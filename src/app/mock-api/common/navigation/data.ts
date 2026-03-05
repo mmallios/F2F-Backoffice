@@ -92,6 +92,13 @@ export const defaultNavigation: FuseNavigationItem[] = [
                 type: 'basic',
                 icon: 'heroicons_outline:lifebuoy',
                 link: '/apps/support/tickets',
+            },
+            {
+                id: 'apps.roles',
+                title: 'Ρολοι Διαχειριστων',
+                type: 'basic',
+                icon: 'heroicons_outline:lifebuoy',
+                link: '/apps/settings/roles',
             }
 
 

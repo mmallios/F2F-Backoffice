@@ -110,7 +110,8 @@ export const appRoutes: Route[] = [
                     { path: 'orders', loadChildren: () => import('app/modules/admin/apps/orders/orders.routes') },
                     { path: 'products', loadChildren: () => import('app/modules/admin/apps/products/products.routes') },
                     { path: 'announcements', loadChildren: () => import('app/modules/admin/apps/announcements/announcements.routes') },
-                    { path: 'support/tickets', loadChildren: () => import('app/modules/admin/apps/support/support.routes') }
+                    { path: 'support/tickets', loadChildren: () => import('app/modules/admin/apps/support/support.routes') },
+                    { path: 'settings/roles', loadChildren: () => import('app/modules/admin/apps/roles/roles.routes') }
                 ]
             },
 
