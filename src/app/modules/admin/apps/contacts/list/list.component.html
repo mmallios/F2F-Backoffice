@@ -1,0 +1,293 @@
+<div class="absolute inset-0 flex min-w-0 flex-col overflow-hidden">
+    <mat-drawer-container class="bg-card h-full flex-auto dark:bg-transparent" (backdropClick)="onBackdropClicked()">
+        <!-- Drawer (optional: keep if you still want a details route) -->
+        <mat-drawer class="w-full dark:bg-gray-900 md:w-160" [mode]="drawerMode" [position]="'end'"
+            [disableClose]="drawerMode === 'side'" #matDrawer>
+            <router-outlet></router-outlet>
+        </mat-drawer>
+
+        <mat-drawer-content class="flex flex-col">
+            <div class="flex-auto">
+                <!-- Header -->
+                <div class="border-b px-6 py-7 md:px-8">
+                    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                        <!-- Title -->
+                        <div class="min-w-0">
+                            <div class="text-3xl md:text-4xl font-extrabold leading-none tracking-tight">
+                                Users
+                            </div>
+                            <div class="text-secondary mt-2 font-medium">
+                                @if (usersCount > 0) { {{ usersCount }} }
+                                {{
+                                usersCount
+                                | i18nPlural: {
+                                '=0': 'No users',
+                                '=1': 'user',
+                                other: 'users'
+                                }
+                                }}
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="flex w-full flex-col gap-3 sm:flex-row lg:w-auto lg:items-center">
+                            <!-- Search -->
+
+
+                            <!-- Add -->
+                            <button mat-flat-button color="primary" class="w-full sm:w-auto" (click)="openUserDialog()">
+                                <mat-icon svgIcon="heroicons_outline:plus"></mat-icon>
+                                <span class="ml-2 mr-1">ΠΡΟΣΘΗΚΗ ΝΕΟΥ ΧΡΗΣΤΗ</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= FILTER BAR ================= -->
+                <div class="px-6 md:px-8 pt-5">
+                    <div class="bg-gray-50/80 dark:bg-white/5 border rounded-2xl shadow-sm
+           px-4 py-4 md:px-6 md:py-5">
+                        <!-- GRID: 2 equal columns -->
+                        <div class="grid grid-cols-2 gap-4 items-center">
+
+                            <!-- ================= LEFT: SEARCH (50%) ================= -->
+                            <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full" subscriptSizing="dynamic">
+                                <mat-icon class="icon-size-5" matPrefix
+                                    [svgIcon]="'heroicons_solid:magnifying-glass'"></mat-icon>
+                                <mat-label>Αναζήτηση</mat-label>
+                                <input matInput [formControl]="searchInputControl" autocomplete="off"
+                                    placeholder="Search users" />
+
+                                @if (searchInputControl.value) {
+                                <button mat-icon-button matSuffix (click)="searchInputControl.setValue('')">
+                                    <mat-icon [svgIcon]="'heroicons_outline:x-mark'"></mat-icon>
+                                </button>
+                                }
+                            </mat-form-field>
+
+                            <!-- ================= RIGHT: FILTERS (50%) ================= -->
+                            <div class="grid grid-cols-3 gap-3">
+
+                                <!-- Country -->
+                                <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full"
+                                    subscriptSizing="dynamic">
+                                    <mat-icon matPrefix class="icon-size-5"
+                                        [svgIcon]="'heroicons_outline:map'"></mat-icon>
+                                    <mat-label>Χώρα</mat-label>
+                                    <mat-select [formControl]="filterCountryId">
+                                        <mat-option [value]="null">Όλες</mat-option>
+                                        <mat-option *ngFor="let c of countries" [value]="c.id">
+                                            {{ c.name }}
+                                        </mat-option>
+                                    </mat-select>
+                                </mat-form-field>
+
+                                <!-- Region -->
+                                <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full"
+                                    subscriptSizing="dynamic">
+                                    <mat-icon matPrefix class="icon-size-5"
+                                        [svgIcon]="'heroicons_outline:map-pin'"></mat-icon>
+                                    <mat-label>Νομός</mat-label>
+                                    <mat-select [formControl]="filterRegionId">
+                                        <mat-option [value]="null">Όλοι</mat-option>
+                                        <mat-option *ngFor="let r of regions" [value]="r.id">
+                                            {{ r.name }}
+                                        </mat-option>
+                                    </mat-select>
+                                </mat-form-field>
+
+                                <!-- Status -->
+                                <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full"
+                                    subscriptSizing="dynamic">
+                                    <mat-icon matPrefix class="icon-size-5"
+                                        [svgIcon]="'heroicons_outline:shield-check'"></mat-icon>
+                                    <mat-label>Status</mat-label>
+                                    <mat-select [formControl]="filterStatus">
+                                        <mat-option [value]="null">Όλα</mat-option>
+                                        <mat-option [value]="0">Pending</mat-option>
+                                        <mat-option [value]="1">Semi-active</mat-option>
+                                        <mat-option [value]="2">Active</mat-option>
+                                        <mat-option [value]="3">Inactive</mat-option>
+                                        <mat-option [value]="5">Rejected</mat-option>
+                                        <mat-option [value]="6">Deleted</mat-option>
+                                        <mat-option [value]="7">Banned</mat-option>
+                                        <mat-option [value]="8">Locked</mat-option>
+                                        <mat-option [value]="9">Archived</mat-option>
+                                    </mat-select>
+                                </mat-form-field>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+
+
+                <!-- Table Card -->
+                <div class="px-6 py-6 md:px-8">
+                    <div class="bg-card rounded-2xl border shadow-sm overflow-hidden">
+                        <!-- Top bar -->
+                        <!-- <div class="flex items-center justify-between gap-4 border-b px-4 py-3 sm:px-6">
+                            <div class="text-secondary text-sm">
+                                Showing <span class="font-semibold">{{ filteredCount }}</span> results
+                            </div>
+                        </div> -->
+
+                        <!-- Loading -->
+                        @if (loading) {
+                        <div class="p-8">
+                            <div class="animate-pulse space-y-3">
+                                <div class="h-4 w-1/3 rounded bg-gray-200 dark:bg-gray-700"></div>
+                                <div class="h-4 w-2/3 rounded bg-gray-200 dark:bg-gray-700"></div>
+                                <div class="h-4 w-1/2 rounded bg-gray-200 dark:bg-gray-700"></div>
+                            </div>
+                        </div>
+                        } @else {
+
+                        <!-- Empty -->
+                        @if (!dataSource?.data?.length) {
+                        <div class="p-10 text-center">
+                            <div class="text-2xl font-semibold tracking-tight">There are no users!</div>
+                            <div class="text-secondary mt-2">Click “Add user” to create one.</div>
+                        </div>
+                        } @else {
+
+                        <!-- Material table -->
+                        <div class="overflow-x-auto">
+                            <table mat-table [dataSource]="dataSource" matSort class="min-w-[980px] w-full">
+                                <!-- Name -->
+                                <ng-container matColumnDef="name">
+                                    <th mat-header-cell *matHeaderCellDef mat-sort-header class="px-6">
+                                        Χρήστης
+                                    </th>
+                                    <td mat-cell *matCellDef="let u" class="px-6 py-3">
+                                        <div class="flex items-center gap-3">
+                                            <div
+                                                class="h-10 w-10 rounded-full overflow-hidden flex items-center justify-center bg-gray-100 dark:bg-gray-800">
+                                                @if (u.image) {
+                                                <img [src]="u.image" class="h-full w-full object-cover" />
+                                                } @else {
+                                                <span
+                                                    class="text-sm font-bold text-gray-700 dark:text-gray-200 uppercase">
+                                                    {{ (u.firstname?.charAt(0) || '?') }}
+                                                </span>
+                                                }
+                                            </div>
+
+                                            <div class="min-w-0">
+                                                <div class="font-semibold truncate">
+                                                    {{ u.firstname }} {{ u.lastname }}
+                                                </div>
+                                                <div class="text-secondary text-md truncate">
+                                                    {{ u.code || '-' }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </ng-container>
+
+                                <!-- Email -->
+                                <ng-container matColumnDef="email">
+                                    <th mat-header-cell *matHeaderCellDef mat-sort-header>Email</th>
+                                    <td mat-cell *matCellDef="let u" class="py-3">
+                                        <div class="truncate max-w-[260px]">{{ u.email || '-' }}</div>
+                                    </td>
+                                </ng-container>
+
+                                <!-- Mobile -->
+                                <ng-container matColumnDef="mobile">
+                                    <th mat-header-cell *matHeaderCellDef mat-sort-header>Κινήτο</th>
+                                    <td mat-cell *matCellDef="let u" class="py-3">
+                                        {{ u.mobile || '-' }}
+                                    </td>
+                                </ng-container>
+
+                                <!-- Country -->
+                                <!-- Country -->
+                                <ng-container matColumnDef="country">
+                                    <th mat-header-cell *matHeaderCellDef mat-sort-header>Χώρα</th>
+                                    <td mat-cell *matCellDef="let u" class="py-3">
+                                        <div class="flex items-center gap-2">
+                                            @if (getCountryFlagUrl(u)) {
+                                            <img class="h-4 w-6 rounded-sm border border-gray-200 dark:border-white/10 object-cover cursor-pointer"
+                                                [src]="getCountryFlagUrl(u)" [alt]="getCountryName(u)"
+                                                [matTooltip]="getCountryName(u)" matTooltipPosition="above"
+                                                (error)="onFlagError($event)" />
+                                            }
+                                        </div>
+                                    </td>
+                                </ng-container>
+
+
+                                <!-- Region -->
+                                <ng-container matColumnDef="region">
+                                    <th mat-header-cell *matHeaderCellDef mat-sort-header>Νομός</th>
+                                    <td mat-cell *matCellDef="let u" class="py-3">
+                                        <span class="truncate max-w-[220px] inline-block">{{ getRegionName(u) }}</span>
+                                    </td>
+                                </ng-container>
+
+
+
+                                <!-- Points -->
+                                <ng-container matColumnDef="points">
+                                    <th mat-header-cell *matHeaderCellDef mat-sort-header>Πόντοι</th>
+                                    <td mat-cell *matCellDef="let u" class="py-3">
+                                        <span class="font-semibold">{{ u.points ?? 0 }}</span>
+                                    </td>
+                                </ng-container>
+
+                                <!-- Status -->
+                                <ng-container matColumnDef="status">
+                                    <th mat-header-cell *matHeaderCellDef mat-sort-header>Status</th>
+                                    <td mat-cell *matCellDef="let u" class="py-3">
+                                        <mat-chip class="!rounded-full !px-3 !text-xs !font-semibold"
+                                            [ngClass]="getStatusChipClass(u.status)">
+                                            {{ getStatusLabel(u.status) }}
+                                        </mat-chip>
+                                    </td>
+                                </ng-container>
+
+                                <!-- Actions -->
+                                <ng-container matColumnDef="actions">
+                                    <th mat-header-cell *matHeaderCellDef class="text-right px-6">Ενέργειες</th>
+
+                                    <td mat-cell *matCellDef="let u" class="text-right px-6 py-3">
+                                        <div class="inline-flex items-center gap-2">
+                                            <!-- View -->
+                                            <button mat-stroked-button class="!rounded-xl" [routerLink]="[u.id, 'view']"
+                                                matTooltip="Προβολή χρήστη">
+                                                <mat-icon [svgIcon]="'heroicons_outline:eye'"></mat-icon>
+                                            </button>
+
+                                            <!-- Edit -->
+                                            <button mat-stroked-button class="!rounded-xl" (click)="openUserDialog(u)"
+                                                matTooltip="Επεξεργασία">
+                                                <mat-icon [svgIcon]="'heroicons_outline:pencil-square'"></mat-icon>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </ng-container>
+
+                                <tr mat-header-row *matHeaderRowDef="usersTableColumns"></tr>
+                                <tr mat-row *matRowDef="let row; columns: usersTableColumns"
+                                    class="hover:bg-gray-50 dark:hover:bg-white/5 transition"></tr>
+                            </table>
+                        </div>
+
+                        <!-- Footer (paginator) -->
+                        <div class="border-t">
+                            <mat-paginator [pageSizeOptions]="[15, 30, 50, 100]" [pageSize]="15"
+                                showFirstLastButtons></mat-paginator>
+
+                        </div>
+
+                        }
+                        }
+                    </div>
+                </div>
+            </div>
+        </mat-drawer-content>
+    </mat-drawer-container>
+</div>

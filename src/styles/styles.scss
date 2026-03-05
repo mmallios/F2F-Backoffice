@@ -1,0 +1,73 @@
+/* ----------------------------------------------------------------------------------------------------- */
+/*  @ Import/write your custom styles here.
+/*  @ Styles from this file will override 'vendors.scss' and Fuse's base styles.
+/* ----------------------------------------------------------------------------------------------------- */
+/* Angular Material - disabled fields full opacity */
+/* ================================
+   ANGULAR MATERIAL DISABLED = FULL OPACITY
+   ================================ */
+
+/* 1️⃣ Form field container */
+.mat-mdc-form-field.mat-form-field-disabled {
+    opacity: 1 !important;
+}
+
+/* 2️⃣ MDC text field (input, textarea, datepicker) */
+.mdc-text-field--disabled {
+    opacity: 1 !important;
+    background-color: transparent !important;
+}
+
+/* Input / textarea text color */
+.mdc-text-field--disabled .mdc-text-field__input {
+    color: rgba(0, 0, 0, 0.87) !important;
+    -webkit-text-fill-color: rgba(212, 212, 212, 0.87) !important;
+}
+
+/* Floating label */
+.mat-mdc-form-field-disabled .mdc-floating-label {
+    color: rgba(206, 206, 206, 0.6) !important;
+}
+
+/* 3️⃣ MAT-SELECT */
+.mat-mdc-select.mat-mdc-select-disabled {
+    opacity: 1 !important;
+}
+
+.mat-mdc-select-disabled .mat-mdc-select-value {
+    color: rgba(184, 181, 181, 0.87) !important;
+}
+
+.mat-mdc-select-disabled .mat-mdc-select-arrow {
+    color: rgba(211, 210, 210, 0.54) !important;
+}
+
+/* 4️⃣ MAT-CHECKBOX */
+.mat-mdc-checkbox.mat-mdc-checkbox-disabled {
+    opacity: 1 !important;
+}
+
+.mat-mdc-checkbox-disabled .mdc-form-field>label {
+    color: rgba(0, 0, 0, 0.87) !important;
+}
+
+/* 5️⃣ MAT-RADIO */
+.mat-mdc-radio-button.mat-mdc-radio-disabled {
+    opacity: 1 !important;
+}
+
+.mat-mdc-radio-disabled .mdc-label {
+    color: rgba(0, 0, 0, 0.87) !important;
+}
+
+/* 6️⃣ MAT-SLIDE-TOGGLE */
+.mat-mdc-slide-toggle.mat-mdc-slide-toggle-disabled {
+    opacity: 1 !important;
+}
+
+/* 7️⃣ Disabled outline / underline */
+.mat-mdc-form-field-disabled .mdc-notched-outline__leading,
+.mat-mdc-form-field-disabled .mdc-notched-outline__notch,
+.mat-mdc-form-field-disabled .mdc-notched-outline__trailing {
+    border-color: rgba(0, 0, 0, 0.38) !important;
+}

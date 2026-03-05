@@ -1,0 +1,297 @@
+<div class="w-full px-3 sm:px-6 md:px-8 py-4">
+
+    <!-- Sticky Header -->
+    <mat-card class="!rounded-2xl overflow-hidden sticky top-0 z-10">
+        <div class="p-3 sm:p-4 flex items-start justify-between gap-3 flex-wrap">
+            <!-- Left: Title -->
+            <div class="min-w-0">
+                <div class="flex items-center gap-2 text-xl sm:text-2xl font-extrabold tracking-tight">
+                    <mat-icon class="opacity-80">support_agent</mat-icon>
+                    <span>Λεπτομέρειες Ticket</span>
+                </div>
+
+                <div class="text-secondary mt-1">
+                    Διαχείριση συνομιλίας, κατάστασης και ανάθεσης.
+                </div>
+
+                <!-- Chips row -->
+                <div class="mt-3 flex items-center gap-2 flex-wrap" *ngIf="details() as d">
+                    <mat-chip class="!rounded-xl" selected>
+                        <mat-icon class="mr-2 !text-base">tag</mat-icon>
+                        #{{ d.ticket.id }}
+                    </mat-chip>
+
+                    <mat-chip class="!rounded-xl" [color]="statusChipColor(d.ticket.status)" selected>
+                        <mat-icon class="mr-2 !text-base">flag</mat-icon>
+                        {{ statusLabel(d.ticket.status) }}
+                    </mat-chip>
+
+                    <mat-chip class="!rounded-xl" selected>
+                        <mat-icon class="mr-2 !text-base">schedule</mat-icon>
+                        Δημιουργία: <b class="ml-1">{{ formatDate(d.ticket.createdAt) }}</b>
+                    </mat-chip>
+
+                    <mat-chip class="!rounded-xl" selected *ngIf="d.ticket.updatedAt">
+                        <mat-icon class="mr-2 !text-base">update</mat-icon>
+                        Τελευταια Ενημέρωση: <b class="ml-1">{{ formatDate(d.ticket.updatedAt!) }}</b>
+                    </mat-chip>
+                </div>
+            </div>
+
+            <!-- Right: Actions -->
+            <div class="flex items-center gap-2">
+                <a mat-stroked-button class="!rounded-xl" routerLink="/apps/support/tickets">
+                    <mat-icon class="mr-2">arrow_back</mat-icon>
+                    Πίσω
+                </a>
+
+                <button mat-stroked-button class="!rounded-xl" (click)="loadMock()" [disabled]="loading()">
+                    <mat-icon class="mr-2">refresh</mat-icon>
+                    Ανανέωση
+                </button>
+            </div>
+        </div>
+
+        <mat-progress-bar *ngIf="loading()" mode="indeterminate"></mat-progress-bar>
+    </mat-card>
+
+    <!-- Error -->
+    <mat-card *ngIf="error() && !loading()" class="!rounded-2xl mt-3">
+        <div class="p-3 flex items-center gap-2">
+            <mat-icon color="warn">error</mat-icon>
+            <div class="min-w-0">{{ error() }}</div>
+        </div>
+    </mat-card>
+
+    <!-- Content -->
+    <ng-container *ngIf="!loading() && details() as d">
+
+        <!-- Meta Bar (compact controls row) -->
+        <mat-card class="!rounded-2xl mt-3 overflow-hidden">
+            <div class="p-3 sm:p-4 flex flex-col gap-3">
+
+
+                <!-- Controls row -->
+                <div class="flex flex-col md:flex-row md:items-center gap-3">
+                    <mat-form-field class="w-full md:w-[240px]" appearance="outline">
+                        <mat-label>Κατάσταση</mat-label>
+                        <mat-select [formControl]="metaForm.controls.status">
+                            <mat-option *ngFor="let s of statusOptions" [value]="s.value">{{ s.label }}</mat-option>
+                        </mat-select>
+                    </mat-form-field>
+
+                    <mat-form-field class="w-full md:flex-1" appearance="outline">
+                        <mat-label>Ανάθεση σε</mat-label>
+                        <mat-select [formControl]="metaForm.controls.assigneeAdminId">
+                            <mat-option [value]="null">— Χωρίς ανάθεση —</mat-option>
+                            <mat-option *ngFor="let a of adminUsers()" [value]="a.id">
+                                {{ (a.firstname || '') + ' ' + (a.lastname || '') }}
+                            </mat-option>
+                        </mat-select>
+                    </mat-form-field>
+
+                    <button mat-flat-button color="primary" class="!rounded-xl w-full md:w-auto md:whitespace-nowrap"
+                        (click)="saveMeta()" [disabled]="savingMeta()">
+                        <mat-icon class="mr-2">save</mat-icon>
+                        {{ savingMeta() ? 'Αποθήκευση…' : 'Αποθήκευση' }}
+                    </button>
+                </div>
+            </div>
+
+            <mat-progress-bar *ngIf="savingMeta()" mode="indeterminate"></mat-progress-bar>
+        </mat-card>
+
+        <!-- Main layout: Conversation + Summary -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 mt-3">
+
+            <!-- Conversation (left, wide) -->
+            <mat-card class="!rounded-2xl overflow-hidden lg:col-span-8">
+                <div class="p-3 sm:p-4">
+                    <div class="flex items-center justify-between gap-3">
+                        <div class="font-extrabold text-lg flex items-center gap-2">
+                            <mat-icon>forum</mat-icon>
+                            Συνομιλία
+                            <span class="text-secondary text-sm">({{ d.messages.length }})</span>
+                        </div>
+                    </div>
+
+                    <mat-divider class="my-3"></mat-divider>
+
+                    <div class="flex flex-col gap-3 max-h-[62vh] overflow-auto pr-1">
+                        <div *ngFor="let m of d.messages" class="flex" [class.justify-end]="isAdminMsg(m)">
+                            <div class="max-w-[92%] sm:max-w-[75%] rounded-2xl px-3 py-2"
+                                [class.bg-blue-900]="!isAdminMsg(m)" [class.dark:bg-dark]="!isAdminMsg(m)"
+                                [class.bg-blue-600]="isAdminMsg(m)" [class.text-white]="isAdminMsg(m)">
+                                <div class="text-xs opacity-80 mb-1 flex items-center justify-between gap-3">
+                                    <span class="font-semibold">{{ isAdminMsg(m) ? currentAdmin().fullname : 'ΧΡΗΣΤΗΣ'
+                                        }}</span>
+                                    <span>{{ formatDate(m.createdAt) }}</span>
+                                </div>
+                                <div class="whitespace-pre-wrap leading-relaxed">{{ m.body }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <mat-divider class="my-3"></mat-divider>
+
+                    <!-- Reply -->
+                    <form [formGroup]="replyForm" class="flex flex-col gap-2">
+                        <mat-form-field class="w-full" appearance="outline">
+                            <mat-label>Απάντηση Admin</mat-label>
+                            <textarea matInput rows="4" formControlName="body" placeholder="Γράψε απάντηση…"></textarea>
+                            <mat-error *ngIf="replyForm.controls.body.hasError('required')">Απαιτείται</mat-error>
+                        </mat-form-field>
+
+                        <div class="flex items-center justify-end gap-2 flex-wrap">
+                            <button mat-stroked-button class="!rounded-xl" type="button"
+                                (click)="replyForm.reset({ body: '' })">
+                                Καθαρισμός
+                            </button>
+
+                            <button mat-flat-button color="primary" class="!rounded-xl" type="button"
+                                (click)="sendReply()" [disabled]="sending() || replyForm.invalid">
+                                <mat-icon class="mr-2">send</mat-icon>
+                                {{ sending() ? 'Αποστολή…' : 'Αποστολή' }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <mat-progress-bar *ngIf="sending()" mode="indeterminate"></mat-progress-bar>
+            </mat-card>
+
+            <!-- Right column -->
+            <div class="lg:col-span-4 flex flex-col gap-3">
+
+                <!-- Subject / Category / Assignee (moved here) -->
+                <mat-card class="!rounded-2xl overflow-hidden">
+                    <div class="p-3 sm:p-4">
+                        <div class="text-lg font-extrabold truncate">
+                            {{ d.ticket.subject || '—' }}
+                        </div>
+
+                        <div class="text-secondary flex items-center gap-2 flex-wrap mt-2">
+                            <mat-icon class="!text-[18px] opacity-70">label</mat-icon>
+                            <span>Κατηγορία:</span>
+                            <b>{{ d.ticket.category || '—' }}</b>
+                        </div>
+
+                        <div class="text-secondary flex items-center gap-2 flex-wrap mt-2">
+                            <mat-icon class="!text-[18px] opacity-70">assignment_ind</mat-icon>
+                            <span>Ανάθεση:</span>
+                            <b>{{ d.ticket.assigneeAdminName || adminNameById(d.ticket.assigneeAdminId) }}</b>
+                        </div>
+
+                        <div class="mt-3">
+                            <button *ngIf="isUnassigned()" mat-flat-button color="primary" class="!rounded-xl w-full"
+                                (click)="claimToMe()" [disabled]="savingMeta()">
+                                <mat-icon class="mr-2">person_add</mat-icon>
+                                Ανάθεσέ το σε εμένα
+                            </button>
+                        </div>
+                    </div>
+                </mat-card>
+
+                <!-- Summary (cards layout like your example) -->
+                <mat-card class="!rounded-2xl overflow-hidden">
+                    <div class="p-3 sm:p-4">
+                        <div class="font-extrabold text-lg flex items-center gap-2">
+                            <mat-icon>receipt_long</mat-icon>
+                            Σύνοψη
+                        </div>
+
+                        <mat-divider class="my-3"></mat-divider>
+
+                        <!-- ✅ Grid cards (like your example) -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
+
+                            <!-- User -->
+                            <div
+                                class="rounded-xl border p-4 flex items-center gap-4 hover:bg-gray-50/60 dark:hover:bg-white/5 transition">
+                                <div
+                                    class="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10 text-primary shrink-0">
+                                    <mat-icon class="icon-size-6 text-primary">account_circle</mat-icon>
+                                </div>
+                                <div class="min-w-0">
+                                    <div class="text-s text-secondary font-medium">Χρήστης</div>
+                                    <div class="font-semibold truncate">
+                                        {{ d.ticket.userFullName || ('Χρήστης #' + d.ticket.userId) }}
+                                    </div>
+                                    <div class="text-secondary text-xs truncate">
+                                        {{ d.ticket.code || 'F2F00001' }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Status -->
+                            <div
+                                class="rounded-xl border p-4 flex items-center gap-4 hover:bg-gray-50/60 dark:hover:bg-white/5 transition">
+                                <div
+                                    class="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10 text-primary shrink-0">
+                                    <mat-icon class="icon-size-6 text-primary">flag</mat-icon>
+                                </div>
+                                <div class="min-w-0">
+                                    <div class="text-s text-secondary font-medium">Κατάσταση</div>
+                                    <div class="font-semibold truncate">
+                                        {{ statusLabel(d.ticket.status) }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Replies -->
+                            <div
+                                class="rounded-xl border p-4 flex items-center gap-4 hover:bg-gray-50/60 dark:hover:bg-white/5 transition">
+                                <div
+                                    class="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10 text-primary shrink-0">
+                                    <mat-icon class="icon-size-6 text-primary">chat_bubble</mat-icon>
+                                </div>
+                                <div class="min-w-0">
+                                    <div class="text-s text-secondary font-medium">Απαντήσεις</div>
+                                    <div class="font-semibold truncate">
+                                        {{ d.ticket.repliesCount ?? (d.messages.length - 1) }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Created -->
+                            <div
+                                class="rounded-xl border p-4 flex items-center gap-4 hover:bg-gray-50/60 dark:hover:bg-white/5 transition">
+                                <div
+                                    class="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10 text-primary shrink-0">
+                                    <mat-icon class="icon-size-6 text-primary">schedule</mat-icon>
+                                </div>
+                                <div class="min-w-0">
+                                    <div class="text-s text-secondary font-medium">Δημιουργία</div>
+                                    <div class="font-semibold truncate">
+                                        {{ formatDate(d.ticket.createdAt) }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Updated -->
+                            <div *ngIf="d.ticket.updatedAt"
+                                class="rounded-xl border p-4 flex items-center gap-4 hover:bg-gray-50/60 dark:hover:bg-white/5 transition">
+                                <div
+                                    class="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10 text-primary shrink-0">
+                                    <mat-icon class="icon-size-6 text-primary">update</mat-icon>
+                                </div>
+                                <div class="min-w-0">
+                                    <div class="text-s text-secondary font-medium">Ενημέρωση</div>
+                                    <div class="font-semibold truncate">
+                                        {{ formatDate(d.ticket.updatedAt!) }}
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </mat-card>
+
+            </div>
+
+
+
+        </div>
+
+    </ng-container>
+</div>

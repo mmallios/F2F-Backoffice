@@ -1,0 +1,205 @@
+<div class="w-full px-4 sm:px-6 lg:px-8 py-2 space-y-4">
+
+    <div class="border-b px-6 py-6 md:px-8">
+        <div class="flex items-start justify-between gap-3">
+            <div>
+                <div class="text-4xl font-extrabold leading-none tracking-tight">Αγώνες</div>
+                <div class="text-secondary text-sm mt-1">Διαχείριση αγώνων</div>
+            </div>
+
+            <div class="shrink-0">
+                <button mat-flat-button color="primary" type="button" (click)="addNewEvent()">
+                    <mat-icon>add</mat-icon>
+                    <span class="ml-2">ΝΕΟΣ ΑΓΩΝΑΣ</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= TABS ================= -->
+    <div class="bg-card rounded-2xl border shadow-sm overflow-hidden">
+        <mat-tab-group class="p-2 md:p-4">
+
+            <mat-tab *ngFor="let tab of tabs" [label]="tab.label">
+                <div class="p-4 md:p-6 space-y-4">
+                    <!-- ================= FILTER BAR (same UI as other page) ================= -->
+                    <div class="px-2 md:px-4 pt-2">
+                        <div class="bg-gray-50/80 dark:bg-white/5 border rounded-2xl shadow-sm
+              px-4 py-4 md:px-6 md:py-5">
+
+                            <!-- GRID: Search 35% + Filters 65% (ALWAYS 1 ROW) -->
+                            <div class="grid grid-cols-[35%_65%] gap-4 items-center">
+
+
+                                <!-- ================= LEFT: SEARCH (50%) ================= -->
+                                <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full"
+                                    subscriptSizing="dynamic">
+                                    <mat-icon class="icon-size-5" matPrefix
+                                        [svgIcon]="'heroicons_solid:magnifying-glass'"></mat-icon>
+                                    <mat-label>Αναζήτηση</mat-label>
+
+                                    <input matInput [formControl]="tab.searchCtrl" autocomplete="off"
+                                        placeholder="Ομάδα, διοργάνωση, αγωνιστική..." />
+
+                                    @if (tab.searchCtrl.value) {
+                                    <button mat-icon-button matSuffix (click)="tab.searchCtrl.setValue('')">
+                                        <mat-icon [svgIcon]="'heroicons_outline:x-mark'"></mat-icon>
+                                    </button>
+                                    }
+                                </mat-form-field>
+
+                                <!-- ================= RIGHT: FILTERS (50%) ================= -->
+                                <div class="grid grid-cols-3 gap-3">
+
+                                    <!-- Date Range -->
+                                    <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full"
+                                        subscriptSizing="dynamic" [formGroup]="tab.dateRange">
+                                        <mat-icon matPrefix class="icon-size-5"
+                                            [svgIcon]="'heroicons_outline:calendar-days'"></mat-icon>
+                                        <mat-label>Ημερομηνίες</mat-label>
+
+                                        <mat-date-range-input [rangePicker]="picker">
+                                            <input matStartDate formControlName="start" placeholder="Από">
+                                            <input matEndDate formControlName="end" placeholder="Έως">
+                                        </mat-date-range-input>
+
+                                        <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+                                        <mat-date-range-picker #picker></mat-date-range-picker>
+
+                                        @if (tab.dateRange.value?.start || tab.dateRange.value?.end) {
+                                        <button mat-icon-button matSuffix (click)="clearDateRange(tab)">
+                                            <mat-icon [svgIcon]="'heroicons_outline:x-mark'"></mat-icon>
+                                        </button>
+                                        }
+                                    </mat-form-field>
+
+                                    <!-- Competition -->
+                                    <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full"
+                                        subscriptSizing="dynamic">
+                                        <mat-icon matPrefix class="icon-size-5"
+                                            [svgIcon]="'heroicons_outline:trophy'"></mat-icon>
+                                        <mat-label>Διοργάνωση</mat-label>
+
+                                        <mat-select [formControl]="tab.competitionCtrl">
+                                            <mat-option [value]="null">Όλες</mat-option>
+                                            <mat-option *ngFor="let c of competitionsByTab[tab.key]" [value]="c">
+                                                {{ c }}
+                                            </mat-option>
+                                        </mat-select>
+
+                                        @if (tab.competitionCtrl.value) {
+                                        <button mat-icon-button matSuffix (click)="tab.competitionCtrl.setValue(null)">
+                                            <mat-icon [svgIcon]="'heroicons_outline:x-mark'"></mat-icon>
+                                        </button>
+                                        }
+                                    </mat-form-field>
+
+                                    <!-- Enabled Tickets -->
+                                    <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full"
+                                        subscriptSizing="dynamic">
+                                        <mat-icon matPrefix class="icon-size-5"
+                                            [svgIcon]="'heroicons_outline:ticket'"></mat-icon>
+                                        <mat-label>Εισιτήρια</mat-label>
+
+                                        <mat-select [formControl]="tab.ticketsCtrl">
+                                            <mat-option [value]="null">Όλα</mat-option>
+                                            <mat-option [value]="true">Enabled</mat-option>
+                                            <mat-option [value]="false">Disabled</mat-option>
+                                        </mat-select>
+
+                                        @if (tab.ticketsCtrl.value !== null) {
+                                        <button mat-icon-button matSuffix (click)="tab.ticketsCtrl.setValue(null)">
+                                            <mat-icon [svgIcon]="'heroicons_outline:x-mark'"></mat-icon>
+                                        </button>
+                                        }
+                                    </mat-form-field>
+
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+
+
+                    <!-- TABLE -->
+                    <div class="overflow-x-auto rounded-2xl border">
+                        <table class="w-full border-collapse text-sm">
+
+                            <thead class="border-b">
+                                <tr class="text-left text-secondary font-bold">
+                                    <th class="px-4 py-3">Γηπεδούχος</th>
+                                    <th class="px-4 py-3">Φιλοξενούμενος</th>
+                                    <th class="px-4 py-3 whitespace-nowrap">Ημερομηνία</th>
+                                    <th class="px-4 py-3">Διοργάνωση</th>
+                                    <th class="px-4 py-3 text-center">TV</th>
+                                    <th class="px-4 py-3 text-center whitespace-nowrap">Εισιτήρια</th>
+                                    <th class="px-4 py-3 text-right whitespace-nowrap">Ενέργειες</th>
+                                </tr>
+                            </thead>
+
+                            <tbody class="divide-y">
+                                <tr *ngFor="let ev of tab.filtered; trackBy: trackById" class="transition">
+
+                                    <td class="px-4 py-3">
+                                        <div class="flex items-center gap-2 min-w-0">
+                                            <img [src]="ev.homeTeamLogoUrl"
+                                                class="h-8 w-8 rounded object-contain shrink-0" alt="home" />
+                                            <span class="font-medium truncate">{{ ev.homeTeamName }}</span>
+                                        </div>
+                                    </td>
+
+                                    <td class="px-4 py-3">
+                                        <div class="flex items-center gap-2 min-w-0">
+                                            <img [src]="ev.awayTeamLogoUrl"
+                                                class="h-8 w-8 rounded object-contain shrink-0" alt="away" />
+                                            <span class="font-medium truncate">{{ ev.awayTeamName }}</span>
+                                        </div>
+                                    </td>
+
+                                    <td class="text-md px-4 py-3 whitespace-nowrap">
+                                        {{ formatDateGr(ev.eventDate) }}
+                                    </td>
+
+                                    <td class="px-4 py-3">
+                                        <div class="font-medium">{{ ev.competitionName }}</div>
+                                        <div class="text-md text-secondary">Αγωνιστική {{ ev.matchday }}</div>
+                                    </td>
+
+                                    <td class="px-4 py-3 text-center whitespace-nowrap">
+                                        <span class="px-2 py-1 rounded-lg font-medium">
+                                            {{ ev.tvChannelName || '—' }}
+                                        </span>
+                                    </td>
+
+                                    <td class="px-4 py-3 text-center whitespace-nowrap">
+                                        <mat-slide-toggle color="primary" [checked]="ev.isTicketingOpen"
+                                            (change)="toggleTickets(ev, $event.checked)">
+                                        </mat-slide-toggle>
+                                    </td>
+
+                                    <td class="px-4 py-3 text-right whitespace-nowrap">
+                                        <button mat-icon-button color="primary" (click)="viewDetails(ev)"
+                                            matTooltip="Επεξεργασία">
+                                            <mat-icon>edit</mat-icon>
+                                        </button>
+                                    </td>
+
+                                </tr>
+
+                                <tr *ngIf="tab.filtered.length === 0">
+                                    <td colspan="7" class="px-6 py-10 text-center text-secondary">
+                                        Δεν βρέθηκαν events
+                                    </td>
+                                </tr>
+
+                            </tbody>
+                        </table>
+                    </div>
+
+                </div>
+            </mat-tab>
+
+        </mat-tab-group>
+    </div>
+</div>

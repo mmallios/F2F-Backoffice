@@ -1,0 +1,324 @@
+<div class="w-full max-w-none px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- ================= HEADER / OVERVIEW ================= -->
+    <div class="bg-card rounded-2xl border shadow-sm p-5 md:p-6" [formGroup]="detailsForm">
+
+        <!-- ================= TOP ROW ================= -->
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+
+            <!-- Avatar + Name -->
+            <div class="flex items-center gap-4 min-w-0">
+                <div
+                    class="h-16 w-16 rounded-2xl overflow-hidden bg-gray-200 flex items-center justify-center text-lg font-semibold text-gray-700">
+                    <img *ngIf="avatarPreview" [src]="avatarPreview" class="h-full w-full object-cover" />
+                    <span *ngIf="!avatarPreview">{{ initials }}</span>
+                </div>
+
+                <div class="min-w-0">
+                    <div class="text-xl md:text-2xl font-extrabold truncate">
+                        {{ detailsForm.get('firstname')?.value }}
+                        {{ detailsForm.get('lastname')?.value }}
+                    </div>
+
+                    <div class="text-secondary text-m mt-0.5">
+                        Κωδικός:
+                        <span class="font-medium">{{ detailsForm.get('code')?.value || '-' }}</span>
+                        • Πόντοι:
+                        <span class="font-medium f-bold">{{ detailsForm.get('points')?.value ?? 0 }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <!-- Actions -->
+            <div class="flex flex-wrap items-center gap-2">
+
+                <!-- ✅ Status dropdown (left of Change Image) -->
+                <!-- Status dropdown (HEADER) -->
+                <!-- Readonly view -->
+                <div *ngIf="!overviewEdit"
+                    class="px-4 py-2 rounded-full text-m font-semibold inline-flex items-center gap-2"
+                    [ngClass]="getStatusChipClass(detailsForm.get('status')?.value)">
+                    <mat-icon class="icon-size-5" [svgIcon]="'heroicons_outline:shield-check'"></mat-icon>
+                    {{ getStatusLabel(detailsForm.get('status')?.value) }}
+                </div>
+
+
+                <!-- Editable view -->
+
+
+                <button mat-stroked-button type="button" (click)="openEditUserModal()">
+                    <mat-icon>edit</mat-icon>
+                    <span class="ml-2">Επεξεργασία</span>
+                </button>
+
+
+                <button mat-button color="warn" *ngIf="overviewEdit" type="button" (click)="cancelOverviewEdit()">
+                    Ακύρωση
+                </button>
+
+                <button mat-flat-button color="primary" *ngIf="overviewEdit" type="button" (click)="saveUser()"
+                    [disabled]="detailsForm.invalid">
+                    Αποθήκευση
+                </button>
+            </div>
+
+        </div>
+
+        <!-- ================= VIEW MODE ================= -->
+        <div *ngIf="!overviewEdit" class="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            <ng-container *ngFor="let field of viewFields">
+                <div class="rounded-xl border p-4 flex items-center gap-4
+             hover:bg-gray-50/60 dark:hover:bg-white/5 transition">
+                    <!-- BIG ICON (LEFT) -->
+                    <div class="flex items-center justify-center w-10 h-10 rounded-xl
+               bg-primary/10 text-primary shrink-0">
+                        <mat-icon class="icon-size-6 text-primary" [svgIcon]="field.icon"></mat-icon>
+                    </div>
+
+                    <!-- TEXT (RIGHT) -->
+                    <div class="min-w-0">
+                        <div class="text-s text-secondary font-medium">
+                            {{ field.label }}
+                        </div>
+                        <div class="font-semibold truncate">
+                            <ng-container [ngSwitch]="field.control">
+
+                                <!-- ✅ Social media: icon + account -->
+                                <ng-container *ngSwitchCase="'socialMediaProfile'">
+                                    <span class="inline-flex items-center gap-2 min-w-0">
+                                        <img *ngIf="getSocialIconUrl()" class="h-5 w-5 rounded-sm object-contain"
+                                            [src]="getSocialIconUrl()" [alt]="getSocialMediaName() || 'social'" />
+                                        <span class="truncate">{{ detailsForm.get(field.control)?.value || '-' }}</span>
+                                    </span>
+                                </ng-container>
+
+                                <!-- default -->
+                                <ng-container *ngSwitchDefault>
+                                    {{ detailsForm.get(field.control)?.value || '-' }}
+                                </ng-container>
+
+                            </ng-container>
+                        </div>
+
+                    </div>
+                </div>
+            </ng-container>
+        </div>
+
+
+
+    </div>
+
+
+    <!-- ================= TABS ================= -->
+    <div class="bg-card rounded-2xl border shadow-sm overflow-hidden">
+        <mat-tab-group class="p-2 md:p-4">
+
+
+            <!-- TAB: ΕΙΣΙΤΗΡΙΑ ΔΙΑΡΚΕΙΑΣ -->
+            <mat-tab label="ΕΙΣΙΤΗΡΙΑ ΔΙΑΡΚΕΙΑΣ">
+                <div class="p-4 md:p-6 space-y-4">
+
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <div class="text-lg font-bold">Εισιτήρια διαρκείας</div>
+                            <div class="text-secondary text-sm">Λίστα εισιτηρίων χρήστη</div>
+                        </div>
+                    </div>
+
+                    <!-- Empty state -->
+                    <div *ngIf="!tickets?.length"
+                        class="rounded-2xl border bg-white/40 dark:bg-transparent p-6 text-center text-secondary">
+                        Δεν υπάρχουν εισιτήρια.
+                    </div>
+
+                    <!-- List -->
+                    <!-- List -->
+                    <div class="grid grid-cols-1 gap-3" *ngIf="tickets?.length">
+
+                        <div *ngFor="let t of tickets; trackBy: trackByTicketId" class="rounded-2xl border bg-card shadow-sm p-4 flex items-center gap-4
+               hover:bg-gray-50/60 dark:hover:bg-white/5 transition">
+
+                            <!-- ⚽ ICON -->
+                            <div class="flex items-center justify-center w-10 h-10 rounded-full
+                    bg-primary/10 text-primary shrink-0">
+                                <mat-icon class="text-red-500">sports_soccer</mat-icon>
+
+                            </div>
+
+                            <!-- │ DIVIDER -->
+                            <div class="self-stretch w-px bg-border opacity-60"></div>
+
+                            <!-- CONTENT -->
+                            <div class="flex items-center justify-between gap-3 w-full min-w-0">
+
+                                <!-- Left -->
+                                <div class="min-w-0">
+                                    <div class="font-semibold truncate">
+                                        {{ t.firstname }} {{ t.lastname }}
+                                    </div>
+
+                                    <div class="text-secondary text-m mt-0.5">
+                                        ΘΥΡΑ: <span class="font-bold">{{ t.gate }}</span> |
+                                        ΤΜΗΜΑ: <span class="font-bold">{{ t.section }}</span> |
+                                        ΣΕΙΡΑ: <span class="font-bold">{{ t.row }}</span> |
+                                        ΘΕΣΗ: <span class="font-bold">{{ t.seat }}</span>
+                                    </div>
+                                </div>
+
+                                <!-- Right actions -->
+                                <div class="flex items-center gap-2 shrink-0">
+                                    <button mat-stroked-button type="button" (click)="openEditTicket(t)">
+                                        <mat-icon>edit</mat-icon>
+                                        <span class="ml-2 hidden sm:inline">Επεξεργασία</span>
+                                    </button>
+
+                                    <button mat-stroked-button color="warn" type="button" (click)="openDeleteTicket(t)">
+                                        <mat-icon>delete</mat-icon>
+                                        <span class="ml-2 hidden sm:inline">Διαγραφή</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+                </div>
+            </mat-tab>
+
+
+            <!-- TAB 2 -->
+
+            <mat-tab label="ΚΑΡΤΕΣ">
+                <div class="p-4 md:p-6 space-y-8">
+
+                    <!-- ================= SECTION 1: FAN CARDS ================= -->
+                    <div class="space-y-3">
+                        <div>
+                            <div class="text-lg font-bold">ΚΑΡΤΕΣ ΦΙΛΑΘΛΟΥ</div>
+                        </div>
+
+                        <!-- Empty -->
+                        <div *ngIf="!fanCards?.length"
+                            class="rounded-2xl border bg-white/40 dark:bg-transparent p-6 text-center text-secondary">
+                            Δεν υπάρχουν κάρτες φιλάθλου.
+                        </div>
+
+                        <!-- List -->
+                        <div class="grid grid-cols-1 gap-3" *ngIf="fanCards?.length">
+                            <div *ngFor="let c of fanCards; trackBy: trackByCardId" class="rounded-2xl border bg-card shadow-sm p-4 flex items-center gap-4
+                 hover:bg-gray-50/60 dark:hover:bg-white/5 transition">
+
+                                <!-- ICON -->
+                                <div
+                                    class="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary shrink-0">
+                                    <mat-icon class="text-red-500">badge</mat-icon>
+                                </div>
+
+                                <!-- DIVIDER -->
+                                <div class="self-stretch w-px bg-border opacity-60"></div>
+
+                                <!-- CONTENT -->
+                                <div class="flex items-center justify-between gap-3 w-full min-w-0">
+                                    <div class="min-w-0">
+                                        <div class="font-semibold truncate">{{ c.firstname }} {{ c.lastname }}</div>
+                                        <div class="text-secondary text-m mt-0.5">
+                                            ΚΑΡΤΑ: <span class="font-bold">{{ c.cardNumber }}</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex items-center gap-2 shrink-0">
+                                        <button mat-stroked-button type="button" (click)="openEditCard(c)">
+                                            <mat-icon>edit</mat-icon>
+                                            <span class="ml-2 hidden sm:inline">Επεξεργασία</span>
+                                        </button>
+
+                                        <button mat-stroked-button color="warn" type="button"
+                                            (click)="openDeleteCard(c)">
+                                            <mat-icon>delete</mat-icon>
+                                            <span class="ml-2 hidden sm:inline">Διαγραφή</span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ================= SECTION 2: MEMBER CARDS ================= -->
+                    <div class="space-y-3">
+                        <div>
+                            <div class="text-lg font-bold">ΚΑΡΤΕΣ ΜΕΛΟΥΣ</div>
+                        </div>
+
+                        <!-- Empty -->
+                        <div *ngIf="!memberCards?.length"
+                            class="rounded-2xl border bg-white/40 dark:bg-transparent p-6 text-center text-secondary">
+                            Δεν υπάρχουν κάρτες μέλους.
+                        </div>
+
+                        <!-- List -->
+                        <div class="grid grid-cols-1 gap-3" *ngIf="memberCards?.length">
+                            <div *ngFor="let c of memberCards; trackBy: trackByCardId" class="rounded-2xl border bg-card shadow-sm p-4 flex items-center gap-4
+                 hover:bg-gray-50/60 dark:hover:bg-white/5 transition">
+
+                                <!-- ICON -->
+                                <div
+                                    class="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary shrink-0">
+                                    <mat-icon class="text-red-500">workspace_premium</mat-icon>
+                                </div>
+
+                                <!-- DIVIDER -->
+                                <div class="self-stretch w-px bg-border opacity-60"></div>
+
+                                <!-- CONTENT -->
+                                <div class="flex items-center justify-between gap-3 w-full min-w-0">
+                                    <div class="min-w-0">
+                                        <div class="font-semibold truncate">{{ c.firstname }} {{ c.lastname }}</div>
+                                        <div class="text-secondary text-m mt-0.5">
+                                            ΑΡΙΘΜΟΣ ΚΑΡΤΑΣ: <span class="font-bold">{{ c.cardNumber }}</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex items-center gap-2 shrink-0">
+                                        <button mat-stroked-button type="button" (click)="openEditCard(c)">
+                                            <mat-icon>edit</mat-icon>
+                                            <span class="ml-2 hidden sm:inline">Επεξεργασία</span>
+                                        </button>
+
+                                        <button mat-stroked-button color="warn" type="button"
+                                            (click)="openDeleteCard(c)">
+                                            <mat-icon>delete</mat-icon>
+                                            <span class="ml-2 hidden sm:inline">Διαγραφή</span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </mat-tab>
+
+
+
+            <!-- TAB 3 -->
+            <mat-tab label="ΣΥΝΔΡΟΜΕΣ">
+                <div class="p-4 md:p-6 text-secondary">
+                    Λίστα συνδρομών / events
+                </div>
+            </mat-tab>
+
+            <!-- TAB 4 -->
+            <mat-tab label="ΔΡΑΣΤΗΡΙΟΤΗΤΑ">
+                <div class="p-4 md:p-6 text-secondary">
+                    Θα προστεθεί σύντομα…
+                </div>
+            </mat-tab>
+
+        </mat-tab-group>
+    </div>
+
+</div>

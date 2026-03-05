@@ -1,0 +1,313 @@
+<div class="absolute inset-0 flex min-w-0 flex-col overflow-hidden">
+    <div class="flex-1 min-h-0 overflow-auto">
+
+        <!-- ΠΑΝΩ ΜΠΑΡΑ -->
+        <div class="border-b bg-card px-4 py-4 md:px-8">
+            <div class="flex items-center justify-between gap-3">
+                <a mat-stroked-button class="!rounded-xl" routerLink="/apps/orders">
+                    <mat-icon [svgIcon]="'heroicons_outline:arrow-left'"></mat-icon>
+                    <span class="ml-2">Πίσω στις παραγγελίες</span>
+                </a>
+
+                @if (!loading() && order()) {
+                <div class="flex items-center gap-2">
+                    <mat-chip class="!rounded-full !px-3 !text-xs !font-semibold"
+                        [ngClass]="getStatusChipClass(order()!.status)">
+                        {{ getStatusLabel(order()!.status) }}
+                    </mat-chip>
+
+                    <button mat-stroked-button class="!rounded-xl" (click)="retry()" matTooltip="Ανανέωση">
+                        <mat-icon [svgIcon]="'heroicons_outline:arrow-path'"></mat-icon>
+                    </button>
+                </div>
+                }
+            </div>
+        </div>
+
+        <!-- ΠΕΡΙΕΧΟΜΕΝΟ -->
+        <div class="px-4 py-5 md:px-8 md:py-7">
+
+            <!-- LOADING -->
+            @if (loading()) {
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div class="lg:col-span-2 bg-card border rounded-2xl shadow-sm p-5">
+                    <div class="animate-pulse space-y-4">
+                        <div class="h-7 w-2/3 rounded bg-gray-200 dark:bg-gray-700"></div>
+                        <div class="h-4 w-1/2 rounded bg-gray-200 dark:bg-gray-700"></div>
+                        <div class="h-4 w-4/5 rounded bg-gray-200 dark:bg-gray-700"></div>
+                        <div class="h-64 w-full rounded bg-gray-200 dark:bg-gray-700"></div>
+                    </div>
+                </div>
+                <div class="bg-card border rounded-2xl shadow-sm p-5">
+                    <div class="animate-pulse space-y-4">
+                        <div class="h-6 w-1/2 rounded bg-gray-200 dark:bg-gray-700"></div>
+                        <div class="h-10 w-full rounded bg-gray-200 dark:bg-gray-700"></div>
+                        <div class="h-10 w-full rounded bg-gray-200 dark:bg-gray-700"></div>
+                        <div class="h-10 w-full rounded bg-gray-200 dark:bg-gray-700"></div>
+                    </div>
+                </div>
+            </div>
+            }
+
+            <!-- ERROR -->
+            @if (!loading() && error()) {
+            <div class="bg-card border rounded-2xl shadow-sm p-6">
+                <div class="flex items-start gap-3">
+                    <mat-icon class="mt-0.5" [svgIcon]="'heroicons_outline:exclamation-triangle'"></mat-icon>
+                    <div class="min-w-0">
+                        <div class="text-lg font-semibold">Κάτι πήγε στραβά</div>
+                        <div class="text-secondary mt-1">{{ error() }}</div>
+
+                        <div class="mt-4 flex gap-2">
+                            <button mat-flat-button color="primary" class="!rounded-xl" (click)="retry()">
+                                Δοκίμασε ξανά
+                            </button>
+                            <a mat-stroked-button class="!rounded-xl" routerLink="/orders">Επιστροφή</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            }
+
+            <!-- MAIN -->
+            @if (!loading() && !error() && order()) {
+
+            <!-- HERO -->
+            <div class="bg-card border rounded-2xl shadow-sm p-5 md:p-6">
+                <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                    <div class="min-w-0">
+                        <div class="text-2xl md:text-3xl font-extrabold tracking-tight truncate">
+                            Παραγγελία #{{ order()!.code }}
+                        </div>
+
+                        <div class="text-secondary mt-1 flex flex-wrap items-center gap-x-4 gap-y-1">
+                            <span>
+                                <mat-icon class="icon-size-4 align-[-2px]"
+                                    [svgIcon]="'heroicons_outline:calendar-days'"></mat-icon>
+                                <span class="ml-1">Υποβλήθηκε:</span>
+                                <span class="ml-1 font-medium">{{ order()!.submittedAt | date:'medium' }}</span>
+                            </span>
+
+                            <span class="hidden sm:inline">•</span>
+
+                            <span>
+                                <mat-icon class="icon-size-4 align-[-2px]"
+                                    [svgIcon]="'heroicons_outline:credit-card'"></mat-icon>
+                                <span class="ml-1">Πληρωμή:</span>
+                                <span class="ml-1 font-medium">{{ getPaymentLabel(order()!.paymentMethod) }}</span>
+                            </span>
+
+                            <span class="hidden sm:inline">•</span>
+
+                            <span>
+                                <mat-icon class="icon-size-4 align-[-2px]"
+                                    [svgIcon]="'heroicons_outline:truck'"></mat-icon>
+                                <span class="ml-1">Αποστολή:</span>
+                                <span class="ml-1 font-medium">{{ getShippingLabel(order()!.shippingMethod) }}</span>
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap gap-2">
+                        <div class="rounded-2xl border px-4 py-3 bg-gray-50/70 dark:bg-white/5">
+                            <div class="text-xs text-secondary">Υποσύνολο</div>
+                            <div class="text-lg font-bold">{{ subtotal() | number:'1.2-2' }} €</div>
+                        </div>
+
+                        <div class="rounded-2xl border px-4 py-3 bg-gray-50/70 dark:bg-white/5">
+                            <div class="text-xs text-secondary">Μεταφορικά</div>
+                            <div class="text-lg font-bold">{{ shipping() | number:'1.2-2' }} €</div>
+                        </div>
+
+                        <div class="rounded-2xl border px-4 py-3 bg-gray-50/70 dark:bg-white/5">
+                            <div class="text-xs text-secondary">Σύνολο</div>
+                            <div class="text-lg font-extrabold">{{ total() | number:'1.2-2' }} €</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- GRID -->
+            <div class="mt-5 grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+                <!-- ΑΡΙΣΤΕΡΑ -->
+                <div class="lg:col-span-2 space-y-4">
+
+                    <!-- ΣΤΟΙΧΕΙΑ ΧΡΗΣΤΗ -->
+                    <div class="bg-card border rounded-2xl shadow-sm p-5 md:p-6">
+                        <div class="text-lg font-bold">Στοιχεία χρήστη</div>
+
+                        <div class="mt-4 flex items-center gap-4">
+                            <div
+                                class="w-12 h-12 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-800 flex items-center justify-center shrink-0">
+                                @if (user()?.image) {
+                                <img [src]="user()?.image" class="h-full w-full object-cover" alt="Χρήστης" />
+                                } @else {
+                                <mat-icon [svgIcon]="'heroicons_outline:user-circle'"></mat-icon>
+                                }
+                            </div>
+
+                            <div class="min-w-0">
+                                <div class="text-base font-semibold truncate">{{ userFullname() }}</div>
+
+                                @if (userEmail()) {
+                                <div class="text-secondary text-sm truncate">{{ userEmail() }}</div>
+                                } @else {
+                                <div class="text-secondary text-sm">—</div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ΑΠΟΣΤΟΛΗ / ΔΙΕΥΘΥΝΣΗ -->
+                    <div class="bg-card border rounded-2xl shadow-sm p-5 md:p-6">
+                        <div class="text-lg font-bold">Αποστολή & Διεύθυνση</div>
+
+                        @if (shippingDetails()) {
+                        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+
+                            <div class="rounded-xl border p-4 bg-gray-50/70 dark:bg-white/5">
+                                <div class="text-xs text-secondary">Ονοματεπώνυμο</div>
+                                <div class="font-semibold">
+                                    {{ (shippingDetails()!.firstName || '') + ' ' + (shippingDetails()!.lastName || '')
+                                    || '—' }}
+                                </div>
+                            </div>
+
+                            <div class="rounded-xl border p-4 bg-gray-50/70 dark:bg-white/5">
+                                <div class="text-xs text-secondary">Τηλέφωνο</div>
+                                <div class="font-semibold">{{ shippingDetails()!.phone || '—' }}</div>
+                            </div>
+
+                            <div class="rounded-xl border p-4 bg-gray-50/70 dark:bg-white/5 md:col-span-2">
+                                <div class="text-xs text-secondary">Διεύθυνση</div>
+                                <div class="font-semibold">
+                                    {{ shippingDetails()!.addressLine1 || '—' }}
+                                    @if (shippingDetails()!.addressLine2) {
+                                    <span class="text-secondary">, {{ shippingDetails()!.addressLine2 }}</span>
+                                    }
+                                </div>
+                                <div class="text-secondary text-sm mt-1">
+                                    {{ shippingDetails()!.zip || '' }} {{ shippingDetails()!.city || '' }}
+                                    · {{ shippingDetails()!.region || '' }} · {{ shippingDetails()!.country || '' }}
+                                </div>
+                            </div>
+
+                            <div class="rounded-xl border p-4 bg-gray-50/70 dark:bg-white/5">
+                                <div class="text-xs text-secondary">Μέθοδος</div>
+                                <div class="font-semibold">{{ shippingDetails()!.method || '—' }}</div>
+                            </div>
+
+                            <div class="rounded-xl border p-4 bg-gray-50/70 dark:bg-white/5">
+                                <div class="text-xs text-secondary">Locker ID</div>
+                                <div class="font-semibold">{{ shippingDetails()!.lockerId || '—' }}</div>
+                            </div>
+
+                        </div>
+                        } @else {
+                        <div class="mt-3 text-secondary">
+                            Δεν βρέθηκαν στοιχεία αποστολής στο <span class="font-semibold">orderData</span>.
+                        </div>
+                        }
+                    </div>
+
+                    <!-- ΠΡΟΪΟΝΤΑ -->
+
+
+                </div>
+
+                <!-- ΔΕΞΙΑ -->
+                <div class="space-y-4">
+
+                    <!-- ✅ ΠΡΟΪΟΝΤΑ (ΣΥΝΟΠΤΙΚΑ) ΠΑΝΩ ΑΠΟ ΣΥΝΟΨΗ -->
+                    <!-- ✅ ΠΡΟΪΟΝΤΑ (ΣΥΝΟΠΤΙΚΑ) ΠΑΝΩ ΑΠΟ ΣΥΝΟΨΗ -->
+                    <div class="bg-card border rounded-2xl shadow-sm overflow-hidden">
+                        <div class="p-5 md:p-6 border-b flex items-center justify-between gap-3">
+                            <div class="min-w-0">
+                                <div class="text-lg font-bold">Προϊόντα</div>
+                                <div class="text-secondary text-sm">{{ items().length }} τεμ.</div>
+                            </div>
+
+                            <button mat-stroked-button class="!rounded-xl shrink-0" (click)="openProductsEditor()"
+                                matTooltip="Επεξεργασία προϊόντων">
+                                <mat-icon [svgIcon]="'heroicons_outline:pencil-square'"></mat-icon>
+                                <span class="ml-2">Επεξεργασία</span>
+                            </button>
+                        </div>
+
+                        <div class="divide-y max-h-[420px] overflow-auto">
+                            @for (it of items(); track it.id) {
+                            <div class="p-4 flex items-center gap-3">
+                                <div
+                                    class="w-12 h-12 rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 flex items-center justify-center shrink-0">
+                                    @if (it.imageUrl) {
+                                    <img [src]="it.imageUrl" class="h-full w-full object-cover" alt="Προϊόν" />
+                                    } @else {
+                                    <mat-icon [svgIcon]="'heroicons_outline:photo'"></mat-icon>
+                                    }
+                                </div>
+
+                                <div class="min-w-0 flex-1">
+                                    <div class="font-semibold truncate">{{ it.productTitle }}</div>
+                                    <div class="text-secondary text-xs mt-0.5">
+                                        Ποσότητα:
+                                        <span class="font-medium text-gray-900 dark:text-gray-100">{{ it.quantity
+                                            }}</span>
+                                        <span class="mx-2">•</span>
+                                        Σύνολο:
+                                        <span class="font-semibold text-gray-900 dark:text-gray-100">{{ it.lineTotal |
+                                            number:'1.2-2' }} €</span>
+                                    </div>
+                                </div>
+                            </div>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- ΣΥΝΟΨΗ -->
+                    <div class="bg-card border rounded-2xl shadow-sm p-5 md:p-6">
+                        <div class="text-lg font-bold">Σύνοψη</div>
+
+                        <div class="mt-4 space-y-3">
+                            <div class="flex items-center justify-between">
+                                <div class="text-secondary">Υποσύνολο</div>
+                                <div class="font-semibold">{{ subtotal() | number:'1.2-2' }} €</div>
+                            </div>
+
+                            <div class="flex items-center justify-between">
+                                <div class="text-secondary">Μεταφορικά</div>
+                                <div class="font-semibold">{{ shipping() | number:'1.2-2' }} €</div>
+                            </div>
+
+                            <div class="border-t pt-3 flex items-center justify-between">
+                                <div class="text-secondary">Σύνολο</div>
+                                <div class="text-xl font-extrabold">{{ total() | number:'1.2-2' }} €</div>
+                            </div>
+
+                            <div class="mt-2 rounded-xl border p-4 bg-gray-50/70 dark:bg-white/5">
+                                <div class="text-xs text-secondary">Πληρωμή</div>
+                                <div class="font-semibold">{{ getPaymentLabel(order()!.paymentMethod) }}</div>
+
+                                <div class="mt-3 text-xs text-secondary">Αποστολή</div>
+                                <div class="font-semibold">{{ getShippingLabel(order()!.shippingMethod) }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ΠΛΗΡΟΦΟΡΙΕΣ -->
+                    <div class="bg-card border rounded-2xl shadow-sm p-5 md:p-6">
+                        <div class="text-lg font-bold">Πληροφορίες</div>
+                        <div class="mt-3 text-secondary text-sm leading-6">
+                            • Η κατάσταση ενημερώνεται αυτόματα από το σύστημα.<br />
+                            • Για αλλαγές/διόρθωση στοιχείων, χρησιμοποίησε την υποστήριξη.<br />
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+            }
+
+        </div>
+    </div>
+</div>

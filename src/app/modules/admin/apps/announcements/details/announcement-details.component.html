@@ -1,0 +1,191 @@
+<div class="absolute inset-0 flex min-w-0 flex-col overflow-hidden">
+
+    <!-- ================= TOP BAR (no scroll) ================= -->
+    <div class="shrink-0 border-b px-6 py-5 md:px-8">
+        @if (loading) {
+        <div class="bg-card rounded-2xl border shadow-sm p-6">Φόρτωση...</div>
+        } @else {
+
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div class="min-w-0">
+                <div class="text-3xl md:text-4xl font-extrabold tracking-tight truncate">
+                    {{ isCreate ? 'Νέα Ανακοίνωση' : (announcement?.title || 'Ανακοίνωση') }}
+                </div>
+
+                <div class="text-secondary mt-1 truncate">
+                    @if (!isCreate) {
+                    {{ announcement?.code || ('#' + announcement?.id) }}
+                    } @else {
+                    Δημιούργησε και δημοσίευσε/αποθήκευσε αλλαγές
+                    }
+                </div>
+            </div>
+
+            <div class="flex w-full flex-col gap-3 sm:flex-row lg:w-auto lg:items-center">
+                <button mat-stroked-button class="!rounded-xl w-full sm:w-auto" (click)="back()">
+                    <mat-icon [svgIcon]="'heroicons_outline:arrow-left'"></mat-icon>
+                    <span class="ml-2">Πίσω</span>
+                </button>
+
+                @if (!isCreate) {
+                <button mat-stroked-button class="!rounded-xl w-full sm:w-auto" (click)="delete()">
+                    <mat-icon [svgIcon]="'heroicons_outline:trash'"></mat-icon>
+                    <span class="ml-2">Διαγραφή</span>
+                </button>
+                }
+
+                <button mat-flat-button color="primary" class="!rounded-xl w-full sm:w-auto" (click)="save()">
+                    <mat-icon [svgIcon]="'heroicons_outline:check'"></mat-icon>
+                    <span class="ml-2">{{ isCreate ? 'Δημιουργία' : 'Αποθήκευση' }}</span>
+                </button>
+            </div>
+        </div>
+
+        }
+    </div>
+
+    <!-- ================= SCROLL AREA ================= -->
+    <div class="flex-1 min-h-0 overflow-auto">
+        @if (!loading) {
+
+        <div class="p-4 md:p-6 lg:p-8">
+            <div class="bg-transparent">
+                <mat-tab-group animationDuration="0ms" class="min-h-0">
+
+                    <mat-tab label="Ανακοίνωση">
+                        <div class="pt-5">
+                            <div class="grid grid-cols-1 lg:grid-cols-10 gap-6">
+
+                                <!-- Left: form (60%) -->
+                                <div class="lg:col-span-6">
+                                    <div class="bg-card rounded-2xl border shadow-sm p-6 space-y-4">
+
+                                        <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full"
+                                            subscriptSizing="dynamic">
+                                            <mat-label>Τίτλος</mat-label>
+                                            <input matInput [formControl]="form.controls.title"
+                                                placeholder="π.χ. Νέα εκστρατεία..." />
+                                        </mat-form-field>
+
+                                        <!-- ✅ Rich Text Editor -->
+                                        <div>
+                                            <div class="text-sm font-semibold mb-2">Περιγραφή</div>
+
+                                            <quill-editor class="rounded-2xl border bg-transparent"
+                                                [formControl]="form.controls.message" [modules]="quillModules"
+                                                [styles]="{ height: '260px' }"
+                                                placeholder="Γράψε το κείμενο της ανακοίνωσης...">
+                                            </quill-editor>
+
+                                            <div class="text-secondary text-xs mt-2">
+                                                Μπορείς να χρησιμοποιήσεις έντονα/πλάγια, λίστες, links κ.λπ.
+                                            </div>
+                                        </div>
+
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+
+                                            <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full"
+                                                subscriptSizing="dynamic">
+                                                <mat-label>Κατάσταση</mat-label>
+                                                <mat-select [formControl]="form.controls.status">
+                                                    <mat-option [value]="'published'">Δημοσιευμένη</mat-option>
+                                                    <mat-option [value]="'draft'">Πρόχειρη</mat-option>
+                                                </mat-select>
+                                            </mat-form-field>
+
+                                            <!-- ✅ Use Material Datepicker (NOT ISO input) -->
+                                            <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full"
+                                                subscriptSizing="dynamic">
+                                                <mat-label>Ημερομηνία δημοσίευσης</mat-label>
+
+                                                <input matInput [matDatepicker]="picker" [value]="publishDateAsDate"
+                                                    (dateChange)="onPublishDateChange($event.value)"
+                                                    placeholder="Επιλογή ημερομηνίας" />
+
+                                                <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+                                                <mat-datepicker #picker></mat-datepicker>
+
+                                                <mat-hint *ngIf="form.controls.status.value === 'published'">
+                                                    Αν δεν επιλέξεις, θα μπει αυτόματα η τρέχουσα ημερομηνία.
+                                                </mat-hint>
+                                            </mat-form-field>
+
+                                        </div>
+
+                                        <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full"
+                                            subscriptSizing="dynamic">
+                                            <mat-label>Αποστολή push notification</mat-label>
+                                            <mat-select [formControl]="form.controls.sendPushNotification">
+                                                <mat-option [value]="true">Ναι</mat-option>
+                                                <mat-option [value]="false">Όχι</mat-option>
+                                            </mat-select>
+                                        </mat-form-field>
+
+                                        <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full"
+                                            subscriptSizing="dynamic">
+                                            <mat-label>URL Εικόνας (Thumbnail)</mat-label>
+                                            <input matInput [formControl]="form.controls.thumbnail"
+                                                placeholder="https://..." />
+                                        </mat-form-field>
+
+                                        <div class="text-secondary text-xs">
+                                            Σημείωση: Το POST δέχεται μόνο Τίτλο/Περιγραφή. Μετά τη δημιουργία κάνουμε
+                                            αυτόματα PUT για εικόνα/κατάσταση/ημερομηνία/push.
+                                        </div>
+
+                                    </div>
+                                </div>
+
+                                <!-- Right: image uploader (40%) -->
+                                <div class="lg:col-span-4">
+                                    <div class="bg-card rounded-2xl border shadow-sm p-6">
+                                        <div class="font-semibold mb-3">Εικόνα</div>
+
+                                        <div class="rounded-2xl border overflow-hidden bg-gray-50 dark:bg-white/5">
+                                            <div class="h-56 w-full flex items-center justify-center">
+                                                @if (previewUrl || form.controls.thumbnail.value) {
+                                                <img [src]="previewUrl || form.controls.thumbnail.value"
+                                                    class="h-full w-full object-cover">
+                                                } @else {
+                                                <mat-icon [svgIcon]="'heroicons_outline:photo'"
+                                                    class="opacity-60"></mat-icon>
+                                                }
+                                            </div>
+
+                                            <div
+                                                class="p-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                                                <input type="file" (change)="onFileSelected($event)" hidden #fileInput>
+
+                                                <button mat-stroked-button class="!rounded-xl w-full sm:w-auto"
+                                                    (click)="fileInput.click()">
+                                                    <mat-icon [svgIcon]="'heroicons_outline:arrow-up-tray'"></mat-icon>
+                                                    <span class="ml-2">Μεταφόρτωση</span>
+                                                </button>
+
+                                                <button mat-stroked-button class="!rounded-xl w-full sm:w-auto"
+                                                    (click)="removeImage()"
+                                                    [disabled]="!previewUrl && !form.controls.thumbnail.value">
+                                                    <mat-icon [svgIcon]="'heroicons_outline:trash'"></mat-icon>
+                                                    <span class="ml-2">Αφαίρεση</span>
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div class="text-secondary text-xs mt-3">
+                                            Η μεταφόρτωση μπορεί να καλεί το endpoint σου και να ενημερώνει το
+                                            <code>thumbnail</code>.
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </mat-tab>
+
+                </mat-tab-group>
+            </div>
+        </div>
+
+        }
+    </div>
+</div>

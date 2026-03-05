@@ -1,0 +1,369 @@
+<div class="w-full max-w-none px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- ================= FULL WIDTH HEADER ================= -->
+    <div class="bg-card rounded-2xl border shadow-sm p-5 md:p-6">
+
+        <!-- Top actions row -->
+        <div class="flex items-center justify-between gap-3 mb-4">
+            <div class="text-lg md:text-xl font-extrabold">
+                {{ createMode ? 'Νέος Αγώνας' : 'Επεξεργασία Αγώνα' }}
+            </div>
+
+
+            <div class="shrink-0 flex items-center gap-2">
+                <!-- EDIT existing -->
+                <button mat-stroked-button *ngIf="!createMode && !overviewEdit" type="button"
+                    (click)="enableHeaderEdit()">
+                    <mat-icon>edit</mat-icon>
+                    <span class="ml-2">Επεξεργασία</span>
+                </button>
+
+                <!-- Cancel -->
+                <button mat-button color="warn" *ngIf="overviewEdit" type="button"
+                    (click)="createMode ? backToList() : cancelHeaderEdit()">
+                    Ακύρωση
+                </button>
+
+                <!-- Save (create or edit) -->
+                <button mat-flat-button color="primary" *ngIf="overviewEdit" type="button" (click)="saveHeader()"
+                    [disabled]="headerForm.invalid">
+                    Αποθήκευση
+                </button>
+            </div>
+
+        </div>
+
+        <!-- 2 columns: 30% / 70% -->
+        <div class="grid grid-cols-1 lg:grid-cols-[30%_70%] gap-4 lg:gap-6" [formGroup]="headerForm">
+
+            <!-- ============ LEFT (30%) ============ -->
+            <div class="rounded-2xl border bg-white/40 dark:bg-transparent p-4">
+                <div class="text-m text-secondary mb-3 font-bold uppercase tracking-wide">
+                    Στοιχεία αγώνα
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <!-- 1) Competition -->
+                    <mat-form-field class="w-full" subscriptSizing="dynamic">
+                        <mat-label>Διοργάνωση</mat-label>
+
+                        <mat-select formControlName="competitionId" [disabled]="!overviewEdit"
+                            panelClass="competition-select-panel">
+
+                            <mat-option *ngFor="let c of competitions" [value]="c.id">
+                                <div class="competition-option">
+                                    <img class="competition-option__img" [src]="c.image" [alt]="c.name" />
+                                    <span class="competition-option__name">{{ c.name }}</span>
+                                </div>
+                            </mat-option>
+
+                        </mat-select>
+                        <mat-error *ngIf="headerForm.get('competitionId')?.hasError('required')">
+                            Υποχρεωτικό πεδίο
+                        </mat-error>
+                    </mat-form-field>
+
+
+
+                    <!-- 2) Matchday -->
+                    <mat-form-field class="w-full" subscriptSizing="dynamic">
+                        <mat-label>Αγωνιστική</mat-label>
+                        <input matInput formControlName="matchday" [readonly]="!overviewEdit" />
+                    </mat-form-field>
+
+                    <!-- 3) Date -->
+                    <mat-form-field class="w-full" subscriptSizing="dynamic">
+                        <mat-label>Ημερομηνία</mat-label>
+                        <input matInput type="date" formControlName="eventDateOnly" [readonly]="!overviewEdit" />
+                    </mat-form-field>
+
+                    <!-- 4) Time -->
+                    <mat-form-field class="w-full" subscriptSizing="dynamic">
+                        <mat-label>Ώρα</mat-label>
+                        <input matInput type="time" formControlName="eventTimeOnly" [readonly]="!overviewEdit" />
+                    </mat-form-field>
+                </div>
+
+                <div class="mt-2 text-xs text-secondary">
+                    Τρέχουσα:
+                    <span class="font-medium text-default">{{ headerForm.get('eventDate')?.value || '-' }}</span>
+                </div>
+            </div>
+
+            <!-- ============ RIGHT (70%) ============ -->
+            <div class="rounded-2xl border bg-white/40 dark:bg-transparent p-4">
+                <div class="text-m text-secondary mb-3 font-bold uppercase tracking-wide">
+                    Ομάδες
+                </div>
+
+                <div class="flex flex-col gap-3">
+
+                    <div class="flex items-center justify-center gap-3 flex-wrap">
+                        <!-- HOME name dropdown -->
+                        <div class="min-w-[320px]">
+                            <mat-form-field class="w-full" subscriptSizing="dynamic">
+                                <mat-label>Γηπεδούχος</mat-label>
+
+                                <mat-select formControlName="homeTeamId" [disabled]="!overviewEdit"
+                                    panelClass="team-select-panel">
+                                    <mat-option *ngFor="let t of teams" [value]="t.id">
+                                        <div class="team-option">
+                                            <img class="team-option__img" [src]="t.image" [alt]="t.name" />
+                                            <span class="team-option__name">{{ t.name }}</span>
+                                        </div>
+                                    </mat-option>
+                                </mat-select>
+                            </mat-form-field>
+                        </div>
+
+                        <!-- Home logo -->
+                        <div class="flex items-center justify-center">
+                            <img [src]="teamLogo(headerForm.get('homeTeamId')?.value)"
+                                class="h-16 w-16 rounded-2xl object-cover border bg-white" alt="home" />
+                        </div>
+
+                        <!-- VS -->
+                        <div
+                            class="px-3 py-2 rounded-xl border bg-white/60 dark:bg-transparent font-extrabold text-secondary">
+                            VS
+                        </div>
+
+                        <!-- Away logo -->
+                        <div class="flex items-center justify-center">
+                            <img [src]="teamLogo(headerForm.get('awayTeamId')?.value)"
+                                class="h-16 w-16 rounded-2xl object-cover border bg-white" alt="away" />
+                        </div>
+
+                        <!-- AWAY name dropdown -->
+                        <div class="min-w-[320px]">
+                            <mat-form-field class="w-full" subscriptSizing="dynamic">
+                                <mat-label>Φιλοξενούμενος</mat-label>
+
+                                <mat-select formControlName="awayTeamId" [disabled]="!overviewEdit"
+                                    panelClass="team-select-panel">
+                                    <mat-option *ngFor="let t of teams" [value]="t.id">
+                                        <div class="team-option">
+                                            <img class="team-option__img" [src]="t.image" [alt]="t.name" />
+                                            <span class="team-option__name">{{ t.name }}</span>
+                                        </div>
+                                    </mat-option>
+                                </mat-select>
+                            </mat-form-field>
+                        </div>
+                    </div>
+
+                    <!-- Divider -->
+                    <div class="my-4 border-t border-gray-200/80 dark:border-white/10"></div>
+
+                    <!-- Extra fields row -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-center">
+                        <!-- 1) TV Channel -->
+                        <mat-form-field class="w-full" subscriptSizing="dynamic">
+                            <mat-label>Τηλεοπτικό Κανάλι</mat-label>
+
+                            <mat-select formControlName="tvChannel" [disabled]="!overviewEdit">
+                                <mat-option *ngFor="let ch of tvChannels" [value]="ch.id">
+                                    <div class="flex items-center gap-3">
+                                        <img [src]="ch.image" alt="{{ ch.name }}" class="h-6 w-6 object-contain" />
+                                        <span>{{ ch.name }}</span>
+                                    </div>
+                                </mat-option>
+                            </mat-select>
+                        </mat-form-field>
+
+
+                        <!-- 2) Reference ID -->
+                        <mat-form-field class="w-full" subscriptSizing="dynamic">
+                            <mat-label>Reference ID</mat-label>
+                            <input matInput formControlName="referenceId" [readonly]="!overviewEdit"
+                                placeholder="π.χ. EVT-OLY-000123" />
+                        </mat-form-field>
+
+                        <!-- 3) Open Tickets -->
+                        <mat-form-field class="w-full" subscriptSizing="dynamic">
+                            <mat-label>Open Tickets</mat-label>
+                            <mat-select formControlName="openTickets" [disabled]="!overviewEdit">
+                                <mat-option [value]="true">Ενεργά</mat-option>
+                                <mat-option [value]="false">Ανενεργά</mat-option>
+                            </mat-select>
+                        </mat-form-field>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ================= STATS STRIP (NEW) ================= -->
+    <div class="rounded-2xl border bg-card shadow-sm p-4 md:p-5">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            <div *ngFor="let s of statsStrip; trackBy: trackByStatKey"
+                class="rounded-2xl border bg-white/40 dark:bg-transparent px-4 py-3">
+
+                <div class="text-sm text-secondary mb-1 truncate">
+                    {{ s.label }}
+                </div>
+
+                <div class="flex items-end justify-between gap-3">
+                    <div class="text-xl font-extrabold leading-none">
+                        {{ s.value }}
+                    </div>
+                    <!-- 
+                    <div *ngIf="s.suffix"
+                        class="text-xs font-semibold px-2 py-1 rounded-xl border bg-white/60 dark:bg-transparent text-secondary whitespace-nowrap">
+                        {{ s.suffix }}
+                    </div> -->
+                </div>
+
+                <div *ngIf="s.subLabel" class="mt-1 text-[11px] text-secondary truncate">
+                    {{ s.subLabel }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= TABS ================= -->
+    <div class="bg-card rounded-2xl border shadow-sm overflow-hidden">
+        <mat-tab-group class="p-2 md:p-4">
+
+            <!-- TAB 1 -->
+            <mat-tab label="ΕΙΣΙΤΗΡΙΑ ΑΓΩΝΑ">
+                <div class="p-4 md:p-6 space-y-4">
+
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <div class="text-lg font-bold">Εισιτήρια αγώνα</div>
+                            <div class="text-secondary text-sm">Λίστα εισιτηρίων (dummy)</div>
+                        </div>
+                    </div>
+
+                    <!-- ================= FILTER BAR ================= -->
+                    <div class="rounded-2xl border bg-white/40 dark:bg-transparent p-4">
+                        <div class="grid grid-cols-1 md:grid-cols-[1fr_200px_260px_260px] gap-3 items-center">
+
+                            <!-- SEARCH (by name) -->
+                            <mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
+                                <mat-label>Αναζήτηση (Όνομα)</mat-label>
+                                <mat-icon matPrefix>search</mat-icon>
+                                <input matInput [formControl]="ticketSearchCtrl"
+                                    placeholder="π.χ. Γιώργος Παπαδόπουλος" />
+                            </mat-form-field>
+
+                            <!-- FILTER: GATE -->
+                            <mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
+                                <mat-label>Θύρα</mat-label>
+                                <mat-select [formControl]="ticketGateCtrl">
+                                    <mat-option [value]="null">Όλες</mat-option>
+                                    <mat-option *ngFor="let g of availableGates" [value]="g">
+                                        {{ g }}
+                                    </mat-option>
+                                </mat-select>
+                            </mat-form-field>
+
+                            <!-- FILTER: TICKET TYPE -->
+                            <mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
+                                <mat-label>Τύπος εισιτηρίου</mat-label>
+                                <mat-select [formControl]="ticketTypeCtrl">
+                                    <mat-option [value]="null">Όλα</mat-option>
+                                    <mat-option [value]="0">ΕΙΣΙΤΗΡΙΟ ΔΙΑΡΚΕΙΑΣ</mat-option>
+                                    <mat-option [value]="1">ΕΙΣΙΤΗΡΙΟ ΑΓΩΝΑ</mat-option>
+                                </mat-select>
+                            </mat-form-field>
+
+                            <mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
+                                <mat-label>Κατάσταση εισιτηρίου</mat-label>
+                                <mat-select [formControl]="ticketStatusCtrl">
+                                    <mat-option [value]="null">Όλες</mat-option>
+                                    <mat-option [value]="0">ΔΙΑΘΕΣΙΜΟ</mat-option>
+                                    <mat-option [value]="1">ΕΚΡΕΜΜΕΙ ΜΕΤΑΒΙΒΑΣΗ</mat-option>
+                                    <mat-option [value]="2">ΜΕΤΑΒΗΒΑΣΤΗΚΕ</mat-option>
+                                </mat-select>
+                            </mat-form-field>
+
+                        </div>
+                    </div>
+
+                    <!-- EMPTY -->
+                    <div *ngIf="!filteredTickets?.length"
+                        class="rounded-2xl border bg-white/40 dark:bg-transparent p-6 text-center text-secondary">
+                        Δεν υπάρχουν εισιτήρια.
+                    </div>
+
+                    <!-- LIST -->
+                    <div class="grid grid-cols-1 gap-3" *ngIf="filteredTickets?.length">
+
+                        <div *ngFor="let t of filteredTickets; trackBy: trackByTicketId" class="rounded-2xl border bg-card shadow-sm p-4
+               flex items-center justify-between gap-4
+               hover:bg-gray-50/60 dark:hover:bg-white/5 transition">
+
+                            <!-- LEFT SIDE -->
+                            <div class="flex items-start gap-4 min-w-0">
+
+                                <!-- 🎟 Ticket Icon -->
+                                <div class="h-11 w-11 shrink-0 rounded-xl
+                      bg-primary/10 text-primary
+                      flex items-center justify-center">
+                                    <mat-icon class="text-[22px]">confirmation_number</mat-icon>
+                                </div>
+
+                                <!-- CONTENT -->
+                                <div class="min-w-0">
+
+                                    <!-- Name + Badges -->
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <div class="font-semibold truncate">
+                                            {{ t.ownerFirstname }} {{ t.ownerLastname }}
+                                        </div>
+
+
+
+                                        <!-- TYPE BADGE -->
+                                        <span
+                                            class="px-2 py-0.5 rounded-full text-xs font-semibold border whitespace-nowrap">
+                                            {{ ticketStatusLabel(t.status) }}
+                                        </span>
+                                    </div>
+
+                                    <!-- Seat Info -->
+                                    <div class="text-secondary text-sm mt-1">
+                                        {{ticketTypeLabel(t.type)}} --
+                                        ΘΥΡΑ: <span class="font-bold">{{ t.gate }}</span> |
+                                        ΤΜΗΜΑ: <span class="font-bold">{{ t.section }}</span> |
+                                        ΣΕΙΡΑ: <span class="font-bold">{{ t.row }}</span> |
+                                        ΘΕΣΗ: <span class="font-bold">{{ t.seat }}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- ACTIONS -->
+                            <div class="flex items-center gap-2 shrink-0">
+                                <button mat-stroked-button type="button" (click)="openEditTicket(t)">
+                                    <mat-icon>edit</mat-icon>
+                                    <span class="ml-2 hidden sm:inline">Επεξεργασία</span>
+                                </button>
+
+                                <button mat-stroked-button color="warn" type="button" (click)="openDeleteTicket(t)">
+                                    <mat-icon>delete</mat-icon>
+                                    <span class="ml-2 hidden sm:inline">Διαγραφή</span>
+                                </button>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+            </mat-tab>
+
+
+            <!-- TAB 2 -->
+            <mat-tab label="ΣΥΝΔΡΟΜΕΣ">
+                <div class="p-4 md:p-6 text-secondary">
+                    (Δεν υπάρχει περιεχόμενο ακόμα)
+                </div>
+            </mat-tab>
+
+        </mat-tab-group>
+    </div>
+
+</div>

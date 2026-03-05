@@ -1,0 +1,67 @@
+/* dropdown list (overlay) */
+.team-select-panel .mat-mdc-option .mdc-list-item__primary-text {
+    width: 100%;
+}
+
+/* option row */
+.team-option {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    /* name left, image right */
+    gap: 12px;
+}
+
+/* name */
+.team-option__name {
+    min-width: 0;
+    flex: 1 1 auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 600;
+}
+
+/* logo (right) */
+.team-option__img {
+    width: 28px;
+    height: 28px;
+    border-radius: 10px;
+    object-fit: cover;
+    border: 1px solid rgba(0, 0, 0, .08);
+    background: #fff;
+    flex: 0 0 auto;
+}
+
+/* ensure full width click area */
+.competition-select-panel .mat-mdc-option .mdc-list-item__primary-text {
+    width: 100%;
+}
+
+/* option row */
+.competition-option {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* competition logo (left) */
+.competition-option__img {
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    object-fit: cover;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    background: #fff;
+    flex: 0 0 auto;
+}
+
+/* competition name */
+.competition-option__name {
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

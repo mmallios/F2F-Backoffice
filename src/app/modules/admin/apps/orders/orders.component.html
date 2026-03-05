@@ -1,0 +1,282 @@
+<div class="absolute inset-0 flex min-w-0 flex-col overflow-hidden">
+    <mat-drawer-container class="bg-card h-full flex-auto dark:bg-transparent">
+        <mat-drawer class="w-full dark:bg-gray-900 md:w-160" [mode]="drawerMode" [position]="'end'"
+            [disableClose]="drawerMode === 'side'" #matDrawer>
+            <router-outlet></router-outlet>
+        </mat-drawer>
+
+        <mat-drawer-content class="flex flex-col">
+            <div class="flex-auto">
+
+                <!-- ΚΕΦΑΛΙΔΑ -->
+                <div class="border-b px-6 py-7 md:px-8">
+                    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                        <div class="min-w-0">
+                            <div class="text-3xl md:text-4xl font-extrabold leading-none tracking-tight">
+                                Παραγγελίες
+                            </div>
+
+                            <div class="text-secondary mt-2 font-medium">
+                                @if (ordersCount > 0) { {{ ordersCount }} }
+                                {{ ordersCount | i18nPlural: { '=0': 'Καμία παραγγελία', '=1': 'παραγγελία', other:
+                                'παραγγελίες' } }}
+                            </div>
+                        </div>
+
+                        <div class="flex w-full flex-col gap-3 sm:flex-row lg:w-auto lg:items-center">
+                            <button mat-stroked-button class="w-full sm:w-auto !rounded-xl" (click)="reload()">
+                                <mat-icon [svgIcon]="'heroicons_outline:arrow-path'"></mat-icon>
+                                <span class="ml-2 mr-1">Ανανέωση</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ΜΠΑΡΑ ΦΙΛΤΡΩΝ -->
+                <div class="px-6 md:px-8 pt-5">
+                    <div class="bg-gray-50/80 dark:bg-white/5 border rounded-2xl shadow-sm px-4 py-4 md:px-6 md:py-5">
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 items-center">
+
+                            <!-- Αναζήτηση -->
+                            <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full" subscriptSizing="dynamic">
+                                <mat-icon class="icon-size-5" matPrefix
+                                    [svgIcon]="'heroicons_solid:magnifying-glass'"></mat-icon>
+                                <mat-label>Αναζήτηση</mat-label>
+
+                                <input matInput [formControl]="searchInputControl" autocomplete="off"
+                                    placeholder="Αναζήτηση με κωδικό, id, χρήστη..." />
+
+                                @if (searchInputControl.value) {
+                                <button mat-icon-button matSuffix (click)="searchInputControl.setValue('')">
+                                    <mat-icon [svgIcon]="'heroicons_outline:x-mark'"></mat-icon>
+                                </button>
+                                }
+                            </mat-form-field>
+
+                            <!-- Δεξιά φίλτρα -->
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+
+                                <!-- Χρήστης -->
+                                <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full"
+                                    subscriptSizing="dynamic">
+                                    <mat-icon matPrefix class="icon-size-5"
+                                        [svgIcon]="'heroicons_outline:user'"></mat-icon>
+                                    <mat-label>Χρήστης</mat-label>
+
+                                    <mat-select [formControl]="filterUser">
+                                        <mat-option [value]="null">Όλοι</mat-option>
+
+                                        @for (u of usersOptions; track u.id) {
+                                        <mat-option [value]="u.id">
+                                            <div class="flex items-center gap-2">
+                                                <div
+                                                    class="w-6 h-6 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-800 flex items-center justify-center">
+                                                    @if (u.image) {
+                                                    <img [src]="u.image" class="h-full w-full object-cover"
+                                                        alt="Χρήστης" />
+                                                    } @else {
+                                                    <mat-icon class="icon-size-4"
+                                                        [svgIcon]="'heroicons_outline:user-circle'"></mat-icon>
+                                                    }
+                                                </div>
+                                                <span class="truncate">{{ u.fullname }}</span>
+                                            </div>
+                                        </mat-option>
+                                        }
+                                    </mat-select>
+
+                                    @if (filterUser.value !== null) {
+                                    <button mat-icon-button matSuffix (click)="filterUser.setValue(null)">
+                                        <mat-icon [svgIcon]="'heroicons_outline:x-mark'"></mat-icon>
+                                    </button>
+                                    }
+                                </mat-form-field>
+
+                                <!-- Κατάσταση -->
+                                <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full"
+                                    subscriptSizing="dynamic">
+                                    <mat-icon matPrefix class="icon-size-5"
+                                        [svgIcon]="'heroicons_outline:shield-check'"></mat-icon>
+                                    <mat-label>Κατάσταση</mat-label>
+
+                                    <mat-select [formControl]="filterStatus">
+                                        <mat-option [value]="null">Όλες</mat-option>
+                                        <mat-option [value]="0">Σε εκκρεμότητα</mat-option>
+                                        <mat-option [value]="1">Υποβλήθηκε</mat-option>
+                                        <mat-option [value]="2">Πληρωμένη</mat-option>
+                                        <mat-option [value]="3">Απεστάλη</mat-option>
+                                        <mat-option [value]="4">Ολοκληρώθηκε</mat-option>
+                                        <mat-option [value]="5">Ακυρώθηκε</mat-option>
+                                    </mat-select>
+
+                                    @if (filterStatus.value !== null) {
+                                    <button mat-icon-button matSuffix (click)="filterStatus.setValue(null)">
+                                        <mat-icon [svgIcon]="'heroicons_outline:x-mark'"></mat-icon>
+                                    </button>
+                                    }
+                                </mat-form-field>
+
+                                <!-- Πληρωμή -->
+                                <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full"
+                                    subscriptSizing="dynamic">
+                                    <mat-icon matPrefix class="icon-size-5"
+                                        [svgIcon]="'heroicons_outline:credit-card'"></mat-icon>
+                                    <mat-label>Πληρωμή</mat-label>
+
+                                    <mat-select [formControl]="filterPayment">
+                                        <mat-option [value]="null">Όλες</mat-option>
+                                        <mat-option [value]="0">Κάρτα</mat-option>
+                                        <mat-option [value]="1">Αντικαταβολή</mat-option>
+                                        <mat-option [value]="2">Revolut</mat-option>
+                                    </mat-select>
+
+                                    @if (filterPayment.value !== null) {
+                                    <button mat-icon-button matSuffix (click)="filterPayment.setValue(null)">
+                                        <mat-icon [svgIcon]="'heroicons_outline:x-mark'"></mat-icon>
+                                    </button>
+                                    }
+                                </mat-form-field>
+
+                                <!-- Καθαρισμός -->
+                                <button mat-stroked-button class="!rounded-xl w-full" (click)="clearFilters()">
+                                    <mat-icon [svgIcon]="'heroicons_outline:trash'"></mat-icon>
+                                    <span class="ml-2">Καθαρισμός</span>
+                                </button>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ΠΙΝΑΚΑΣ -->
+                <div class="px-6 py-6 md:px-8">
+                    <div class="bg-card rounded-2xl border shadow-sm overflow-hidden">
+
+                        @if (loading) {
+                        <div class="p-8">
+                            <div class="animate-pulse space-y-3">
+                                <div class="h-4 w-1/3 rounded bg-gray-200 dark:bg-gray-700"></div>
+                                <div class="h-4 w-2/3 rounded bg-gray-200 dark:bg-gray-700"></div>
+                                <div class="h-4 w-1/2 rounded bg-gray-200 dark:bg-gray-700"></div>
+                            </div>
+                        </div>
+                        } @else {
+
+                        @if (!dataSource?.data?.length) {
+                        <div class="p-10 text-center">
+                            <div class="text-2xl font-semibold tracking-tight">Δεν υπάρχουν παραγγελίες!</div>
+                            <div class="text-secondary mt-2">Δεν βρέθηκαν αποτελέσματα με βάση τα φίλτρα σου.</div>
+                        </div>
+                        } @else {
+
+                        <div class="overflow-x-auto">
+                            <table mat-table [dataSource]="dataSource" matSort class="min-w-[1180px] w-full">
+
+                                <!-- Χρήστης -->
+                                <ng-container matColumnDef="user">
+                                    <th mat-header-cell *matHeaderCellDef class="px-6">Χρήστης</th>
+
+                                    <td mat-cell *matCellDef="let o" class="px-6 py-3">
+                                        <div class="flex items-center gap-3 min-w-0">
+                                            <div
+                                                class="w-10 h-10 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-800 flex items-center justify-center shrink-0">
+                                                @if (o?.user?.image) {
+                                                <img [src]="o?.user?.image" class="h-full w-full object-cover"
+                                                    alt="Χρήστης" />
+                                                } @else {
+                                                <mat-icon [svgIcon]="'heroicons_outline:user-circle'"></mat-icon>
+                                                }
+                                            </div>
+
+                                            <div class="min-w-0">
+                                                <div class="font-semibold truncate">
+                                                    {{ o?.user?.fullname || '-' }}
+                                                </div>
+
+                                                @if (o?.user?.email) {
+                                                <div class="text-secondary text-sm truncate">
+                                                    {{ o?.user?.email }}
+                                                </div>
+                                                }
+                                            </div>
+                                        </div>
+                                    </td>
+                                </ng-container>
+
+                                <!-- Κωδικός -->
+                                <ng-container matColumnDef="code">
+                                    <th mat-header-cell *matHeaderCellDef mat-sort-header class="px-6">Κωδικός</th>
+                                    <td mat-cell *matCellDef="let o" class="px-6 py-3">
+                                        <div class="font-semibold">#{{ o.code }}</div>
+                                        <div
+                                            class="inline-flex items-center rounded-full border border-red-500 px-2  text-xs font-semibold text-primary dark:text-primary">
+                                            ΝΕΑ ΠΑΡΑΓΓΕΛΙΑ
+                                        </div>
+                                    </td>
+                                </ng-container>
+
+                                <!-- Υποβλήθηκε -->
+                                <ng-container matColumnDef="submittedAt">
+                                    <th mat-header-cell *matHeaderCellDef mat-sort-header>Υποβλήθηκε</th>
+                                    <td mat-cell *matCellDef="let o" class="py-3">
+                                        {{ o.submittedAt | date:'medium' }}
+                                    </td>
+                                </ng-container>
+
+                                <!-- Σύνολο -->
+                                <ng-container matColumnDef="totalAmount">
+                                    <th mat-header-cell *matHeaderCellDef mat-sort-header>Σύνολο</th>
+                                    <td mat-cell *matCellDef="let o" class="py-3">
+                                        <span class="font-semibold">{{ o.totalAmount | number:'1.2-2' }} €</span>
+                                        @if (o.shippingAmount != null) {
+                                        <div class="text-secondary text-sm">
+                                            Μεταφορικά: {{ o.shippingAmount | number:'1.2-2' }} €
+                                        </div>
+                                        }
+                                    </td>
+                                </ng-container>
+
+                                <!-- Κατάσταση -->
+                                <ng-container matColumnDef="status">
+                                    <th mat-header-cell *matHeaderCellDef mat-sort-header>Κατάσταση</th>
+                                    <td mat-cell *matCellDef="let o" class="py-3">
+                                        <mat-chip class="!rounded-full !px-3 !text-xs !font-semibold"
+                                            [ngClass]="getStatusChipClass(o.status)">
+                                            {{ getStatusLabel(o.status) }}
+                                        </mat-chip>
+                                    </td>
+                                </ng-container>
+
+                                <!-- Ενέργειες -->
+                                <ng-container matColumnDef="actions">
+                                    <th mat-header-cell *matHeaderCellDef class="text-right px-6">Ενέργειες</th>
+                                    <td mat-cell *matCellDef="let o" class="text-right px-6 py-3">
+                                        <button mat-stroked-button class="!rounded-xl" [routerLink]="[o.code]"
+                                            matTooltip="Προβολή λεπτομερειών παραγγελίας">
+                                            <mat-icon [svgIcon]="'heroicons_outline:eye'"></mat-icon>
+                                            <span class="ml-2">Προβολή</span>
+                                        </button>
+                                    </td>
+                                </ng-container>
+
+                                <tr mat-header-row *matHeaderRowDef="ordersTableColumns"></tr>
+                                <tr mat-row *matRowDef="let row; columns: ordersTableColumns"
+                                    class="hover:bg-gray-50 dark:hover:bg-white/5 transition"></tr>
+                            </table>
+                        </div>
+
+                        <div class="border-t">
+                            <mat-paginator [pageSizeOptions]="[15, 30, 50, 100]" [pageSize]="15" showFirstLastButtons>
+                            </mat-paginator>
+                        </div>
+
+                        }
+                        }
+
+                    </div>
+                </div>
+
+            </div>
+        </mat-drawer-content>
+    </mat-drawer-container>
+</div>

@@ -1,0 +1,226 @@
+<div class="absolute inset-0 flex min-w-0 flex-col overflow-hidden">
+
+    <!-- ================= HEADER (no scroll) ================= -->
+    <div class="shrink-0 border-b px-6 py-7 md:px-8">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div class="min-w-0">
+                <div class="text-3xl md:text-4xl font-extrabold leading-none tracking-tight">
+                    Products
+                </div>
+                <div class="text-secondary mt-2 font-medium">
+                    @if (productsCount > 0) { {{ productsCount }} }
+                    {{ productsCount | i18nPlural: { '=0': 'No products', '=1': 'product', other: 'products' } }}
+                </div>
+            </div>
+
+            <div class="flex w-full flex-col gap-3 sm:flex-row lg:w-auto lg:items-center">
+                <button mat-stroked-button class="!rounded-xl w-full sm:w-auto" (click)="reload()">
+                    <mat-icon [svgIcon]="'heroicons_outline:arrow-path'"></mat-icon>
+                    <span class="ml-2">Refresh</span>
+                </button>
+
+                <button mat-flat-button color="primary" class="!rounded-xl w-full sm:w-auto" (click)="createProduct()">
+                    <mat-icon [svgIcon]="'heroicons_outline:plus'"></mat-icon>
+                    <span class="ml-2">New Product</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= SCROLL AREA ================= -->
+    <div class="flex-1 min-h-0 overflow-auto">
+
+        <!-- ================= FILTER BAR ================= -->
+        <div class="px-2 md:px-4 pt-2">
+            <div class="bg-gray-50/80 dark:bg-white/5 border rounded-2xl shadow-sm px-4 py-4 md:px-6 md:py-5">
+
+                <!-- Responsive: 1 col on mobile, 2 cols on lg -->
+                <div class="grid grid-cols-1 lg:grid-cols-[35%_65%] gap-4 items-center">
+
+                    <!-- Search -->
+                    <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full" subscriptSizing="dynamic">
+                        <mat-icon class="icon-size-5" matPrefix
+                            [svgIcon]="'heroicons_solid:magnifying-glass'"></mat-icon>
+                        <mat-label>Αναζήτηση</mat-label>
+
+                        <input matInput [formControl]="searchCtrl" autocomplete="off"
+                            placeholder="Κωδικός, τίτλος..." />
+
+                        @if (searchCtrl.value) {
+                        <button mat-icon-button matSuffix (click)="searchCtrl.setValue('')">
+                            <mat-icon [svgIcon]="'heroicons_outline:x-mark'"></mat-icon>
+                        </button>
+                        }
+                    </mat-form-field>
+
+                    <!-- Filters -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <!-- Date Range -->
+                        <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full" subscriptSizing="dynamic"
+                            [formGroup]="dateRange">
+                            <mat-icon matPrefix class="icon-size-5"
+                                [svgIcon]="'heroicons_outline:calendar-days'"></mat-icon>
+                            <mat-label>Ημερομηνίες</mat-label>
+
+                            <mat-date-range-input [rangePicker]="picker">
+                                <input matStartDate formControlName="start" placeholder="Από">
+                                <input matEndDate formControlName="end" placeholder="Έως">
+                            </mat-date-range-input>
+
+                            <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+                            <mat-date-range-picker #picker></mat-date-range-picker>
+
+                            @if (dateRange.value?.start || dateRange.value?.end) {
+                            <button mat-icon-button matSuffix (click)="clearDateRange()">
+                                <mat-icon [svgIcon]="'heroicons_outline:x-mark'"></mat-icon>
+                            </button>
+                            }
+                        </mat-form-field>
+
+                        <!-- Status -->
+                        <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full" subscriptSizing="dynamic">
+                            <mat-icon matPrefix class="icon-size-5"
+                                [svgIcon]="'heroicons_outline:shield-check'"></mat-icon>
+                            <mat-label>Status</mat-label>
+
+                            <mat-select [formControl]="statusCtrl">
+                                <mat-option [value]="null">Όλα</mat-option>
+                                <mat-option [value]="true">Published</mat-option>
+                                <mat-option [value]="false">Draft</mat-option>
+                            </mat-select>
+
+                            @if (statusCtrl.value !== null) {
+                            <button mat-icon-button matSuffix (click)="statusCtrl.setValue(null)">
+                                <mat-icon [svgIcon]="'heroicons_outline:x-mark'"></mat-icon>
+                            </button>
+                            }
+                        </mat-form-field>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= TABLE CARD ================= -->
+        <div class="px-2 md:px-4 lg:px-6 py-6">
+            <div class="bg-card rounded-2xl border shadow-sm overflow-hidden">
+
+                @if (loading) {
+                <div class="p-8">
+                    <div class="animate-pulse space-y-3">
+                        <div class="h-4 w-1/3 rounded bg-gray-200 dark:bg-gray-700"></div>
+                        <div class="h-4 w-2/3 rounded bg-gray-200 dark:bg-gray-700"></div>
+                        <div class="h-4 w-1/2 rounded bg-gray-200 dark:bg-gray-700"></div>
+                    </div>
+                </div>
+                } @else {
+
+                @if (!dataSource?.data?.length) {
+                <div class="p-10 text-center">
+                    <div class="text-2xl font-semibold tracking-tight">There are no products!</div>
+                    <div class="text-secondary mt-2">Try clearing filters.</div>
+                </div>
+                } @else {
+
+                <div class="overflow-x-auto">
+                    <table mat-table [dataSource]="dataSource" matSort class="min-w-[1050px] w-full">
+
+                        <!-- Product -->
+                        <ng-container matColumnDef="product">
+                            <th mat-header-cell *matHeaderCellDef mat-sort-header class="px-6">Product</th>
+                            <td mat-cell *matCellDef="let p" class="px-6 py-3">
+                                <div class="flex items-center gap-3">
+                                    <div
+                                        class="h-10 w-10 rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                                        @if (p.imageUrl) {
+                                        <img [src]="p.imageUrl" class="h-full w-full object-cover" />
+                                        } @else {
+                                        <mat-icon [svgIcon]="'heroicons_outline:photo'"></mat-icon>
+                                        }
+                                    </div>
+
+                                    <div class="min-w-0">
+                                        <div class="font-semibold truncate">{{ p.title }}</div>
+                                        <div class="text-secondary text-sm truncate">{{ p.code }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                        </ng-container>
+
+                        <!-- Price -->
+                        <ng-container matColumnDef="price">
+                            <th mat-header-cell *matHeaderCellDef mat-sort-header>Price</th>
+                            <td mat-cell *matCellDef="let p" class="py-3">
+                                <span class="font-semibold text-xl">{{ p.price | number:'1.2-2' }} €</span>
+                                @if (p.deletedPrice > 0) {
+                                <div class="text-secondary text-md line-through">
+                                    {{ p.deletedPrice | number:'1.2-2' }} €
+                                </div>
+                                }
+                            </td>
+                        </ng-container>
+
+                        <!-- Stock -->
+                        <ng-container matColumnDef="stock">
+                            <th mat-header-cell *matHeaderCellDef mat-sort-header>Stock</th>
+                            <td mat-cell *matCellDef="let p" class="py-3">
+                                <span class="font-semibold text-lg">{{ p.stock }}</span>
+                                <div class="text-secondary text-mg">Max: {{ p.maxQuantity }}</div>
+                            </td>
+                        </ng-container>
+
+                        <!-- Published -->
+                        <ng-container matColumnDef="published">
+                            <th mat-header-cell *matHeaderCellDef mat-sort-header>Published</th>
+                            <td mat-cell *matCellDef="let p" class="py-3">
+                                <mat-chip class="!rounded-full !px-3 !text-xs !font-semibold" [ngClass]="p.isPublished
+                        ? 'bg-green-100 text-green-800 dark:bg-green-500/10 dark:text-green-300'
+                        : 'bg-gray-100 text-gray-800 dark:bg-white/5 dark:text-gray-200'">
+                                    {{ p.isPublished ? 'Published' : 'Draft' }}
+                                </mat-chip>
+                            </td>
+                        </ng-container>
+
+                        <!-- CreatedOn (optional – only if backend provides it) -->
+                        <ng-container matColumnDef="createdOn">
+                            <th mat-header-cell *matHeaderCellDef mat-sort-header>Created</th>
+                            <td mat-cell *matCellDef="let p" class="py-3">
+                                {{ p.createdOn ? (p.createdOn | date:'mediumDate') : '-' }}
+                            </td>
+                        </ng-container>
+
+                        <!-- Actions -->
+                        <ng-container matColumnDef="actions">
+                            <th mat-header-cell *matHeaderCellDef class="text-right px-6">Actions</th>
+                            <td mat-cell *matCellDef="let p" class="text-right px-6 py-3">
+                                <div class="inline-flex items-center gap-2">
+                                    <button mat-stroked-button class="!rounded-xl" matTooltip="View product"
+                                        (click)="viewDetails(p)">
+                                        <mat-icon [svgIcon]="'heroicons_outline:eye'"></mat-icon>
+                                        <span class="ml-2">View</span>
+                                    </button>
+
+                                </div>
+                            </td>
+                        </ng-container>
+
+                        <tr mat-header-row *matHeaderRowDef="columns"></tr>
+                        <tr mat-row *matRowDef="let row; columns: columns"
+                            class="hover:bg-gray-50 dark:hover:bg-white/5 transition"></tr>
+                    </table>
+                </div>
+
+                <!-- Sticky paginator -->
+                <div class="border-t sticky bottom-0 bg-card z-10">
+                    <mat-paginator [pageSizeOptions]="[15, 30, 50, 100]" [pageSize]="15" showFirstLastButtons>
+                    </mat-paginator>
+                </div>
+
+                }
+                }
+
+            </div>
+        </div>
+
+    </div>
+</div>

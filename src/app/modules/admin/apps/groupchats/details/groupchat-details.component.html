@@ -1,0 +1,412 @@
+<div class="absolute inset-0 flex min-w-0 flex-col overflow-hidden">
+    <div class="bg-card h-full flex-auto dark:bg-transparent flex flex-col">
+
+        <!-- Header -->
+        <div class="border-b px-4 py-4 md:px-6">
+            <div class="flex items-start justify-between gap-4">
+                <div class="min-w-0">
+                    <div class="text-xl md:text-xl font-extrabold leading-none tracking-tight">
+                        Ομαδική Συνομιλία
+                    </div>
+                    <div class="text-secondary mt-2">
+                        {{ groupChat?.name || '-' }}
+                    </div>
+                </div>
+
+
+            </div>
+        </div>
+
+        @if (loading) {
+        <div class="p-8">
+            <div class="animate-pulse space-y-3">
+                <div class="h-4 w-1/3 rounded bg-gray-200 dark:bg-gray-700"></div>
+                <div class="h-4 w-2/3 rounded bg-gray-200 dark:bg-gray-700"></div>
+                <div class="h-4 w-1/2 rounded bg-gray-200 dark:bg-gray-700"></div>
+            </div>
+        </div>
+        } @else {
+
+        <!-- 2 Columns -->
+        <div class="flex flex-auto min-h-0">
+
+            <!-- LEFT 35% -->
+            <div class="w-[35%] min-w-[360px] max-w-[520px] border-r dark:border-white/10 overflow-y-auto">
+                <div class="p-6 space-y-6">
+
+                    <!-- Card -->
+                    <div class="bg-gray-50/80 dark:bg-white/5 border rounded-2xl shadow-sm p-5">
+                        <div class="flex items-center justify-between gap-4">
+                            <div class="min-w-0">
+                                <div class="text-lg font-extrabold truncate">Στοιχεία Group</div>
+                                <div class="text-secondary text-sm truncate">
+                                    {{ form.value.code || '-' }}
+                                </div>
+                            </div>
+
+                            <mat-chip class="!rounded-full !px-3 !text-xs !font-semibold" [ngClass]="form.value.isActive
+                                ? 'bg-green-100 text-green-800 dark:bg-green-500/10 dark:text-green-300'
+                                : 'bg-gray-100 text-gray-800 dark:bg-white/5 dark:text-gray-200'">
+                                {{ form.value.isActive ? 'Ενεργό' : 'Ανενεργό' }}
+                            </mat-chip>
+                        </div>
+                    </div>
+
+                    <!-- Image uploader -->
+                    <div class="rounded-2xl border p-5 bg-gray-50 dark:bg-white/5">
+                        <div class="flex items-center justify-between gap-4">
+                            <div class="flex items-center gap-3 min-w-0">
+                                <div
+                                    class="h-14 w-14 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-800 flex items-center justify-center">
+                                    @if (form.value.image) {
+                                    <img [src]="form.value.image!" class="h-full w-full object-cover" alt="group" />
+                                    } @else {
+                                    <span class="font-bold uppercase text-gray-700 dark:text-gray-200">
+                                        {{ (form.value.name?.charAt(0) || '?') }}
+                                    </span>
+                                    }
+                                </div>
+
+                                <div class="min-w-0">
+                                    <div class="font-semibold">Εικόνα Group</div>
+                                    <div class="text-secondary text-sm">PNG/JPG έως 3MB</div>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center gap-2">
+                                <input #fileInput type="file" accept="image/*" class="hidden"
+                                    (change)="onFileSelected($event)" />
+                                <button mat-stroked-button class="!rounded-xl" type="button"
+                                    (click)="triggerFileInput(fileInput)">
+                                    <mat-icon class="mr-2" [svgIcon]="'heroicons_outline:arrow-up-tray'"></mat-icon>
+                                    Ανέβασμα
+                                </button>
+
+                                @if (form.value.image) {
+                                <button mat-button class="!rounded-xl" type="button" (click)="removeImage()">
+                                    <mat-icon class="mr-2" [svgIcon]="'heroicons_outline:trash'"></mat-icon>
+                                    <!-- Αφαίρεση -->
+                                </button>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Form -->
+                    <form [formGroup]="form" class="space-y-4">
+                        <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full" subscriptSizing="dynamic">
+                            <mat-icon matPrefix class="icon-size-5" [svgIcon]="'heroicons_outline:hashtag'"></mat-icon>
+                            <mat-label>Κωδικός</mat-label>
+                            <input matInput formControlName="code" />
+                        </mat-form-field>
+
+                        <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full" subscriptSizing="dynamic">
+                            <mat-icon matPrefix class="icon-size-5"
+                                [svgIcon]="'heroicons_outline:chat-bubble-oval-left'"></mat-icon>
+                            <mat-label>Όνομα</mat-label>
+                            <input matInput formControlName="name" />
+                        </mat-form-field>
+
+                        <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full" subscriptSizing="dynamic">
+                            <mat-icon matPrefix class="icon-size-5"
+                                [svgIcon]="'heroicons_outline:document-text'"></mat-icon>
+                            <mat-label>Περιγραφή</mat-label>
+                            <textarea matInput rows="1" formControlName="description"></textarea>
+                        </mat-form-field>
+
+                        <!-- keep eventId but no event details -->
+                        <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full" subscriptSizing="dynamic">
+                            <mat-icon matPrefix class="icon-size-5"
+                                [svgIcon]="'heroicons_outline:calendar-days'"></mat-icon>
+                            <mat-label>Event</mat-label>
+
+                            <mat-select formControlName="eventId">
+                                <mat-option [value]="null">— Χωρίς event —</mat-option>
+
+                                <mat-option *ngFor="let ev of events" [value]="ev.id">
+                                    <div class="flex flex-col leading-tight">
+                                        <div class="font-semibold">
+                                            {{ ev.homeTeamName }} - {{ ev.awayTeamName }}
+                                        </div>
+                                        <div class="text-secondary text-md">
+                                            {{ formatEventDate(ev.eventDate) }} • {{ ev.competitionName }} |
+                                            {{ev.matchday}}
+                                        </div>
+                                    </div>
+                                </mat-option>
+                            </mat-select>
+
+                            <!-- <mat-hint *ngIf="form.value.eventId">
+                                <span class="text-secondary">
+                                    {{ eventTitleById(form.value.eventId) }}
+                                </span>
+                                <br />
+                                <span class="text-secondary text-sm">
+                                    {{ eventMetaById(form.value.eventId) }}
+                                </span>
+                            </mat-hint> -->
+                        </mat-form-field>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full" subscriptSizing="dynamic">
+                                <mat-icon matPrefix class="icon-size-5" [svgIcon]="'heroicons_outline:star'"></mat-icon>
+                                <mat-label>Κύριο Group</mat-label>
+                                <mat-select formControlName="isMain">
+                                    <mat-option [value]="true">Ναι</mat-option>
+                                    <mat-option [value]="false">Όχι</mat-option>
+                                </mat-select>
+                            </mat-form-field>
+
+                            <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full" subscriptSizing="dynamic">
+                                <mat-icon matPrefix class="icon-size-5"
+                                    [svgIcon]="'heroicons_outline:check-badge'"></mat-icon>
+                                <mat-label>Κατάσταση</mat-label>
+                                <mat-select formControlName="isActive">
+                                    <mat-option [value]="true">Ενεργό</mat-option>
+                                    <mat-option [value]="false">Ανενεργό</mat-option>
+                                </mat-select>
+                            </mat-form-field>
+                        </div>
+
+                        <div class="pt-2 flex items-center justify-end gap-2">
+                            @if (saveError) {
+                            <div class="mr-auto text-sm text-red-600 dark:text-red-400">
+                                {{ saveError }}
+                            </div>
+                            }
+
+                            <button mat-stroked-button class="!rounded-xl" type="button"
+                                [disabled]="saving || form.invalid" (click)="save()">
+                                @if (saving) {
+                                <span>Αποθήκευση...</span>
+                                } @else {
+                                <span>Αποθήκευση</span>
+                                }
+                            </button>
+                        </div>
+
+                    </form>
+
+                </div>
+            </div>
+
+            <!-- RIGHT 65% -->
+            <div class="flex-1 min-w-0 overflow-hidden">
+                <mat-tab-group class="h-full">
+
+                    <!-- TAB 1: Chat -->
+                    <mat-tab label="Συνομιλία">
+                        <div class="h-full flex flex-col min-h-0">
+
+                            <!-- Filters row above chat -->
+                            <div class="border-b bg-gray-50 dark:bg-transparent px-4 py-3 md:px-6">
+                                <form [formGroup]="chatFilters" class="grid grid-cols-12 gap-3 items-end">
+                                    <div class="col-span-15 md:col-span-5">
+                                        <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full"
+                                            subscriptSizing="dynamic">
+                                            <mat-icon matPrefix class="icon-size-5"
+                                                [svgIcon]="'heroicons_outline:calendar'"></mat-icon>
+
+                                            <mat-label>Εύρος ημερομηνιών</mat-label>
+
+                                            <mat-date-range-input [rangePicker]="picker" [formGroup]="chatFilters">
+                                                <input matStartDate formControlName="fromDate" placeholder="Από" />
+                                                <input matEndDate formControlName="toDate" placeholder="Έως" />
+                                            </mat-date-range-input>
+
+                                            <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+                                            <mat-date-range-picker #picker></mat-date-range-picker>
+                                        </mat-form-field>
+                                    </div>
+
+                                    <div class="col-span-12 md:col-span-5">
+                                        <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full"
+                                            subscriptSizing="dynamic">
+                                            <mat-icon matPrefix class="icon-size-5"
+                                                [svgIcon]="'heroicons_outline:users'"></mat-icon>
+                                            <mat-label>Χρήστες</mat-label>
+                                            <mat-select formControlName="userIds" multiple>
+                                                <mat-option *ngFor="let u of sendersForFilter" [value]="u.id">
+                                                    {{ u.name }}
+                                                </mat-option>
+                                            </mat-select>
+                                        </mat-form-field>
+                                    </div>
+
+                                    <div class="col-span-12 md:col-span-1 flex justify-end">
+                                        <button mat-stroked-button class="!rounded-xl w-full md:w-auto" type="button"
+                                            (click)="clearChatFilters()" matTooltip="Καθαρισμός φίλτρων">
+                                            <mat-icon [svgIcon]="'heroicons_outline:arrow-path'"></mat-icon>
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+
+                            <!-- Chat container -->
+                            <div class="bg-gray-50/80 dark:bg-white/5 flex flex-auto flex-col overflow-hidden">
+
+
+                                <!-- Conversation -->
+                                <div class="flex flex-col-reverse overflow-y-auto">
+                                    <div class="bg-gray-50/80 dark:bg-white/5 flex flex-auto shrink flex-col p-6
+            dark:bg-gray-950">
+
+
+                                        @if (filteredView.length === 0) {
+                                        <div class="p-10 text-center text-secondary">
+                                            Δεν υπάρχουν μηνύματα για τα επιλεγμένα φίλτρα.
+                                        </div>
+                                        }
+
+                                        @for (message of filteredView; track message.id; let i = $index; let first =
+                                        $first) {
+
+                                        <!-- Start of the day -->
+                                        @if (
+                                        first ||
+                                        (filteredView[i - 1]?.createdAt | date: 'd') !== (message.createdAt | date:
+                                        'd')
+                                        ) {
+                                        <div class="-mx-6 my-3 flex items-center justify-center">
+                                            <div class="flex-auto border-b"></div>
+                                            <div class="text-secondary mx-4 flex-0 text-sm font-medium leading-5">
+                                                {{ message.createdAt | date:'longDate' }}
+                                            </div>
+                                            <div class="flex-auto border-b"></div>
+                                        </div>
+                                        }
+
+                                        <div class="flex flex-col items-start mt-3">
+
+                                            <div class="mb-1 flex items-center gap-2">
+                                                <div
+                                                    class="h-6 w-6 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                                                    @if (message.senderAvatar) {
+                                                    <img [src]="message.senderAvatar"
+                                                        class="h-full w-full object-cover" />
+                                                    } @else {
+                                                    <span class="text-xs font-bold uppercase">
+                                                        {{ message.senderName.charAt(0) }}
+                                                    </span>
+                                                    }
+                                                </div>
+                                                <div class="text-secondary text-md font-semibold">
+                                                    {{ message.senderName }}
+                                                </div>
+                                            </div>
+
+                                            <div
+                                                class="relative max-w-3/4 rounded-lg px-3 py-2 bg-gray-500 text-gray-50">
+                                                <div class="min-w-4 leading-5" [innerHTML]="message.value"></div>
+                                            </div>
+
+                                            <div class="text-secondary my-0.5 text-sm font-medium ml-3">
+                                                {{ message.createdAt | date:'HH:mm' }}
+                                            </div>
+
+                                        </div>
+                                        }
+                                    </div>
+                                </div>
+
+                                <!-- Message field -->
+                                <div class="flex items-end border-t bg-gray-50 p-4 dark:bg-transparent">
+                                    <mat-form-field class="fuse-mat-dense fuse-mat-rounded fuse-mat-bold w-full"
+                                        subscriptSizing="dynamic">
+                                        <textarea matInput cdkTextareaAutosize [formControl]="messageInput"
+                                            placeholder="Γράψτε μήνυμα ως διαχειριστής..."
+                                            (keydown.enter)="onEnterSend($event)">
+</textarea>
+
+                                    </mat-form-field>
+
+                                    <div class="my-px ml-4 flex h-11 items-center">
+                                        <button mat-icon-button (click)="sendMessage()" matTooltip="Αποστολή">
+                                            <mat-icon [svgIcon]="'heroicons_outline:paper-airplane'"></mat-icon>
+                                        </button>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </mat-tab>
+
+                    <!-- TAB 2: Users -->
+                    <mat-tab label="Χρήστες">
+                        <div class="p-6">
+                            <div class="bg-card rounded-2xl border shadow-sm overflow-hidden">
+                                <div class="border-b px-6 py-4">
+                                    <div class="text-xl font-extrabold">Χρήστες που έστειλαν μήνυμα</div>
+                                    <div class="text-secondary mt-1 text-sm">
+                                        {{ usersWhoMessaged.length }} χρήστες
+                                    </div>
+                                </div>
+
+                                <div class="overflow-x-auto">
+                                    <table class="min-w-[900px] w-full border-collapse text-sm">
+                                        <thead class="border-b">
+                                            <tr class="text-left text-secondary font-semibold">
+                                                <th class="px-6 py-3">Χρήστης</th>
+                                                <th class="px-6 py-3">Μηνύματα</th>
+                                                <th class="px-6 py-3">Τελευταίο μήνυμα</th>
+                                            </tr>
+                                        </thead>
+
+                                        <tbody class="divide-y">
+                                            @for (x of usersWhoMessaged; track x.userId) {
+                                            <tr class="hover:bg-gray-50 dark:hover:bg-white/5 transition">
+                                                <td class="px-6 py-3">
+                                                    <div class="flex items-center gap-3">
+                                                        <div
+                                                            class="h-10 w-10 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                                                            @if (getUserImage(x.userId)) {
+                                                            <img [src]="getUserImage(x.userId)"
+                                                                class="h-full w-full object-cover" />
+                                                            } @else {
+                                                            <span
+                                                                class="text-sm font-bold uppercase text-gray-700 dark:text-gray-200">
+                                                                {{ getUserInitial(x.userId) }}
+                                                            </span>
+                                                            }
+                                                        </div>
+
+                                                        <div class="min-w-0">
+                                                            <div class="font-semibold truncate">
+                                                                {{ getUserFullName(x.userId) }}
+                                                            </div>
+                                                            <div class="text-secondary text-xs truncate">
+                                                                {{ getUserEmail(x.userId) }}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+
+                                                <td class="px-6 py-3 font-semibold">{{ x.count }}</td>
+
+                                                <td class="px-6 py-3">
+                                                    {{ x.lastAt ? (x.lastAt | date:'dd/MM/yy HH:mm') : '-' }}
+                                                </td>
+                                            </tr>
+                                            }
+
+                                            @if (usersWhoMessaged.length === 0) {
+                                            <tr>
+                                                <td colspan="3" class="px-6 py-10 text-center text-secondary">
+                                                    Δεν έχει στείλει κανείς μήνυμα ακόμα.
+                                                </td>
+                                            </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </mat-tab>
+
+                </mat-tab-group>
+            </div>
+
+        </div>
+        }
+    </div>
+</div>

@@ -1,0 +1,29 @@
+<div class="p-5">
+    <div class="flex items-center justify-between mb-4">
+        <div class="text-lg font-bold">Επεξεργασία εισιτηρίου</div>
+        <button mat-icon-button type="button" (click)="close()">
+            <mat-icon>close</mat-icon>
+        </button>
+    </div>
+
+    <form class="space-y-4" [formGroup]="form">
+        <mat-form-field class="w-full">
+            <mat-label>Τίτλος</mat-label>
+            <input matInput formControlName="title" />
+        </mat-form-field>
+
+        <mat-form-field class="w-full">
+            <mat-label>Κατάσταση</mat-label>
+            <mat-select formControlName="status">
+                <mat-option *ngFor="let s of statusOptions" [value]="s">{{ s }}</mat-option>
+            </mat-select>
+        </mat-form-field>
+
+        <div class="flex justify-end gap-2 pt-3 border-t">
+            <button mat-button type="button" (click)="close()">Ακύρωση</button>
+            <button mat-flat-button color="primary" type="button" (click)="save()" [disabled]="form.invalid">
+                Αποθήκευση
+            </button>
+        </div>
+    </form>
+</div>

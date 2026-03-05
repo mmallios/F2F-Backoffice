@@ -1,0 +1,269 @@
+.card {
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.07);
+}
+
+.title {
+    font-size: 1.25rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+}
+
+@media (min-width: 640px) {
+    .title {
+        font-size: 1.5rem;
+    }
+}
+
+.subtitle {
+    margin-top: 0.25rem;
+    font-size: 0.9rem;
+    color: rgba(0, 0, 0, 0.6);
+}
+
+:host-context(.dark) .subtitle {
+    color: rgba(255, 255, 255, 0.65);
+}
+
+.chips-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+/* Filters */
+.filters-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+}
+
+@media (min-width: 768px) {
+    .filters-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 1280px) {
+    .filters-grid {
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+}
+
+.date-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+/* Table */
+.table-wrap {
+    overflow: auto;
+    max-width: 100%;
+}
+
+.modern-table th.mat-mdc-header-cell {
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+
+.modern-table td.mat-mdc-cell {
+    padding-top: 14px;
+    padding-bottom: 14px;
+    vertical-align: middle;
+}
+
+/* Row hover */
+.row-hover {
+    cursor: pointer;
+    transition: background 160ms ease;
+}
+
+.row-hover:hover {
+    background: rgba(0, 0, 0, 0.03);
+}
+
+:host-context(.dark) .row-hover:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+/* small pills */
+.id-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-weight: 800;
+    font-size: 12px;
+    background: rgba(0, 0, 0, 0.06);
+}
+
+:host-context(.dark) .id-chip {
+    background: rgba(255, 255, 255, 0.09);
+}
+
+.cat-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(59, 130, 246, 0.12);
+    font-weight: 800;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+:host-context(.dark) .cat-chip {
+    background: rgba(59, 130, 246, 0.18);
+}
+
+.reply-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(16, 185, 129, 0.12);
+    font-weight: 900;
+    font-size: 12px;
+}
+
+:host-context(.dark) .reply-chip {
+    background: rgba(16, 185, 129, 0.2);
+}
+
+/* unread pulse */
+.unread-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #ff3b30;
+    box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.55);
+    animation: pulse 1.4s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.55);
+    }
+
+    70% {
+        box-shadow: 0 0 0 10px rgba(255, 59, 48, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(255, 59, 48, 0);
+    }
+}
+
+/* Empty */
+.empty-td {
+    padding: 28px 16px;
+}
+
+.empty-state {
+    display: grid;
+    place-items: center;
+    text-align: center;
+    padding: 10px 0;
+}
+
+.empty-icon {
+    font-size: 44px;
+    width: 44px;
+    height: 44px;
+    opacity: 0.65;
+}
+
+/* paginator divider */
+.paginator {
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+:host-context(.dark) .paginator {
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* spin icon */
+.spin {
+    animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Compact filter bar (one row on desktop, wraps nicely) */
+.filters-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
+
+/* each field compact */
+.f-field {
+    min-width: 180px;
+    flex: 0 0 auto;
+}
+
+/* search should be wider */
+.f-search {
+    flex: 1 1 380px;
+    min-width: 260px;
+}
+
+/* dates a bit smaller */
+.f-date {
+    min-width: 170px;
+}
+
+/* optional action buttons group */
+.f-actions {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 0 0 auto;
+}
+
+/* Make Material outline fields tighter */
+:host ::ng-deep .f-field .mat-mdc-form-field-infix {
+    padding-top: 10px !important;
+    padding-bottom: 10px !important;
+    min-height: 44px;
+}
+
+/* Smaller label + nicer density */
+:host ::ng-deep .f-field .mat-mdc-floating-label {
+    font-size: 13px;
+}
+
+:host ::ng-deep .f-field .mat-mdc-form-field-subscript-wrapper {
+    display: none;
+    /* removes extra space under fields */
+}
+
+/* Mobile: keep it stacked and full width */
+@media (max-width: 767px) {
+    .filters-bar {
+        gap: 12px;
+    }
+
+    .f-field,
+    .f-search,
+    .f-date {
+        width: 100%;
+        min-width: 0;
+        flex: 1 1 100%;
+    }
+
+    .f-actions {
+        width: 100%;
+        margin-left: 0;
+        justify-content: flex-end;
+    }
+}
