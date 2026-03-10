@@ -1,0 +1,517 @@
+<div class="absolute inset-0 flex flex-col overflow-hidden bg-card">
+
+    <!-- ── Top progress bar ─────────────────────────────────────── -->
+    <mat-progress-bar *ngIf="loading || submitting" mode="indeterminate" class="shrink-0" style="z-index:10">
+    </mat-progress-bar>
+
+    <!-- ── Header ────────────────────────────────────────────────── -->
+    <div class="border-b shrink-0 px-4 sm:px-8 py-5 flex items-center gap-4 bg-card">
+        <button mat-icon-button (click)="goBack()" matTooltip="Πίσω">
+            <mat-icon>arrow_back</mat-icon>
+        </button>
+        <div class="flex-1 min-w-0">
+            <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight leading-none">Νέα Παραγγελία</h1>
+            <p class="text-secondary text-sm mt-1">Δημιουργία παραγγελίας από το backoffice</p>
+        </div>
+    </div>
+
+    <!-- ── Step indicator ────────────────────────────────────────── -->
+    <div class="shrink-0 border-b bg-black/5 dark:bg-black/20 px-4 sm:px-8 py-4">
+        <ol class="flex items-center gap-0">
+
+            <!-- Step 1 -->
+            <li class="flex items-center gap-3 cursor-pointer" (click)="goToStep(0)">
+                <div class="flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold transition-all shrink-0"
+                    [ngClass]="step() > 0 ? 'bg-green-500 text-white' : step() === 0 ? 'bg-primary text-white' : 'bg-black/10 dark:bg-white/10 text-secondary'">
+                    <mat-icon *ngIf="step() > 0" class="!text-sm !w-5 !h-5">check</mat-icon>
+                    <span *ngIf="step() <= 0">1</span>
+                </div>
+                <div class="hidden sm:block">
+                    <div class="text-xs font-semibold uppercase tracking-wide text-secondary">Βήμα 1</div>
+                    <div class="text-sm font-bold leading-none mt-0.5" [class.text-primary]="step() === 0">Χρήστης</div>
+                </div>
+            </li>
+
+            <div class="flex-1 h-px mx-3" [ngClass]="step() > 0 ? 'bg-green-400' : 'bg-black/15 dark:bg-white/10'">
+            </div>
+
+            <!-- Step 2 -->
+            <li class="flex items-center gap-3 cursor-pointer" (click)="goToStep(1)">
+                <div class="flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold transition-all shrink-0"
+                    [ngClass]="step() > 1 ? 'bg-green-500 text-white' : step() === 1 ? 'bg-primary text-white' : 'bg-black/10 dark:bg-white/10 text-secondary'">
+                    <mat-icon *ngIf="step() > 1" class="!text-sm !w-5 !h-5">check</mat-icon>
+                    <span *ngIf="step() <= 1">2</span>
+                </div>
+                <div class="hidden sm:block">
+                    <div class="text-xs font-semibold uppercase tracking-wide text-secondary">Βήμα 2</div>
+                    <div class="text-sm font-bold leading-none mt-0.5" [class.text-primary]="step() === 1">Διεύθυνση
+                    </div>
+                </div>
+            </li>
+
+            <div class="flex-1 h-px mx-3" [ngClass]="step() > 1 ? 'bg-green-400' : 'bg-black/15 dark:bg-white/10'">
+            </div>
+
+            <!-- Step 3 -->
+            <li class="flex items-center gap-3">
+                <div class="flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold transition-all shrink-0"
+                    [ngClass]="step() === 2 ? 'bg-primary text-white' : 'bg-black/10 dark:bg-white/10 text-secondary'">
+                    <span>3</span>
+                </div>
+                <div class="hidden sm:block">
+                    <div class="text-xs font-semibold uppercase tracking-wide text-secondary">Βήμα 3</div>
+                    <div class="text-sm font-bold leading-none mt-0.5" [class.text-primary]="step() === 2">Προϊόντα
+                    </div>
+                </div>
+            </li>
+
+        </ol>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- STEP 0 — Select User                                       -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <ng-container *ngIf="step() === 0">
+
+        <div class="flex-1 flex flex-col min-h-0 overflow-hidden">
+
+            <!-- Search bar -->
+            <div class="shrink-0 px-4 sm:px-8 py-4 border-b">
+                <mat-form-field class="w-full max-w-xl" appearance="outline" subscriptSizing="dynamic">
+                    <mat-icon matPrefix class="opacity-50">search</mat-icon>
+                    <mat-label>Αναζήτηση χρήστη</mat-label>
+                    <input matInput [value]="userSearch" (input)="userSearch = $any($event.target).value"
+                        placeholder="Όνομα, email, username, κωδικός...">
+                    <button *ngIf="userSearch" mat-icon-button matSuffix type="button" (click)="userSearch = ''">
+                        <mat-icon>close</mat-icon>
+                    </button>
+                </mat-form-field>
+            </div>
+
+            <!-- User list -->
+            <div class="flex-1 overflow-y-auto px-4 sm:px-8 py-4">
+                <div *ngIf="loading" class="py-20 flex justify-center">
+                    <mat-progress-bar mode="indeterminate" class="w-full max-w-xs"></mat-progress-bar>
+                </div>
+
+                <ng-container *ngIf="!loading">
+                    <!-- Vertical user list -->
+                    <div class="divide-y border rounded-2xl overflow-hidden">
+                        <button *ngFor="let u of filteredUsers" type="button"
+                            class="w-full flex items-center gap-3 px-4 py-3 bg-card hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-left group"
+                            (click)="selectUser(u)">
+
+                            <img *ngIf="u.image" [src]="u.image"
+                                class="w-9 h-9 rounded-full object-cover shrink-0 border" alt="">
+                            <div *ngIf="!u.image"
+                                class="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary text-sm shrink-0 select-none">
+                                {{ userInitials(u) }}
+                            </div>
+
+                            <div class="flex-1 min-w-0">
+                                <div class="font-semibold text-sm truncate">{{ u.firstname }} {{ u.lastname }}</div>
+                                <div class="text-secondary text-xs truncate">{{ u.email }}</div>
+                            </div>
+
+                            <div *ngIf="u.code" class="font-mono text-xs text-secondary/50 shrink-0 hidden sm:block">{{
+                                u.code }}</div>
+
+                            <mat-icon
+                                class="text-secondary opacity-20 group-hover:opacity-60 shrink-0 transition-opacity !text-lg">
+                                chevron_right
+                            </mat-icon>
+                        </button>
+                    </div>
+
+                    <div *ngIf="filteredUsers.length === 0"
+                        class="py-24 flex flex-col items-center gap-3 text-secondary opacity-40">
+                        <mat-icon class="!text-6xl">person_search</mat-icon>
+                        <span>Δεν βρέθηκαν χρήστες</span>
+                    </div>
+                </ng-container>
+            </div>
+
+        </div>
+
+    </ng-container>
+
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- STEP 1 — Address & Details                                 -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <ng-container *ngIf="step() === 1">
+
+        <div class="flex-1 flex flex-col min-h-0 overflow-hidden">
+            <div class="flex-1 overflow-y-auto px-4 sm:px-8 py-6">
+
+                <!-- Selected user mini-card -->
+                <div
+                    class="flex items-center gap-4 p-4 rounded-2xl bg-primary/6 border border-primary/15 mb-7 max-w-lg">
+                    <img *ngIf="selectedUser()?.image" [src]="selectedUser()!.image!"
+                        class="w-12 h-12 rounded-full object-cover shrink-0 border" alt="">
+                    <div *ngIf="!selectedUser()?.image"
+                        class="w-12 h-12 rounded-full bg-primary/15 flex items-center justify-center font-bold text-primary shrink-0 select-none">
+                        {{ userInitials(selectedUser()) }}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="font-bold truncate">
+                            {{ selectedUser()?.firstname }} {{ selectedUser()?.lastname }}
+                        </div>
+                        <div class="text-secondary text-sm truncate">{{ selectedUser()?.email }}</div>
+                    </div>
+                    <button mat-stroked-button class="!rounded-xl !h-8 !text-xs shrink-0" type="button"
+                        (click)="step.set(0)">
+                        <mat-icon class="!text-sm">edit</mat-icon> Αλλαγή
+                    </button>
+                </div>
+
+                <!-- Address form -->
+                <form [formGroup]="addressForm" class="max-w-2xl">
+                    <h3 class="text-base font-bold mb-4 text-secondary uppercase tracking-wide text-xs">
+                        Στοιχεία αποστολής
+                    </h3>
+
+                    <div class="grid grid-cols-2 gap-4 mb-6">
+
+                        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                            <mat-label>Όνομα</mat-label>
+                            <input matInput formControlName="firstName">
+                        </mat-form-field>
+
+                        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                            <mat-label>Επώνυμο</mat-label>
+                            <input matInput formControlName="lastName">
+                        </mat-form-field>
+
+                        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                            <mat-label>Email</mat-label>
+                            <mat-icon matPrefix class="opacity-40">mail</mat-icon>
+                            <input matInput formControlName="email" type="email">
+                        </mat-form-field>
+
+                        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                            <mat-label>Τηλέφωνο</mat-label>
+                            <mat-icon matPrefix class="opacity-40">phone</mat-icon>
+                            <input matInput formControlName="phone">
+                        </mat-form-field>
+
+                        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="col-span-2">
+                            <mat-label>Διεύθυνση</mat-label>
+                            <mat-icon matPrefix class="opacity-40">home</mat-icon>
+                            <input matInput formControlName="addressLine1" placeholder="Οδός, αριθμός">
+                        </mat-form-field>
+
+                        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                            <mat-label>Πόλη</mat-label>
+                            <input matInput formControlName="city">
+                        </mat-form-field>
+
+                        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                            <mat-label>Ταχυδρομικός κώδικας</mat-label>
+                            <input matInput formControlName="zip">
+                        </mat-form-field>
+
+                        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                            <mat-label>Νομός / Περιοχή</mat-label>
+                            <input matInput formControlName="region">
+                        </mat-form-field>
+
+                        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                            <mat-label>Χώρα</mat-label>
+                            <input matInput formControlName="country">
+                        </mat-form-field>
+
+                        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="col-span-2">
+                            <mat-label>Σημειώσεις / Οδηγίες παράδοσης</mat-label>
+                            <textarea matInput formControlName="notes" rows="2"
+                                placeholder="π.χ. 2ος όροφος, κτλ."></textarea>
+                        </mat-form-field>
+
+                    </div>
+
+                    <mat-divider class="my-2"></mat-divider>
+
+                    <h3 class="text-xs font-bold mb-4 mt-5 text-secondary uppercase tracking-wide">
+                        Αποστολή &amp; Πληρωμή
+                    </h3>
+
+                    <div class="grid grid-cols-2 gap-4">
+
+                        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                            <mat-label>Τρόπος αποστολής</mat-label>
+                            <mat-icon matPrefix class="opacity-40">local_shipping</mat-icon>
+                            <mat-select formControlName="shippingMethod">
+                                <mat-option [value]="null">— Χωρίς επιλογή</mat-option>
+                                <mat-option [value]="0">Courier</mat-option>
+                                <mat-option [value]="1">Παράδοση στο χώρο</mat-option>
+                                <mat-option [value]="2">Click &amp; Collect</mat-option>
+                            </mat-select>
+                        </mat-form-field>
+
+                        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                            <mat-label>Τρόπος πληρωμής</mat-label>
+                            <mat-icon matPrefix class="opacity-40">payment</mat-icon>
+                            <mat-select formControlName="paymentMethod">
+                                <mat-option [value]="null">— Χωρίς επιλογή</mat-option>
+                                <mat-option [value]="0">Κάρτα</mat-option>
+                                <mat-option [value]="1">Αντικαταβολή</mat-option>
+                                <mat-option [value]="2">Revolut</mat-option>
+                            </mat-select>
+                        </mat-form-field>
+
+                        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                            <mat-label>Κόστος αποστολής (€)</mat-label>
+                            <mat-icon matPrefix class="opacity-40">euro</mat-icon>
+                            <input matInput type="number" min="0" step="0.5" formControlName="shippingAmount">
+                        </mat-form-field>
+
+                    </div>
+                </form>
+
+            </div>
+
+            <!-- Footer -->
+            <div class="shrink-0 border-t px-4 sm:px-8 py-4 flex justify-between bg-card">
+                <button mat-stroked-button class="!rounded-xl" (click)="step.set(0)">
+                    <mat-icon>arrow_back</mat-icon> Πίσω
+                </button>
+                <button mat-flat-button color="primary" class="!rounded-xl" (click)="step.set(2)">
+                    Επόμενο <mat-icon>arrow_forward</mat-icon>
+                </button>
+            </div>
+        </div>
+
+    </ng-container>
+
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- STEP 2 — Products                                          -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <ng-container *ngIf="step() === 2">
+
+        <div class="flex-1 flex min-h-0 overflow-hidden">
+
+            <!-- LEFT: product catalogue -->
+            <div class="flex-1 flex flex-col min-w-0 overflow-hidden border-r">
+
+                <!-- Search -->
+                <div class="shrink-0 px-4 py-3 border-b">
+                    <mat-form-field class="w-full" appearance="outline" subscriptSizing="dynamic">
+                        <mat-icon matPrefix class="opacity-50">search</mat-icon>
+                        <mat-label>Αναζήτηση προϊόντος</mat-label>
+                        <input matInput [value]="productSearch" (input)="productSearch = $any($event.target).value"
+                            placeholder="Τίτλος ή κωδικός...">
+                        <button *ngIf="productSearch" mat-icon-button matSuffix type="button"
+                            (click)="productSearch = ''">
+                            <mat-icon>close</mat-icon>
+                        </button>
+                    </mat-form-field>
+                </div>
+
+                <!-- Product list -->
+                <div class="flex-1 overflow-y-auto py-2">
+
+                    <ng-container *ngFor="let p of filteredProducts">
+                        <!-- Product row -->
+                        <div class="group">
+                            <div class="flex items-center gap-3 px-4 py-3 hover:bg-black/3 dark:hover:bg-white/3 transition-colors cursor-pointer"
+                                (click)="openAddPanel(p)">
+
+                                <img *ngIf="p.imageUrl" [src]="p.imageUrl"
+                                    class="w-12 h-12 rounded-xl object-cover shrink-0 border" alt="">
+                                <div *ngIf="!p.imageUrl"
+                                    class="w-12 h-12 rounded-xl bg-primary/8 flex items-center justify-center shrink-0">
+                                    <mat-icon class="text-primary opacity-50">inventory_2</mat-icon>
+                                </div>
+
+                                <div class="flex-1 min-w-0">
+                                    <div class="font-semibold text-sm truncate">{{ p.title }}</div>
+                                    <div class="text-sm font-bold text-primary">{{ p.price | number:'1.2-2' }}€</div>
+                                    <div *ngIf="hasSizes(p)" class="text-xs text-secondary flex gap-1 flex-wrap mt-0.5">
+                                        <span *ngFor="let s of productSizes(p)"
+                                            class="px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/5 font-mono text-[10px]">
+                                            {{ sizeLabel(s.size) }}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <!-- Cart badge if already added -->
+                                <div *ngIf="itemInCart(p.id) as ci"
+                                    class="shrink-0 w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
+                                    {{ ci.qty }}
+                                </div>
+
+                                <mat-icon class="shrink-0 text-secondary transition-transform"
+                                    [class.rotate-90]="pendingAddProduct()?.id === p.id">
+                                    add_circle
+                                </mat-icon>
+                            </div>
+
+                            <!-- Inline size/qty panel — compact single row -->
+                            <div *ngIf="pendingAddProduct()?.id === p.id"
+                                class="mx-3 mb-2 px-3 py-2 rounded-xl border bg-black/3 dark:bg-black/30">
+
+                                <div class="flex items-center gap-2 flex-wrap">
+
+                                    <!-- Size chips -->
+                                    <ng-container *ngIf="hasSizes(p)">
+                                        <button *ngFor="let s of productSizes(p)" type="button"
+                                            class="px-2.5 py-1 rounded-lg border text-xs font-bold transition-all"
+                                            [ngClass]="pendingSize() === s.size
+                                                ? 'bg-primary border-primary text-white'
+                                                : 'border-black/15 dark:border-white/15 hover:border-primary'"
+                                            (click)="pendingSize.set(s.size)">
+                                            {{ sizeLabel(s.size) }}
+                                        </button>
+                                        <div class="w-px h-4 bg-black/15 dark:bg-white/15 mx-1"></div>
+                                    </ng-container>
+
+                                    <!-- Qty stepper -->
+                                    <div class="flex items-center gap-1">
+                                        <button mat-icon-button class="!w-7 !h-7" type="button"
+                                            [disabled]="pendingQty() <= 1" (click)="pendingQty.set(pendingQty() - 1)">
+                                            <mat-icon class="!text-sm">remove</mat-icon>
+                                        </button>
+                                        <span class="text-sm font-bold w-5 text-center">{{ pendingQty() }}</span>
+                                        <button mat-icon-button class="!w-7 !h-7" type="button"
+                                            (click)="pendingQty.set(pendingQty() + 1)">
+                                            <mat-icon class="!text-sm">add</mat-icon>
+                                        </button>
+                                    </div>
+
+                                    <div class="w-px h-4 bg-black/15 dark:bg-white/15 mx-1"></div>
+
+                                    <!-- Add button -->
+                                    <button mat-flat-button color="primary" class="!rounded-lg !h-8 !text-xs"
+                                        type="button" [disabled]="hasSizes(p) && pendingSize() === null"
+                                        (click)="confirmAdd()">
+                                        <mat-icon class="!text-sm">add_shopping_cart</mat-icon>
+                                        Προσθήκη
+                                    </button>
+
+                                    <!-- Cancel -->
+                                    <button mat-icon-button class="!w-7 !h-7 opacity-50 hover:opacity-100" type="button"
+                                        (click)="pendingAddProduct.set(null)" matTooltip="Ακύρωση">
+                                        <mat-icon class="!text-sm">close</mat-icon>
+                                    </button>
+
+                                </div>
+
+                            </div>
+                        </div>
+                    </ng-container>
+
+                    <div *ngIf="filteredProducts.length === 0"
+                        class="py-20 flex flex-col items-center gap-3 text-secondary opacity-40">
+                        <mat-icon class="!text-5xl">inventory_2</mat-icon>
+                        <span class="text-sm">Δεν βρέθηκαν προϊόντα</span>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- RIGHT: Cart summary -->
+            <div class="w-64 xl:w-72 shrink-0 flex flex-col overflow-hidden">
+
+                <!-- Cart header -->
+                <div class="shrink-0 px-4 py-3 border-b flex items-center gap-2">
+                    <mat-icon class="text-primary">shopping_cart</mat-icon>
+                    <span class="font-bold">Καλάθι</span>
+                    <span *ngIf="orderItems().length"
+                        class="ml-auto text-xs bg-primary/10 text-primary font-bold rounded-full px-2 py-0.5">
+                        {{ orderItems().length }}
+                    </span>
+                </div>
+
+                <!-- Items -->
+                <div class="flex-1 overflow-y-auto py-2 px-3">
+
+                    <div *ngIf="!orderItems().length"
+                        class="py-14 flex flex-col items-center gap-2 text-secondary opacity-40">
+                        <mat-icon class="!text-4xl">add_shopping_cart</mat-icon>
+                        <span class="text-xs text-center">Καμία επιλογή ακόμα</span>
+                    </div>
+
+                    <div *ngFor="let item of orderItems()"
+                        class="flex items-start gap-2 py-2 px-1 border-b last:border-0">
+
+                        <img *ngIf="item.product.imageUrl" [src]="item.product.imageUrl"
+                            class="w-9 h-9 rounded-lg object-cover shrink-0" alt="">
+                        <div *ngIf="!item.product.imageUrl"
+                            class="w-9 h-9 rounded-lg bg-primary/8 shrink-0 flex items-center justify-center">
+                            <mat-icon class="text-primary opacity-40 !text-sm">inventory_2</mat-icon>
+                        </div>
+
+                        <div class="flex-1 min-w-0">
+                            <div class="text-xs font-semibold truncate leading-snug">{{ item.product.title }}</div>
+                            <div class="text-[11px] text-secondary">
+                                {{ item.qty }}×{{ item.product.price | number:'1.2-2' }}€
+                                <span *ngIf="item.size !== null"
+                                    class="ml-1 font-mono bg-black/5 dark:bg-white/5 px-1 rounded">
+                                    {{ sizeLabel(item.size) }}
+                                </span>
+                            </div>
+                            <!-- qty controls -->
+                            <div class="flex items-center gap-0.5 mt-1">
+                                <button mat-icon-button class="!w-6 !h-6" type="button" (click)="decreaseItem(item)">
+                                    <mat-icon class="!text-xs">remove</mat-icon>
+                                </button>
+                                <span class="text-xs font-bold w-5 text-center">{{ item.qty }}</span>
+                                <button mat-icon-button class="!w-6 !h-6" type="button" (click)="increaseItem(item)">
+                                    <mat-icon class="!text-xs">add</mat-icon>
+                                </button>
+                            </div>
+                        </div>
+
+                        <button mat-icon-button
+                            class="!w-6 !h-6 shrink-0 opacity-30 hover:opacity-80 transition-opacity" type="button"
+                            (click)="removeItem(item)" matTooltip="Αφαίρεση">
+                            <mat-icon class="!text-xs">close</mat-icon>
+                        </button>
+
+                    </div>
+                </div>
+
+                <!-- Totals -->
+                <div class="shrink-0 border-t px-4 py-3">
+                    <div class="flex justify-between text-xs text-secondary mb-1">
+                        <span>Υποσύνολο</span>
+                        <span>{{ subtotal | number:'1.2-2' }}€</span>
+                    </div>
+                    <div class="flex justify-between text-xs text-secondary mb-1">
+                        <span>Αποστολή</span>
+                        <span>{{ (addressForm.value.shippingAmount || 0) | number:'1.2-2' }}€</span>
+                    </div>
+                    <div class="flex justify-between font-bold text-sm border-t pt-2 mt-1">
+                        <span>Σύνολο</span>
+                        <span class="text-primary">{{ grandTotal | number:'1.2-2' }}€</span>
+                    </div>
+                </div>
+
+                <!-- Submit button -->
+                <div class="shrink-0 px-4 pb-5 pt-2">
+                    <button mat-flat-button color="primary" class="w-full !rounded-xl !py-2 !text-base" type="button"
+                        (click)="submit()" [disabled]="submitting || !orderItems().length">
+                        <mat-icon class="mr-1">
+                            {{ submitting ? 'hourglass_empty' : 'check_circle' }}
+                        </mat-icon>
+                        {{ submitting ? 'Δημιουργία...' : 'Δημιουργία Παραγγελίας' }}
+                    </button>
+                </div>
+
+            </div>
+            <!-- /cart -->
+
+            <!-- Back button (bottom-left overlay on mobile could be footer) -->
+        </div>
+
+        <!-- Footer: back button -->
+        <div class="shrink-0 border-t px-4 sm:px-6 py-3 flex justify-start bg-card">
+            <button mat-stroked-button class="!rounded-xl" (click)="step.set(1)">
+                <mat-icon>arrow_back</mat-icon> Πίσω
+            </button>
+        </div>
+
+    </ng-container>
+
+</div>

@@ -20,7 +20,7 @@ import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatSort, MatSortModule } from '@angular/material/sort';
 import { MatChipsModule } from '@angular/material/chips';
-import { RouterLink, RouterOutlet } from '@angular/router';
+import { Router, RouterLink, RouterOutlet } from '@angular/router';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSelectModule } from '@angular/material/select';
 import { FuseMediaWatcherService } from '@fuse/services/media-watcher';
@@ -88,6 +88,7 @@ export class OrdersListComponent implements OnInit, AfterViewInit, OnDestroy {
         private _api: StoreService,
         private _cdr: ChangeDetectorRef,
         private _fuseMediaWatcher: FuseMediaWatcherService,
+        private _router: Router,
         @Inject(DOCUMENT) private _document: any
     ) { }
 
@@ -179,6 +180,10 @@ export class OrdersListComponent implements OnInit, AfterViewInit, OnDestroy {
 
     reload(): void {
         this.getOrders();
+    }
+
+    openNewOrderDialog(): void {
+        this._router.navigate(['/apps/orders/new']);
     }
 
     getOrders(): void {

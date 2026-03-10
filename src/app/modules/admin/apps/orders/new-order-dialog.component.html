@@ -1,0 +1,373 @@
+<div class="flex flex-col overflow-hidden" style="width:min(95vw,900px);max-height:88vh">
+
+    <!-- accent line -->
+    <div class="h-1 w-full bg-gradient-to-r from-primary to-accent shrink-0"></div>
+
+    <!-- Header -->
+    <div class="flex items-center gap-3 px-6 py-4 border-b shrink-0">
+        <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+            <mat-icon class="text-primary">shopping_bag</mat-icon>
+        </div>
+        <div class="flex-1 min-w-0">
+            <h2 class="text-lg font-bold leading-tight">Νέα Παραγγελία</h2>
+            <p class="text-xs text-secondary mt-0.5">Δημιουργία παραγγελίας μέσω backoffice</p>
+        </div>
+        <button mat-icon-button [mat-dialog-close]="null" type="button">
+            <mat-icon>close</mat-icon>
+        </button>
+    </div>
+
+    <!-- Step indicators -->
+    <div class="flex items-center px-6 py-3 border-b bg-black/3 dark:bg-white/3 shrink-0 gap-2">
+
+        <!-- Step 1 -->
+        <div class="flex items-center gap-2 cursor-pointer" (click)="selectedUser && step > 0 ? (step = 0) : null">
+            <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-colors"
+                [ngClass]="step > 0 ? 'bg-green-500 text-white' : step === 0 ? 'bg-primary text-white' : 'bg-black/10 dark:bg-white/10'">
+                <mat-icon *ngIf="step > 0" class="!text-sm">check</mat-icon>
+                <span *ngIf="step === 0">1</span>
+            </div>
+            <span class="text-sm font-medium hidden sm:inline" [class.text-primary]="step === 0"
+                [class.text-green-500]="step > 0">Χρήστης</span>
+        </div>
+
+        <div class="flex-1 h-px bg-black/10 dark:bg-white/10"></div>
+
+        <!-- Step 2 -->
+        <div class="flex items-center gap-2 cursor-pointer" (click)="selectedUser && step > 1 ? (step = 1) : null">
+            <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-colors"
+                [ngClass]="step > 1 ? 'bg-green-500 text-white' : step === 1 ? 'bg-primary text-white' : 'bg-black/10 dark:bg-white/10'">
+                <mat-icon *ngIf="step > 1" class="!text-sm">check</mat-icon>
+                <span *ngIf="step <= 1">2</span>
+            </div>
+            <span class="text-sm font-medium hidden sm:inline" [class.text-primary]="step === 1"
+                [class.text-green-500]="step > 1">Στοιχεία</span>
+        </div>
+
+        <div class="flex-1 h-px bg-black/10 dark:bg-white/10"></div>
+
+        <!-- Step 3 -->
+        <div class="flex items-center gap-2">
+            <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-colors"
+                [ngClass]="step === 2 ? 'bg-primary text-white' : 'bg-black/10 dark:bg-white/10'">
+                <span>3</span>
+            </div>
+            <span class="text-sm font-medium hidden sm:inline" [class.text-primary]="step === 2">Προϊόντα</span>
+        </div>
+
+    </div>
+
+    <!-- Top loading bar -->
+    <mat-progress-bar *ngIf="loading" mode="indeterminate" class="shrink-0"></mat-progress-bar>
+
+    <!-- =============================== -->
+    <!-- STEP 1 — Select user            -->
+    <!-- =============================== -->
+    <div *ngIf="step === 0" class="flex flex-col flex-1 min-h-0 overflow-hidden">
+
+        <!-- Search -->
+        <div class="px-6 py-3 border-b shrink-0">
+            <mat-form-field class="w-full" appearance="outline" subscriptSizing="dynamic">
+                <mat-icon matPrefix>search</mat-icon>
+                <mat-label>Αναζήτηση χρήστη</mat-label>
+                <input matInput [value]="userSearch" (input)="userSearch = $any($event.target).value"
+                    placeholder="Όνομα, email, κωδικός...">
+                <button *ngIf="userSearch" mat-icon-button matSuffix type="button" (click)="userSearch = ''">
+                    <mat-icon>clear</mat-icon>
+                </button>
+            </mat-form-field>
+        </div>
+
+        <!-- User list -->
+        <div class="flex-1 overflow-y-auto py-2 px-3">
+
+            <ng-container *ngIf="!loading">
+                <div *ngFor="let u of filteredUsers"
+                    class="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors group"
+                    (click)="selectUser(u)">
+
+                    <img *ngIf="u.image" [src]="u.image"
+                        class="w-10 h-10 rounded-full object-cover shrink-0 border-2 border-black/10 dark:border-white/10"
+                        alt="">
+                    <div *ngIf="!u.image"
+                        class="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center text-primary font-bold text-sm shrink-0 select-none">
+                        {{ userInitials(u) }}
+                    </div>
+
+                    <div class="flex-1 min-w-0">
+                        <div class="font-semibold text-sm truncate">{{ u.firstname }} {{ u.lastname }}</div>
+                        <div class="text-xs text-secondary truncate">{{ u.email }}</div>
+                        <div *ngIf="u.code" class="text-[11px] font-mono text-secondary/60">{{ u.code }}</div>
+                    </div>
+
+                    <mat-icon class="text-secondary opacity-30 group-hover:opacity-70 shrink-0 transition-opacity">
+                        chevron_right
+                    </mat-icon>
+                </div>
+
+                <div *ngIf="filteredUsers.length === 0"
+                    class="py-20 flex flex-col items-center gap-2 text-secondary opacity-40">
+                    <mat-icon class="!text-5xl">person_search</mat-icon>
+                    <span class="text-sm">Δεν βρέθηκαν χρήστες</span>
+                </div>
+            </ng-container>
+
+        </div>
+    </div>
+
+    <!-- =============================== -->
+    <!-- STEP 2 — Address & details      -->
+    <!-- =============================== -->
+    <div *ngIf="step === 1" class="flex flex-col flex-1 min-h-0 overflow-hidden">
+
+        <div class="flex-1 overflow-y-auto px-6 py-5">
+
+            <!-- Selected user mini-card -->
+            <div
+                class="flex items-center gap-3 bg-primary/8 dark:bg-primary/15 rounded-xl px-4 py-3 mb-5 border border-primary/15">
+                <img *ngIf="selectedUser?.image" [src]="selectedUser!.image!"
+                    class="w-10 h-10 rounded-full object-cover shrink-0" alt="">
+                <div *ngIf="!selectedUser?.image"
+                    class="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold shrink-0 select-none">
+                    {{ userInitials(selectedUser) }}
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="font-bold text-sm truncate">{{ selectedUser?.firstname }} {{ selectedUser?.lastname }}
+                    </div>
+                    <div class="text-xs text-secondary truncate">{{ selectedUser?.email }}</div>
+                </div>
+                <button mat-stroked-button class="!rounded-xl !h-8 !text-xs shrink-0" type="button" (click)="step = 0">
+                    <mat-icon class="!text-sm mr-0.5">edit</mat-icon> Αλλαγή
+                </button>
+            </div>
+
+            <!-- Address form -->
+            <form [formGroup]="detailsForm">
+                <div class="grid grid-cols-2 gap-3">
+
+                    <mat-form-field class="col-span-2" appearance="outline" subscriptSizing="dynamic">
+                        <mat-label>Ονοματεπώνυμο παραλήπτη</mat-label>
+                        <mat-icon matPrefix class="opacity-50">person</mat-icon>
+                        <input matInput formControlName="fullname" placeholder="Πλήρες ονοματεπώνυμο">
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                        <mat-label>Τηλέφωνο</mat-label>
+                        <mat-icon matPrefix class="opacity-50">phone</mat-icon>
+                        <input matInput formControlName="phone" placeholder="+30 69...">
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                        <mat-label>Ταχυδρομικός κώδικας</mat-label>
+                        <mat-icon matPrefix class="opacity-50">markunread_mailbox</mat-icon>
+                        <input matInput formControlName="postalCode">
+                    </mat-form-field>
+
+                    <mat-form-field class="col-span-2" appearance="outline" subscriptSizing="dynamic">
+                        <mat-label>Διεύθυνση</mat-label>
+                        <mat-icon matPrefix class="opacity-50">home</mat-icon>
+                        <input matInput formControlName="address" placeholder="Οδός, αριθμός">
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                        <mat-label>Πόλη</mat-label>
+                        <mat-icon matPrefix class="opacity-50">location_city</mat-icon>
+                        <input matInput formControlName="city">
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                        <mat-label>Κόστος αποστολής (€)</mat-label>
+                        <mat-icon matPrefix class="opacity-50">local_shipping</mat-icon>
+                        <input matInput type="number" formControlName="shippingAmount" min="0" step="0.5">
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                        <mat-label>Τρόπος αποστολής</mat-label>
+                        <mat-icon matPrefix class="opacity-50">inventory</mat-icon>
+                        <mat-select formControlName="shippingMethod">
+                            <mat-option [value]="null">— Χωρίς επιλογή</mat-option>
+                            <mat-option [value]="0">Courier</mat-option>
+                            <mat-option [value]="1">Παράδοση στο χώρο</mat-option>
+                            <mat-option [value]="2">Click &amp; Collect</mat-option>
+                        </mat-select>
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                        <mat-label>Τρόπος πληρωμής</mat-label>
+                        <mat-icon matPrefix class="opacity-50">payment</mat-icon>
+                        <mat-select formControlName="paymentMethod">
+                            <mat-option [value]="null">— Χωρίς επιλογή</mat-option>
+                            <mat-option [value]="0">Κάρτα</mat-option>
+                            <mat-option [value]="1">Αντικαταβολή</mat-option>
+                            <mat-option [value]="2">Revolut</mat-option>
+                        </mat-select>
+                    </mat-form-field>
+
+                    <mat-form-field class="col-span-2" appearance="outline" subscriptSizing="dynamic">
+                        <mat-label>Σημειώσεις</mat-label>
+                        <mat-icon matPrefix class="opacity-50">notes</mat-icon>
+                        <textarea matInput formControlName="notes" rows="2"
+                            placeholder="Οδηγίες παράδοσης, σχόλια..."></textarea>
+                    </mat-form-field>
+
+                </div>
+            </form>
+        </div>
+
+        <!-- Footer -->
+        <div class="px-6 py-4 border-t flex justify-between shrink-0">
+            <button mat-stroked-button class="!rounded-xl" type="button" (click)="step = 0">
+                <mat-icon class="mr-1">arrow_back</mat-icon> Πίσω
+            </button>
+            <button mat-flat-button color="primary" class="!rounded-xl" type="button" (click)="step = 2">
+                Επόμενο <mat-icon class="ml-1">arrow_forward</mat-icon>
+            </button>
+        </div>
+    </div>
+
+    <!-- =============================== -->
+    <!-- STEP 3 — Products               -->
+    <!-- =============================== -->
+    <div *ngIf="step === 2" class="flex flex-col flex-1 min-h-0 overflow-hidden">
+
+        <!-- Product search -->
+        <div class="px-4 py-3 border-b shrink-0">
+            <mat-form-field class="w-full" appearance="outline" subscriptSizing="dynamic">
+                <mat-icon matPrefix>search</mat-icon>
+                <mat-label>Αναζήτηση προϊόντος</mat-label>
+                <input matInput [value]="productSearch" (input)="productSearch = $any($event.target).value"
+                    placeholder="Τίτλος ή κωδικός...">
+                <button *ngIf="productSearch" mat-icon-button matSuffix type="button" (click)="productSearch = ''">
+                    <mat-icon>clear</mat-icon>
+                </button>
+            </mat-form-field>
+        </div>
+
+        <!-- Split: products list + cart summary -->
+        <div class="flex flex-1 min-h-0 overflow-hidden">
+
+            <!-- Products list -->
+            <div class="flex-1 overflow-y-auto py-2 px-3 border-r">
+
+                <div *ngFor="let p of filteredProducts"
+                    class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 group">
+
+                    <img *ngIf="p.imageUrl" [src]="p.imageUrl" class="w-11 h-11 rounded-lg object-cover shrink-0"
+                        alt="">
+                    <div *ngIf="!p.imageUrl"
+                        class="w-11 h-11 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                        <mat-icon class="text-primary opacity-60">inventory_2</mat-icon>
+                    </div>
+
+                    <div class="flex-1 min-w-0">
+                        <div class="text-sm font-semibold truncate">{{ p.title }}</div>
+                        <div class="text-xs text-secondary">{{ p.price | number:'1.2-2' }}€</div>
+                    </div>
+
+                    <!-- qty controls -->
+                    <div class="flex items-center gap-1 shrink-0">
+                        <button mat-icon-button class="!w-8 !h-8" type="button" [disabled]="itemQty(p.id) === 0"
+                            (click)="decreaseItem(p)">
+                            <mat-icon class="!text-base" [class.opacity-30]="itemQty(p.id) === 0">
+                                remove_circle_outline
+                            </mat-icon>
+                        </button>
+                        <span class="w-5 text-center text-sm font-bold transition-colors"
+                            [class.text-primary]="itemQty(p.id) > 0">
+                            {{ itemQty(p.id) > 0 ? itemQty(p.id) : '' }}
+                        </span>
+                        <button mat-icon-button class="!w-8 !h-8" type="button" (click)="addItem(p)">
+                            <mat-icon class="!text-base text-primary">add_circle_outline</mat-icon>
+                        </button>
+                    </div>
+                </div>
+
+                <div *ngIf="filteredProducts.length === 0"
+                    class="py-16 flex flex-col items-center gap-2 text-secondary opacity-40">
+                    <mat-icon class="!text-5xl">inventory_2</mat-icon>
+                    <span class="text-sm">Δεν βρέθηκαν προϊόντα</span>
+                </div>
+
+            </div>
+
+            <!-- Cart summary panel -->
+            <div class="w-56 shrink-0 flex flex-col overflow-hidden">
+
+                <!-- Cart header -->
+                <div class="px-4 py-3 border-b flex items-center gap-2 bg-black/3 dark:bg-white/3 shrink-0">
+                    <mat-icon class="text-primary !text-base">shopping_cart</mat-icon>
+                    <span class="font-semibold text-sm">Καλάθι</span>
+                    <span *ngIf="orderItems.length > 0"
+                        class="ml-auto text-xs bg-primary/10 text-primary rounded-full px-2 py-0.5 font-bold">
+                        {{ orderItems.length }}
+                    </span>
+                </div>
+
+                <!-- Items -->
+                <div class="flex-1 overflow-y-auto py-2 px-3">
+                    <div *ngIf="orderItems.length === 0"
+                        class="py-10 flex flex-col items-center gap-2 text-secondary opacity-40">
+                        <mat-icon class="!text-3xl">add_shopping_cart</mat-icon>
+                        <div class="text-xs text-center">Δεν έχεις επιλέξει προϊόντα ακόμα</div>
+                    </div>
+
+                    <div *ngFor="let item of orderItems" class="flex items-start gap-2 py-1.5">
+                        <img *ngIf="item.product.imageUrl" [src]="item.product.imageUrl"
+                            class="w-8 h-8 rounded object-cover shrink-0" alt="">
+                        <div *ngIf="!item.product.imageUrl"
+                            class="w-8 h-8 rounded bg-primary/10 shrink-0 flex items-center justify-center">
+                            <mat-icon class="text-primary opacity-50 !text-sm">inventory_2</mat-icon>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="text-xs font-medium truncate leading-snug">{{ item.product.title }}</div>
+                            <div class="text-[11px] text-secondary">
+                                {{ item.qty }} × {{ item.product.price | number:'1.2-2' }}€
+                            </div>
+                        </div>
+                        <button mat-icon-button
+                            class="!w-5 !h-5 !leading-5 shrink-0 opacity-30 hover:opacity-80 transition-opacity"
+                            type="button" (click)="removeItemFully(item.product)">
+                            <mat-icon class="!text-xs">close</mat-icon>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Totals -->
+                <div class="border-t px-4 py-3 shrink-0 bg-black/2 dark:bg-white/2">
+                    <div class="flex justify-between text-xs text-secondary mb-1">
+                        <span>Υποσύνολο</span>
+                        <span>{{ subtotal | number:'1.2-2' }}€</span>
+                    </div>
+                    <div class="flex justify-between text-xs text-secondary mb-2">
+                        <span>Αποστολή</span>
+                        <span>{{ (detailsForm.value.shippingAmount || 0) | number:'1.2-2' }}€</span>
+                    </div>
+                    <div class="flex justify-between font-bold text-sm border-t pt-2 mt-1">
+                        <span>Σύνολο</span>
+                        <span class="text-primary">{{ grandTotal | number:'1.2-2' }}€</span>
+                    </div>
+                </div>
+
+            </div>
+            <!-- /cart panel -->
+
+        </div>
+        <!-- /split -->
+
+        <!-- Footer -->
+        <div class="px-6 py-4 border-t flex items-center justify-between shrink-0">
+            <button mat-stroked-button class="!rounded-xl" type="button" (click)="step = 1">
+                <mat-icon class="mr-1">arrow_back</mat-icon> Πίσω
+            </button>
+            <button mat-flat-button color="primary" class="!rounded-xl" type="button" (click)="submit()"
+                [disabled]="submitting || !orderItems.length">
+                <mat-icon class="mr-1">{{ submitting ? 'hourglass_empty' : 'check_circle' }}</mat-icon>
+                {{ submitting ? 'Δημιουργία...' : 'Δημιουργία Παραγγελίας' }}
+            </button>
+        </div>
+
+        <mat-progress-bar *ngIf="submitting" mode="indeterminate"></mat-progress-bar>
+
+    </div>
+
+</div>
