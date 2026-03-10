@@ -3,50 +3,49 @@
     <!-- ================= TOP BAR ================= -->
     <div class="relative shrink-0 border-b bg-card px-6 py-5 md:px-8">
         @if (saving) {
-            <mat-progress-bar mode="indeterminate" class="absolute bottom-0 left-0 right-0 z-10"></mat-progress-bar>
+        <mat-progress-bar mode="indeterminate" class="absolute bottom-0 left-0 right-0 z-10"></mat-progress-bar>
         }
 
         @if (loading) {
-            <div class="h-10 w-1/3 rounded bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
+        <div class="h-10 w-1/3 rounded bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
         } @else if (!product) {
-            <div class="text-secondary">Το προϊόν δεν βρέθηκε.</div>
+        <div class="text-secondary">Το προϊόν δεν βρέθηκε.</div>
         } @else {
-            <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between flex-wrap">
-                <div class="min-w-0">
-                    <div class="text-3xl md:text-4xl font-extrabold tracking-tight truncate">{{ product.title }}</div>
-                    <div class="text-secondary mt-1 truncate font-mono text-sm">{{ product.code }}</div>
-                </div>
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between flex-wrap">
+            <div class="min-w-0">
+                <div class="text-3xl md:text-4xl font-extrabold tracking-tight truncate">{{ product.title }}</div>
+                <div class="text-secondary mt-1 truncate font-mono text-sm">{{ product.code }}</div>
+            </div>
 
-                <div class="flex flex-wrap items-center gap-2 justify-end">
-                    <mat-chip class="!rounded-full !px-3 !text-xs !font-semibold"
-                        [ngClass]="product.isPublished
+            <div class="flex flex-wrap items-center gap-2 justify-end">
+                <mat-chip class="!rounded-full !px-3 !text-xs !font-semibold" [ngClass]="product.isPublished
                             ? 'bg-green-100 text-green-800 dark:bg-green-500/10 dark:text-green-300'
                             : 'bg-gray-100 text-gray-600 dark:bg-white/5 dark:text-gray-400'">
-                        {{ product.isPublished ? 'Δημοσιευμένο' : 'Πρόχειρο' }}
-                    </mat-chip>
+                    {{ product.isPublished ? 'Δημοσιευμένο' : 'Πρόχειρο' }}
+                </mat-chip>
 
-                    <button mat-stroked-button class="!rounded-xl" (click)="back()">
-                        <mat-icon [svgIcon]="'heroicons_outline:arrow-left'"></mat-icon>
-                        <span class="ml-2">Πίσω</span>
-                    </button>
+                <button mat-stroked-button class="!rounded-xl" (click)="back()">
+                    <mat-icon [svgIcon]="'heroicons_outline:arrow-left'"></mat-icon>
+                    <span class="ml-2">Πίσω</span>
+                </button>
 
-                    @if (editMode) {
-                        <button mat-flat-button color="primary" class="!rounded-xl" (click)="save()"
-                            [disabled]="saving || form.invalid">
-                            <mat-icon [svgIcon]="'heroicons_outline:check'"></mat-icon>
-                            <span class="ml-2">{{ saving ? 'Αποθήκευση…' : 'Αποθήκευση' }}</span>
-                        </button>
-                        <button mat-stroked-button class="!rounded-xl" (click)="cancelEdit()" [disabled]="saving">
-                            Άκυρο
-                        </button>
-                    } @else {
-                        <button mat-stroked-button class="!rounded-xl" (click)="startEdit()">
-                            <mat-icon [svgIcon]="'heroicons_outline:pencil-square'"></mat-icon>
-                            <span class="ml-2">Επεξεργασία</span>
-                        </button>
-                    }
-                </div>
+                @if (editMode) {
+                <button mat-flat-button color="primary" class="!rounded-xl" (click)="save()"
+                    [disabled]="saving || form.invalid">
+                    <mat-icon [svgIcon]="'heroicons_outline:check'"></mat-icon>
+                    <span class="ml-2">{{ saving ? 'Αποθήκευση…' : 'Αποθήκευση' }}</span>
+                </button>
+                <button mat-stroked-button class="!rounded-xl" (click)="cancelEdit()" [disabled]="saving">
+                    Άκυρο
+                </button>
+                } @else {
+                <button mat-stroked-button class="!rounded-xl" (click)="startEdit()">
+                    <mat-icon [svgIcon]="'heroicons_outline:pencil-square'"></mat-icon>
+                    <span class="ml-2">Επεξεργασία</span>
+                </button>
+                }
             </div>
+        </div>
         }
     </div>
 
@@ -67,31 +66,36 @@
                                 <!-- IMAGE CARD -->
                                 <div class="bg-card rounded-2xl border shadow-sm p-5">
                                     <div class="font-bold mb-4 flex items-center gap-2">
-                                        <mat-icon class="icon-size-5 text-gray-400" [svgIcon]="'heroicons_outline:photo'"></mat-icon>
+                                        <mat-icon class="icon-size-5 text-gray-400"
+                                            [svgIcon]="'heroicons_outline:photo'"></mat-icon>
                                         Εικόνα Προϊόντος
                                     </div>
                                     <div class="flex flex-col sm:flex-row gap-5 items-start">
-                                        <div class="w-full sm:w-52 h-52 rounded-2xl overflow-hidden border bg-gray-50 dark:bg-white/5 flex items-center justify-center shrink-0">
+                                        <div
+                                            class="w-full sm:w-52 h-52 rounded-2xl overflow-hidden border bg-gray-50 dark:bg-white/5 flex items-center justify-center shrink-0">
                                             @if (previewUrl || product.imageUrl) {
-                                                <img [src]="previewUrl || product.imageUrl" class="h-full w-full object-cover" />
+                                            <img [src]="previewUrl || product.imageUrl"
+                                                class="h-full w-full object-cover" />
                                             } @else {
-                                                <mat-icon [svgIcon]="'heroicons_outline:photo'" class="opacity-30 !w-16 !h-16"></mat-icon>
+                                            <mat-icon [svgIcon]="'heroicons_outline:photo'"
+                                                class="opacity-30 !w-16 !h-16"></mat-icon>
                                             }
                                         </div>
                                         @if (editMode) {
-                                            <div class="flex flex-col gap-2">
-                                                <input type="file" (change)="onFileSelected($event)" hidden #fileInput accept="image/*">
-                                                <button mat-stroked-button class="!rounded-xl" (click)="fileInput.click()">
-                                                    <mat-icon [svgIcon]="'heroicons_outline:arrow-up-tray'"></mat-icon>
-                                                    <span class="ml-2">Ανέβασμα</span>
-                                                </button>
-                                                <button mat-stroked-button class="!rounded-xl" (click)="removeImage()"
-                                                    [disabled]="!previewUrl && !product.imageUrl">
-                                                    <mat-icon [svgIcon]="'heroicons_outline:trash'"></mat-icon>
-                                                    <span class="ml-2">Αφαίρεση</span>
-                                                </button>
-                                                <div class="text-secondary text-xs mt-1">JPEG · PNG · WEBP</div>
-                                            </div>
+                                        <div class="flex flex-col gap-2">
+                                            <input type="file" (change)="onFileSelected($event)" hidden #fileInput
+                                                accept="image/*">
+                                            <button mat-stroked-button class="!rounded-xl" (click)="fileInput.click()">
+                                                <mat-icon [svgIcon]="'heroicons_outline:arrow-up-tray'"></mat-icon>
+                                                <span class="ml-2">Ανέβασμα</span>
+                                            </button>
+                                            <button mat-stroked-button class="!rounded-xl" (click)="removeImage()"
+                                                [disabled]="!previewUrl && !product.imageUrl">
+                                                <mat-icon [svgIcon]="'heroicons_outline:trash'"></mat-icon>
+                                                <span class="ml-2">Αφαίρεση</span>
+                                            </button>
+                                            <div class="text-secondary text-xs mt-1">JPEG · PNG · WEBP</div>
+                                        </div>
                                         }
                                     </div>
                                 </div>
@@ -99,180 +103,228 @@
                                 <!-- PRODUCT FORM FIELDS CARD -->
                                 <div class="bg-card rounded-2xl border shadow-sm p-5 md:p-6">
                                     <div class="font-bold mb-5 flex items-center gap-2">
-                                        <mat-icon class="icon-size-5 text-gray-400" [svgIcon]="'heroicons_outline:clipboard-document-list'"></mat-icon>
+                                        <mat-icon class="icon-size-5 text-gray-400"
+                                            [svgIcon]="'heroicons_outline:clipboard-document-list'"></mat-icon>
                                         Στοιχεία Προϊόντος
                                     </div>
 
                                     @if (editMode) {
-                                        <!-- EDIT MODE -->
-                                        <div class="space-y-4">
+                                    <!-- EDIT MODE -->
+                                    <div class="space-y-4">
 
-                                            <div class="flex items-start gap-3">
-                                                <mat-icon class="icon-size-5 mt-3 text-gray-400 shrink-0" [svgIcon]="'heroicons_outline:tag'"></mat-icon>
-                                                <mat-form-field class="fuse-mat-dense fuse-mat-rounded flex-1" subscriptSizing="dynamic">
-                                                    <mat-label>Τίτλος *</mat-label>
-                                                    <input matInput [formControl]="form.controls.title" />
-                                                </mat-form-field>
-                                            </div>
-
-                                            <div class="flex items-start gap-3">
-                                                <mat-icon class="icon-size-5 mt-3 text-gray-400 shrink-0" [svgIcon]="'heroicons_outline:hashtag'"></mat-icon>
-                                                <mat-form-field class="fuse-mat-dense fuse-mat-rounded flex-1" subscriptSizing="dynamic">
-                                                    <mat-label>Κωδικός *</mat-label>
-                                                    <input matInput [formControl]="form.controls.code" />
-                                                </mat-form-field>
-                                            </div>
-
-                                            <div class="flex items-start gap-3">
-                                                <mat-icon class="icon-size-5 mt-3 text-gray-400 shrink-0" [svgIcon]="'heroicons_outline:currency-euro'"></mat-icon>
-                                                <div class="flex-1 grid grid-cols-2 gap-3">
-                                                    <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full" subscriptSizing="dynamic">
-                                                        <mat-label>Τιμή (€)</mat-label>
-                                                        <input matInput type="number" [formControl]="form.controls.price" />
-                                                    </mat-form-field>
-                                                    <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full" subscriptSizing="dynamic">
-                                                        <mat-label>Τιμή Πριν (€)</mat-label>
-                                                        <input matInput type="number" [formControl]="form.controls.deletedPrice" />
-                                                    </mat-form-field>
-                                                </div>
-                                            </div>
-
-                                            <div class="flex items-start gap-3">
-                                                <mat-icon class="icon-size-5 mt-3 text-gray-400 shrink-0" [svgIcon]="'heroicons_outline:cube'"></mat-icon>
-                                                <div class="flex-1 grid grid-cols-2 gap-3">
-                                                    <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full" subscriptSizing="dynamic">
-                                                        <mat-label>Απόθεμα</mat-label>
-                                                        <input matInput type="number" [formControl]="form.controls.stock" />
-                                                    </mat-form-field>
-                                                    <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full" subscriptSizing="dynamic">
-                                                        <mat-label>Μέγ. Ποσότητα</mat-label>
-                                                        <input matInput type="number" [formControl]="form.controls.maxQuantity" />
-                                                    </mat-form-field>
-                                                </div>
-                                            </div>
-
-                                            <div class="flex items-start gap-3">
-                                                <mat-icon class="icon-size-5 mt-3 text-gray-400 shrink-0" [svgIcon]="'heroicons_outline:globe-alt'"></mat-icon>
-                                                <mat-form-field class="fuse-mat-dense fuse-mat-rounded flex-1" subscriptSizing="dynamic">
-                                                    <mat-label>Ορατότητα</mat-label>
-                                                    <mat-select [formControl]="form.controls.isPublished">
-                                                        <mat-option [value]="true">Δημοσιευμένο</mat-option>
-                                                        <mat-option [value]="false">Πρόχειρο</mat-option>
-                                                    </mat-select>
-                                                </mat-form-field>
-                                            </div>
-
-                                            <div class="flex items-start gap-3">
-                                                <mat-icon class="icon-size-5 mt-3 text-gray-400 shrink-0" [svgIcon]="'heroicons_outline:document-text'"></mat-icon>
-                                                <mat-form-field class="fuse-mat-dense fuse-mat-rounded flex-1" subscriptSizing="dynamic">
-                                                    <mat-label>Σύντομη Περιγραφή</mat-label>
-                                                    <textarea matInput rows="3" [formControl]="form.controls.smallDescription"></textarea>
-                                                </mat-form-field>
-                                            </div>
-
-                                            <div class="flex items-start gap-3">
-                                                <mat-icon class="icon-size-5 mt-3 text-gray-400 shrink-0" [svgIcon]="'heroicons_outline:bars-3-bottom-left'"></mat-icon>
-                                                <mat-form-field class="fuse-mat-dense fuse-mat-rounded flex-1" subscriptSizing="dynamic">
-                                                    <mat-label>Πλήρης Περιγραφή</mat-label>
-                                                    <textarea matInput rows="6" [formControl]="form.controls.description"></textarea>
-                                                </mat-form-field>
-                                            </div>
-
+                                        <div class="flex items-start gap-3">
+                                            <mat-icon class="icon-size-5 mt-3 text-gray-400 shrink-0"
+                                                [svgIcon]="'heroicons_outline:tag'"></mat-icon>
+                                            <mat-form-field class="fuse-mat-dense fuse-mat-rounded flex-1"
+                                                subscriptSizing="dynamic">
+                                                <mat-label>Τίτλος *</mat-label>
+                                                <input matInput [formControl]="form.controls.title" />
+                                            </mat-form-field>
                                         </div>
+
+                                        <div class="flex items-start gap-3">
+                                            <mat-icon class="icon-size-5 mt-3 text-gray-400 shrink-0"
+                                                [svgIcon]="'heroicons_outline:hashtag'"></mat-icon>
+                                            <mat-form-field class="fuse-mat-dense fuse-mat-rounded flex-1"
+                                                subscriptSizing="dynamic">
+                                                <mat-label>Κωδικός *</mat-label>
+                                                <input matInput [formControl]="form.controls.code" />
+                                            </mat-form-field>
+                                        </div>
+
+                                        <div class="flex items-start gap-3">
+                                            <mat-icon class="icon-size-5 mt-3 text-gray-400 shrink-0"
+                                                [svgIcon]="'heroicons_outline:currency-euro'"></mat-icon>
+                                            <div class="flex-1 grid grid-cols-2 gap-3">
+                                                <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full"
+                                                    subscriptSizing="dynamic">
+                                                    <mat-label>Τιμή (€)</mat-label>
+                                                    <input matInput type="number" [formControl]="form.controls.price" />
+                                                </mat-form-field>
+                                                <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full"
+                                                    subscriptSizing="dynamic">
+                                                    <mat-label>Τιμή Πριν (€)</mat-label>
+                                                    <input matInput type="number"
+                                                        [formControl]="form.controls.deletedPrice" />
+                                                </mat-form-field>
+                                            </div>
+                                        </div>
+
+                                        <div class="flex items-start gap-3">
+                                            <mat-icon class="icon-size-5 mt-3 text-gray-400 shrink-0"
+                                                [svgIcon]="'heroicons_outline:cube'"></mat-icon>
+                                            <div class="flex-1 grid grid-cols-2 gap-3">
+                                                <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full"
+                                                    subscriptSizing="dynamic">
+                                                    <mat-label>Απόθεμα</mat-label>
+                                                    <input matInput type="number" [formControl]="form.controls.stock" />
+                                                </mat-form-field>
+                                                <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full"
+                                                    subscriptSizing="dynamic">
+                                                    <mat-label>Μέγ. Ποσότητα</mat-label>
+                                                    <input matInput type="number"
+                                                        [formControl]="form.controls.maxQuantity" />
+                                                </mat-form-field>
+                                            </div>
+                                        </div>
+
+                                        <div class="flex items-start gap-3">
+                                            <mat-icon class="icon-size-5 mt-3 text-gray-400 shrink-0"
+                                                [svgIcon]="'heroicons_outline:globe-alt'"></mat-icon>
+                                            <mat-form-field class="fuse-mat-dense fuse-mat-rounded flex-1"
+                                                subscriptSizing="dynamic">
+                                                <mat-label>Ορατότητα</mat-label>
+                                                <mat-select [formControl]="form.controls.isPublished">
+                                                    <mat-option [value]="true">Δημοσιευμένο</mat-option>
+                                                    <mat-option [value]="false">Πρόχειρο</mat-option>
+                                                </mat-select>
+                                            </mat-form-field>
+                                        </div>
+
+                                        <div class="flex items-start gap-3">
+                                            <mat-icon class="icon-size-5 mt-3 text-gray-400 shrink-0"
+                                                [svgIcon]="'heroicons_outline:document-text'"></mat-icon>
+                                            <mat-form-field class="fuse-mat-dense fuse-mat-rounded flex-1"
+                                                subscriptSizing="dynamic">
+                                                <mat-label>Σύντομη Περιγραφή</mat-label>
+                                                <textarea matInput rows="3"
+                                                    [formControl]="form.controls.smallDescription"></textarea>
+                                            </mat-form-field>
+                                        </div>
+
+                                        <div class="flex items-start gap-3">
+                                            <mat-icon class="icon-size-5 mt-3 text-gray-400 shrink-0"
+                                                [svgIcon]="'heroicons_outline:bars-3-bottom-left'"></mat-icon>
+                                            <mat-form-field class="fuse-mat-dense fuse-mat-rounded flex-1"
+                                                subscriptSizing="dynamic">
+                                                <mat-label>Πλήρης Περιγραφή</mat-label>
+                                                <textarea matInput rows="6"
+                                                    [formControl]="form.controls.description"></textarea>
+                                            </mat-form-field>
+                                        </div>
+
+                                    </div>
                                     } @else {
-                                        <!-- VIEW MODE: 2-column card grid (matches user-profile style) -->
-                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <!-- VIEW MODE: 2-column card grid (matches user-profile style) -->
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
 
-                                            <!-- Τίτλος -->
-                                            <div class="rounded-xl border p-4 flex items-center gap-4 hover:bg-gray-50/60 dark:hover:bg-white/5 transition">
-                                                <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10 text-primary shrink-0">
-                                                    <mat-icon class="icon-size-6" [svgIcon]="'heroicons_outline:tag'"></mat-icon>
-                                                </div>
-                                                <div class="min-w-0">
-                                                    <div class="text-xs text-secondary font-medium">Τίτλος</div>
-                                                    <div class="font-semibold truncate">{{ product.title }}</div>
-                                                </div>
+                                        <!-- Τίτλος -->
+                                        <div
+                                            class="rounded-xl border p-4 flex items-center gap-4 hover:bg-gray-50/60 dark:hover:bg-white/5 transition">
+                                            <div
+                                                class="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10 text-primary shrink-0">
+                                                <mat-icon class="icon-size-6"
+                                                    [svgIcon]="'heroicons_outline:tag'"></mat-icon>
                                             </div>
-
-                                            <!-- Κωδικός -->
-                                            <div class="rounded-xl border p-4 flex items-center gap-4 hover:bg-gray-50/60 dark:hover:bg-white/5 transition">
-                                                <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10 text-primary shrink-0">
-                                                    <mat-icon class="icon-size-6" [svgIcon]="'heroicons_outline:hashtag'"></mat-icon>
-                                                </div>
-                                                <div class="min-w-0">
-                                                    <div class="text-xs text-secondary font-medium">Κωδικός</div>
-                                                    <div class="font-semibold font-mono truncate">{{ product.code }}</div>
-                                                </div>
+                                            <div class="min-w-0">
+                                                <div class="text-xs text-secondary font-medium">Τίτλος</div>
+                                                <div class="font-semibold truncate">{{ product.title }}</div>
                                             </div>
-
-                                            <!-- Τιμή -->
-                                            <div class="rounded-xl border p-4 flex items-center gap-4 hover:bg-gray-50/60 dark:hover:bg-white/5 transition">
-                                                <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10 text-primary shrink-0">
-                                                    <mat-icon class="icon-size-6" [svgIcon]="'heroicons_outline:currency-euro'"></mat-icon>
-                                                </div>
-                                                <div class="min-w-0">
-                                                    <div class="text-xs text-secondary font-medium">Τιμή</div>
-                                                    <div class="font-semibold">
-                                                        {{ product.price | number:'1.2-2' }} €
-                                                        @if (product.deletedPrice > 0) {
-                                                            <span class="ml-1 text-sm text-gray-400 line-through font-normal">{{ product.deletedPrice | number:'1.2-2' }} €</span>
-                                                        }
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <!-- Απόθεμα -->
-                                            <div class="rounded-xl border p-4 flex items-center gap-4 hover:bg-gray-50/60 dark:hover:bg-white/5 transition">
-                                                <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10 text-primary shrink-0">
-                                                    <mat-icon class="icon-size-6" [svgIcon]="'heroicons_outline:cube'"></mat-icon>
-                                                </div>
-                                                <div class="min-w-0">
-                                                    <div class="text-xs text-secondary font-medium">Απόθεμα / Μέγ. Ποσότητα</div>
-                                                    <div class="font-semibold">
-                                                        {{ totalStock() }} τεμ.
-                                                        <span class="text-secondary text-sm font-normal ml-1">/ μέγ. {{ product.maxQuantity }}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <!-- Ορατότητα -->
-                                            <div class="rounded-xl border p-4 flex items-center gap-4 hover:bg-gray-50/60 dark:hover:bg-white/5 transition">
-                                                <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10 text-primary shrink-0">
-                                                    <mat-icon class="icon-size-6" [svgIcon]="'heroicons_outline:globe-alt'"></mat-icon>
-                                                </div>
-                                                <div class="min-w-0">
-                                                    <div class="text-xs text-secondary font-medium">Ορατότητα</div>
-                                                    <div class="font-semibold">{{ product.isPublished ? 'Δημοσιευμένο' : 'Πρόχειρο' }}</div>
-                                                </div>
-                                            </div>
-
-                                            @if (product.smallDescription) {
-                                                <!-- Σύντομη Περιγραφή (full width) -->
-                                                <div class="sm:col-span-2 rounded-xl border p-4 flex items-start gap-4 hover:bg-gray-50/60 dark:hover:bg-white/5 transition">
-                                                    <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10 text-primary shrink-0 mt-0.5">
-                                                        <mat-icon class="icon-size-6" [svgIcon]="'heroicons_outline:document-text'"></mat-icon>
-                                                    </div>
-                                                    <div class="min-w-0 flex-1">
-                                                        <div class="text-xs text-secondary font-medium">Σύντομη Περιγραφή</div>
-                                                        <div class="text-sm leading-6 mt-0.5">{{ product.smallDescription }}</div>
-                                                    </div>
-                                                </div>
-                                            }
-
-                                            @if (product.description) {
-                                                <!-- Πλήρης Περιγραφή (full width) -->
-                                                <div class="sm:col-span-2 rounded-xl border p-4 flex items-start gap-4 hover:bg-gray-50/60 dark:hover:bg-white/5 transition">
-                                                    <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10 text-primary shrink-0 mt-0.5">
-                                                        <mat-icon class="icon-size-6" [svgIcon]="'heroicons_outline:bars-3-bottom-left'"></mat-icon>
-                                                    </div>
-                                                    <div class="min-w-0 flex-1">
-                                                        <div class="text-xs text-secondary font-medium">Πλήρης Περιγραφή</div>
-                                                        <div class="text-sm leading-6 whitespace-pre-wrap mt-0.5">{{ product.description }}</div>
-                                                    </div>
-                                                </div>
-                                            }
-
                                         </div>
+
+                                        <!-- Κωδικός -->
+                                        <div
+                                            class="rounded-xl border p-4 flex items-center gap-4 hover:bg-gray-50/60 dark:hover:bg-white/5 transition">
+                                            <div
+                                                class="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10 text-primary shrink-0">
+                                                <mat-icon class="icon-size-6"
+                                                    [svgIcon]="'heroicons_outline:hashtag'"></mat-icon>
+                                            </div>
+                                            <div class="min-w-0">
+                                                <div class="text-xs text-secondary font-medium">Κωδικός</div>
+                                                <div class="font-semibold font-mono truncate">{{ product.code }}</div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Τιμή -->
+                                        <div
+                                            class="rounded-xl border p-4 flex items-center gap-4 hover:bg-gray-50/60 dark:hover:bg-white/5 transition">
+                                            <div
+                                                class="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10 text-primary shrink-0">
+                                                <mat-icon class="icon-size-6"
+                                                    [svgIcon]="'heroicons_outline:currency-euro'"></mat-icon>
+                                            </div>
+                                            <div class="min-w-0">
+                                                <div class="text-xs text-secondary font-medium">Τιμή</div>
+                                                <div class="font-semibold">
+                                                    {{ product.price | number:'1.2-2' }} €
+                                                    @if (product.deletedPrice > 0) {
+                                                    <span class="ml-1 text-sm text-gray-400 line-through font-normal">{{
+                                                        product.deletedPrice | number:'1.2-2' }} €</span>
+                                                    }
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Απόθεμα -->
+                                        <div
+                                            class="rounded-xl border p-4 flex items-center gap-4 hover:bg-gray-50/60 dark:hover:bg-white/5 transition">
+                                            <div
+                                                class="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10 text-primary shrink-0">
+                                                <mat-icon class="icon-size-6"
+                                                    [svgIcon]="'heroicons_outline:cube'"></mat-icon>
+                                            </div>
+                                            <div class="min-w-0">
+                                                <div class="text-xs text-secondary font-medium">Απόθεμα / Μέγ. Ποσότητα
+                                                </div>
+                                                <div class="font-semibold">
+                                                    {{ totalStock() }} τεμ.
+                                                    <span class="text-secondary text-sm font-normal ml-1">/ μέγ. {{
+                                                        product.maxQuantity }}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Ορατότητα -->
+                                        <div
+                                            class="rounded-xl border p-4 flex items-center gap-4 hover:bg-gray-50/60 dark:hover:bg-white/5 transition">
+                                            <div
+                                                class="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10 text-primary shrink-0">
+                                                <mat-icon class="icon-size-6"
+                                                    [svgIcon]="'heroicons_outline:globe-alt'"></mat-icon>
+                                            </div>
+                                            <div class="min-w-0">
+                                                <div class="text-xs text-secondary font-medium">Ορατότητα</div>
+                                                <div class="font-semibold">{{ product.isPublished ? 'Δημοσιευμένο' :
+                                                    'Πρόχειρο' }}</div>
+                                            </div>
+                                        </div>
+
+                                        @if (product.smallDescription) {
+                                        <!-- Σύντομη Περιγραφή (full width) -->
+                                        <div
+                                            class="sm:col-span-2 rounded-xl border p-4 flex items-start gap-4 hover:bg-gray-50/60 dark:hover:bg-white/5 transition">
+                                            <div
+                                                class="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10 text-primary shrink-0 mt-0.5">
+                                                <mat-icon class="icon-size-6"
+                                                    [svgIcon]="'heroicons_outline:document-text'"></mat-icon>
+                                            </div>
+                                            <div class="min-w-0 flex-1">
+                                                <div class="text-xs text-secondary font-medium">Σύντομη Περιγραφή</div>
+                                                <div class="text-sm leading-6 mt-0.5">{{ product.smallDescription }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        }
+
+                                        @if (product.description) {
+                                        <!-- Πλήρης Περιγραφή (full width) -->
+                                        <div
+                                            class="sm:col-span-2 rounded-xl border p-4 flex items-start gap-4 hover:bg-gray-50/60 dark:hover:bg-white/5 transition">
+                                            <div
+                                                class="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10 text-primary shrink-0 mt-0.5">
+                                                <mat-icon class="icon-size-6"
+                                                    [svgIcon]="'heroicons_outline:bars-3-bottom-left'"></mat-icon>
+                                            </div>
+                                            <div class="min-w-0 flex-1">
+                                                <div class="text-xs text-secondary font-medium">Πλήρης Περιγραφή</div>
+                                                <div class="text-sm leading-6 whitespace-pre-wrap mt-0.5">{{
+                                                    product.description }}</div>
+                                            </div>
+                                        </div>
+                                        }
+
+                                    </div>
                                     }
                                 </div>
 
@@ -283,72 +335,79 @@
                                 <div class="bg-card rounded-2xl border shadow-sm p-5 md:p-6">
                                     <div class="flex items-center justify-between gap-2 mb-5">
                                         <div class="font-bold flex items-center gap-2">
-                                            <mat-icon class="icon-size-5 text-gray-400" [svgIcon]="'heroicons_outline:squares-2x2'"></mat-icon>
+                                            <mat-icon class="icon-size-5 text-gray-400"
+                                                [svgIcon]="'heroicons_outline:squares-2x2'"></mat-icon>
                                             Μεγέθη & Αποθέματα
                                         </div>
                                         <div class="text-secondary text-sm font-semibold">{{ totalStock() }} τεμ.</div>
                                     </div>
 
                                     @if (!skuDraft.length) {
-                                        <div class="text-secondary text-sm py-6 text-center">
-                                            <mat-icon [svgIcon]="'heroicons_outline:inbox'" class="!w-10 !h-10 opacity-30 mx-auto block mb-2"></mat-icon>
-                                            Δεν υπάρχουν μεγέθη.
-                                        </div>
+                                    <div class="text-secondary text-sm py-6 text-center">
+                                        <mat-icon [svgIcon]="'heroicons_outline:inbox'"
+                                            class="!w-10 !h-10 opacity-30 mx-auto block mb-2"></mat-icon>
+                                        Δεν υπάρχουν μεγέθη.
+                                    </div>
                                     } @else {
-                                        <div class="space-y-2 mb-4">
-                                            @for (sku of skuDraft; track sku.size) {
-                                                <div class="flex items-center gap-3 rounded-xl border px-3 py-2.5 bg-gray-50/70 dark:bg-white/5">
-                                                    <div class="w-12 font-bold text-center shrink-0">{{ sizeLabel(sku.size) }}</div>
-                                                    <div class="flex-1">
-                                                        <input
-                                                            type="number" min="0"
-                                                            class="w-full bg-transparent font-semibold focus:outline-none border-b border-gray-300 dark:border-gray-600 text-center py-0.5"
-                                                            [value]="sku.stock"
-                                                            (change)="updateSkuStock(sku.size, +$any($event.target).value)" />
-                                                    </div>
-                                                    <div class="text-secondary text-xs shrink-0">τεμ.</div>
-                                                    <button mat-icon-button color="warn" (click)="removeSku(sku.size)" matTooltip="Αφαίρεση μεγέθους">
-                                                        <mat-icon [svgIcon]="'heroicons_outline:trash'"></mat-icon>
-                                                    </button>
-                                                </div>
-                                            }
+                                    <div class="space-y-2 mb-4">
+                                        @for (sku of skuDraft; track sku.size) {
+                                        <div
+                                            class="flex items-center gap-3 rounded-xl border px-3 py-2.5 bg-gray-50/70 dark:bg-white/5">
+                                            <div class="w-12 font-bold text-center shrink-0">{{ sizeLabel(sku.size) }}
+                                            </div>
+                                            <div class="flex-1">
+                                                <input type="number" min="0"
+                                                    class="w-full bg-transparent font-semibold focus:outline-none border-b border-gray-300 dark:border-gray-600 text-center py-0.5"
+                                                    [value]="sku.stock"
+                                                    (change)="updateSkuStock(sku.size, +$any($event.target).value)" />
+                                            </div>
+                                            <div class="text-secondary text-xs shrink-0">τεμ.</div>
+                                            <button mat-icon-button color="warn" (click)="removeSku(sku.size)"
+                                                matTooltip="Αφαίρεση μεγέθους">
+                                                <mat-icon [svgIcon]="'heroicons_outline:trash'"></mat-icon>
+                                            </button>
                                         </div>
+                                        }
+                                    </div>
                                     }
 
                                     @if (availableSizesForAdd().length) {
-                                        <div class="border-t pt-4">
-                                            <div class="text-xs text-secondary mb-3 font-semibold">Προσθήκη μεγέθους</div>
-                                            <div class="flex gap-2 items-end flex-wrap">
-                                                <mat-form-field class="fuse-mat-dense fuse-mat-rounded flex-1 min-w-0" subscriptSizing="dynamic">
-                                                    <mat-label>Μέγεθος</mat-label>
-                                                    <mat-select [(ngModel)]="skuNewSize">
-                                                        @for (s of availableSizesForAdd(); track s.value) {
-                                                            <mat-option [value]="s.value">{{ s.label }}</mat-option>
-                                                        }
-                                                    </mat-select>
-                                                </mat-form-field>
+                                    <div class="border-t pt-4">
+                                        <div class="text-xs text-secondary mb-3 font-semibold">Προσθήκη μεγέθους</div>
+                                        <div class="flex gap-2 items-end flex-wrap">
+                                            <mat-form-field class="fuse-mat-dense fuse-mat-rounded flex-1 min-w-0"
+                                                subscriptSizing="dynamic">
+                                                <mat-label>Μέγεθος</mat-label>
+                                                <mat-select [(ngModel)]="skuNewSize">
+                                                    @for (s of availableSizesForAdd(); track s.value) {
+                                                    <mat-option [value]="s.value">{{ s.label }}</mat-option>
+                                                    }
+                                                </mat-select>
+                                            </mat-form-field>
 
-                                                <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-20 shrink-0" subscriptSizing="dynamic">
-                                                    <mat-label>Stock</mat-label>
-                                                    <input matInput type="number" min="0" [(ngModel)]="skuNewStock" />
-                                                </mat-form-field>
+                                            <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-20 shrink-0"
+                                                subscriptSizing="dynamic">
+                                                <mat-label>Stock</mat-label>
+                                                <input matInput type="number" min="0" [(ngModel)]="skuNewStock" />
+                                            </mat-form-field>
 
-                                                <button mat-flat-button color="primary" class="!rounded-xl shrink-0"
-                                                    (click)="addSku()" [disabled]="skuNewSize == null" matTooltip="Προσθήκη">
-                                                    <mat-icon [svgIcon]="'heroicons_outline:plus'"></mat-icon>
-                                                </button>
-                                            </div>
+                                            <button mat-flat-button color="primary" class="!rounded-xl shrink-0"
+                                                (click)="addSku()" [disabled]="skuNewSize == null"
+                                                matTooltip="Προσθήκη">
+                                                <mat-icon [svgIcon]="'heroicons_outline:plus'"></mat-icon>
+                                            </button>
                                         </div>
+                                    </div>
                                     }
 
                                     <div class="mt-5">
                                         <button mat-flat-button color="primary" class="!rounded-xl w-full"
                                             (click)="saveSkus()" [disabled]="skuSaving">
                                             @if (skuSaving) {
-                                                <span>Αποθήκευση…</span>
+                                            <span>Αποθήκευση…</span>
                                             } @else {
-                                                <mat-icon [svgIcon]="'heroicons_outline:check'"></mat-icon>
-                                                <span class="ml-2">Αποθήκευση Μεγεθών</span>
+                                            <mat-icon [svgIcon]="'heroicons_outline:check'"></mat-icon>
+                                            <span class="ml-2">Αποθήκευση Μεγεθών</span>
                                             }
                                         </button>
                                     </div>
@@ -369,105 +428,113 @@
                                 <div class="min-w-0">
                                     <div class="font-bold">Παραγγελίες που περιέχουν αυτό το προϊόν</div>
                                     @if (ordersLoaded) {
-                                        <div class="text-secondary text-sm mt-0.5">
-                                            {{ ordersDataSource.filteredData.length }} από {{ ordersDataSource.data.length }} παραγγελίες
-                                        </div>
+                                    <div class="text-secondary text-sm mt-0.5">
+                                        {{ ordersDataSource.filteredData.length }} από {{ ordersDataSource.data.length
+                                        }} παραγγελίες
+                                    </div>
                                     }
                                 </div>
                                 @if (ordersLoaded) {
-                                    <button mat-stroked-button class="!rounded-xl" (click)="loadOrdersForProduct()" [disabled]="ordersLoading">
-                                        <mat-icon [svgIcon]="'heroicons_outline:arrow-path'"></mat-icon>
-                                        <span class="ml-2">Ανανέωση</span>
-                                    </button>
+                                <button mat-stroked-button class="!rounded-xl" (click)="loadOrdersForProduct()"
+                                    [disabled]="ordersLoading">
+                                    <mat-icon [svgIcon]="'heroicons_outline:arrow-path'"></mat-icon>
+                                    <span class="ml-2">Ανανέωση</span>
+                                </button>
                                 }
                             </div>
 
                             <!-- Filters (visible after load) -->
                             @if (ordersLoaded) {
-                                <div class="border-b px-5 py-3 flex flex-wrap items-center gap-3">
-                                    <mat-form-field class="flex-1 min-w-[180px]" subscriptSizing="dynamic">
-                                        <mat-icon matPrefix [svgIcon]="'heroicons_outline:magnifying-glass'" class="!w-4 !h-4 opacity-60 mr-1"></mat-icon>
-                                        <input matInput [formControl]="orderSearchCtrl" placeholder="Αναζήτηση κωδικού...">
-                                    </mat-form-field>
-                                    <mat-form-field class="w-[190px]" subscriptSizing="dynamic">
-                                        <mat-select [formControl]="orderFilterStatus" placeholder="Κατάσταση">
-                                            <mat-option [value]="null">Όλες οι καταστάσεις</mat-option>
-                                            <mat-option [value]="0">Σε εκκρεμότητα</mat-option>
-                                            <mat-option [value]="1">Υποβλήθηκε</mat-option>
-                                            <mat-option [value]="2">Πληρώθηκε</mat-option>
-                                            <mat-option [value]="3">Απεστάλη</mat-option>
-                                            <mat-option [value]="4">Ολοκληρώθηκε</mat-option>
-                                            <mat-option [value]="5">Ακυρώθηκε</mat-option>
-                                        </mat-select>
-                                    </mat-form-field>
-                                    @if (orderSearchCtrl.value || orderFilterStatus.value !== null) {
-                                        <button mat-stroked-button class="!rounded-xl" (click)="clearOrderFilters()">
-                                            <mat-icon [svgIcon]="'heroicons_outline:x-mark'"></mat-icon>
-                                            <span class="ml-1">Καθαρισμός</span>
-                                        </button>
-                                    }
-                                </div>
+                            <div class="border-b px-5 py-3 flex flex-wrap items-center gap-3">
+                                <mat-form-field class="flex-1 min-w-[180px]" subscriptSizing="dynamic">
+                                    <mat-icon matPrefix [svgIcon]="'heroicons_outline:magnifying-glass'"
+                                        class="!w-4 !h-4 opacity-60 mr-1"></mat-icon>
+                                    <input matInput [formControl]="orderSearchCtrl" placeholder="Αναζήτηση κωδικού...">
+                                </mat-form-field>
+                                <mat-form-field class="w-[190px]" subscriptSizing="dynamic">
+                                    <mat-select [formControl]="orderFilterStatus" placeholder="Κατάσταση">
+                                        <mat-option [value]="null">Όλες οι καταστάσεις</mat-option>
+                                        <mat-option [value]="0">Σε εκκρεμότητα</mat-option>
+                                        <mat-option [value]="1">Υποβλήθηκε</mat-option>
+                                        <mat-option [value]="2">Πληρώθηκε</mat-option>
+                                        <mat-option [value]="3">Απεστάλη</mat-option>
+                                        <mat-option [value]="4">Ολοκληρώθηκε</mat-option>
+                                        <mat-option [value]="5">Ακυρώθηκε</mat-option>
+                                    </mat-select>
+                                </mat-form-field>
+                                @if (orderSearchCtrl.value || orderFilterStatus.value !== null) {
+                                <button mat-stroked-button class="!rounded-xl" (click)="clearOrderFilters()">
+                                    <mat-icon [svgIcon]="'heroicons_outline:x-mark'"></mat-icon>
+                                    <span class="ml-1">Καθαρισμός</span>
+                                </button>
+                                }
+                            </div>
                             }
 
                             @if (ordersLoading) {
-                                <div class="p-6">
-                                    <div class="animate-pulse space-y-3">
-                                        <div class="h-4 w-1/3 rounded bg-gray-200 dark:bg-gray-700"></div>
-                                        <div class="h-4 w-2/3 rounded bg-gray-200 dark:bg-gray-700"></div>
-                                        <div class="h-4 w-1/2 rounded bg-gray-200 dark:bg-gray-700"></div>
-                                    </div>
+                            <div class="p-6">
+                                <div class="animate-pulse space-y-3">
+                                    <div class="h-4 w-1/3 rounded bg-gray-200 dark:bg-gray-700"></div>
+                                    <div class="h-4 w-2/3 rounded bg-gray-200 dark:bg-gray-700"></div>
+                                    <div class="h-4 w-1/2 rounded bg-gray-200 dark:bg-gray-700"></div>
                                 </div>
+                            </div>
                             } @else if (ordersLoaded) {
-                                <div class="overflow-x-auto">
-                                    <table mat-table [dataSource]="ordersDataSource" matSort #ordersSort="matSort" class="min-w-[700px] w-full">
+                            <div class="overflow-x-auto">
+                                <table mat-table [dataSource]="ordersDataSource" matSort #ordersSort="matSort"
+                                    class="min-w-[700px] w-full">
 
-                                        <ng-container matColumnDef="code">
-                                            <th mat-header-cell *matHeaderCellDef mat-sort-header class="px-6">Κωδικός</th>
-                                            <td mat-cell *matCellDef="let o" class="px-6 py-3 font-mono font-semibold">{{ o.code }}</td>
-                                        </ng-container>
+                                    <ng-container matColumnDef="code">
+                                        <th mat-header-cell *matHeaderCellDef mat-sort-header class="px-6">Κωδικός</th>
+                                        <td mat-cell *matCellDef="let o" class="px-6 py-3 font-mono font-semibold">{{
+                                            o.code }}</td>
+                                    </ng-container>
 
-                                        <ng-container matColumnDef="status">
-                                            <th mat-header-cell *matHeaderCellDef>Κατάσταση</th>
-                                            <td mat-cell *matCellDef="let o" class="py-3">
-                                                <mat-chip class="!rounded-full !px-3 !text-xs !font-semibold"
-                                                    [ngClass]="getOrderStatusClass(o.status)">
-                                                    {{ getOrderStatusLabel(o.status) }}
-                                                </mat-chip>
-                                            </td>
-                                        </ng-container>
+                                    <ng-container matColumnDef="status">
+                                        <th mat-header-cell *matHeaderCellDef>Κατάσταση</th>
+                                        <td mat-cell *matCellDef="let o" class="py-3">
+                                            <mat-chip class="!rounded-full !px-3 !text-xs !font-semibold"
+                                                [ngClass]="getOrderStatusClass(o.status)">
+                                                {{ getOrderStatusLabel(o.status) }}
+                                            </mat-chip>
+                                        </td>
+                                    </ng-container>
 
-                                        <ng-container matColumnDef="total">
-                                            <th mat-header-cell *matHeaderCellDef mat-sort-header>Σύνολο</th>
-                                            <td mat-cell *matCellDef="let o" class="py-3 font-semibold">{{ o.totalAmount | number:'1.2-2' }} €</td>
-                                        </ng-container>
+                                    <ng-container matColumnDef="total">
+                                        <th mat-header-cell *matHeaderCellDef mat-sort-header>Σύνολο</th>
+                                        <td mat-cell *matCellDef="let o" class="py-3 font-semibold">{{ o.totalAmount |
+                                            number:'1.2-2' }} €</td>
+                                    </ng-container>
 
-                                        <ng-container matColumnDef="submittedAt">
-                                            <th mat-header-cell *matHeaderCellDef mat-sort-header>Ημερομηνία</th>
-                                            <td mat-cell *matCellDef="let o" class="py-3">{{ o.submittedAt | date:'mediumDate' }}</td>
-                                        </ng-container>
+                                    <ng-container matColumnDef="submittedAt">
+                                        <th mat-header-cell *matHeaderCellDef mat-sort-header>Ημερομηνία</th>
+                                        <td mat-cell *matCellDef="let o" class="py-3">{{ o.submittedAt |
+                                            date:'mediumDate' }}</td>
+                                    </ng-container>
 
-                                        <ng-container matColumnDef="actions">
-                                            <th mat-header-cell *matHeaderCellDef class="text-right px-6"></th>
-                                            <td mat-cell *matCellDef="let o" class="text-right px-6 py-3">
-                                                <button mat-stroked-button class="!rounded-xl" (click)="viewOrder(o)">
-                                                    <mat-icon [svgIcon]="'heroicons_outline:eye'"></mat-icon>
-                                                    <span class="ml-2">Προβολή</span>
-                                                </button>
-                                            </td>
-                                        </ng-container>
+                                    <ng-container matColumnDef="actions">
+                                        <th mat-header-cell *matHeaderCellDef class="text-right px-6"></th>
+                                        <td mat-cell *matCellDef="let o" class="text-right px-6 py-3">
+                                            <button mat-stroked-button class="!rounded-xl" (click)="viewOrder(o)">
+                                                <mat-icon [svgIcon]="'heroicons_outline:eye'"></mat-icon>
+                                                <span class="ml-2">Προβολή</span>
+                                            </button>
+                                        </td>
+                                    </ng-container>
 
-                                        <tr mat-header-row *matHeaderRowDef="ordersCols"></tr>
-                                        <tr mat-row *matRowDef="let row; columns: ordersCols"
-                                            class="hover:bg-gray-50 dark:hover:bg-white/5 transition"></tr>
-                                        <tr class="mat-row" *matNoDataRow>
-                                            <td class="mat-cell p-10 text-center text-secondary" [attr.colspan]="ordersCols.length">
-                                                Δεν βρέθηκαν παραγγελίες.
-                                            </td>
-                                        </tr>
-                                    </table>
-                                </div>
-                                <mat-paginator #ordersPaginator [pageSizeOptions]="[10, 25, 50]" [pageSize]="10"
-                                    showFirstLastButtons class="border-t"></mat-paginator>
+                                    <tr mat-header-row *matHeaderRowDef="ordersCols"></tr>
+                                    <tr mat-row *matRowDef="let row; columns: ordersCols"
+                                        class="hover:bg-gray-50 dark:hover:bg-white/5 transition"></tr>
+                                    <tr class="mat-row" *matNoDataRow>
+                                        <td class="mat-cell p-10 text-center text-secondary"
+                                            [attr.colspan]="ordersCols.length">
+                                            Δεν βρέθηκαν παραγγελίες.
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                            <mat-paginator #ordersPaginator [pageSizeOptions]="[10, 25, 50]" [pageSize]="10"
+                                showFirstLastButtons class="border-t"></mat-paginator>
                             }
                         </div>
                     </div>

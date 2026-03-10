@@ -4,7 +4,7 @@
         <!-- ΠΑΝΩ ΜΠΑΡΑ -->
         <div class="relative border-b bg-card px-4 py-4 md:px-8">
             @if (saving()) {
-                <mat-progress-bar mode="indeterminate" class="absolute bottom-0 left-0 right-0 z-10"></mat-progress-bar>
+            <mat-progress-bar mode="indeterminate" class="absolute bottom-0 left-0 right-0 z-10"></mat-progress-bar>
             }
             <div class="flex items-center justify-between gap-3 flex-wrap">
                 <a mat-stroked-button class="!rounded-xl" routerLink="/apps/orders">
@@ -15,31 +15,35 @@
                 @if (!loading() && order()) {
                 <div class="flex items-center gap-2 flex-wrap justify-end">
                     @if (editMode()) {
-                        <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-48" subscriptSizing="dynamic">
-                            <mat-label>Κατάσταση</mat-label>
-                            <mat-select [value]="editDraft().status"
-                                (selectionChange)="editDraft.set({ status: $event.value, shippingAmount: editDraft().shippingAmount, shipping: editDraft().shipping })">
-                                @for (opt of STATUS_OPTIONS; track opt.value) {
-                                    <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
-                                }
-                            </mat-select>
-                        </mat-form-field>
-                        <button mat-flat-button color="primary" class="!rounded-xl" (click)="saveEdit()" [disabled]="saving()">
-                            <mat-icon [svgIcon]="'heroicons_outline:check'"></mat-icon>
-                            <span class="ml-2">{{ saving() ? 'Αποθήκευση…' : 'Αποθήκευση' }}</span>
-                        </button>
-                        <button mat-stroked-button class="!rounded-xl" (click)="cancelEdit()" [disabled]="saving()">Άκυρο</button>
+                    <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-48" subscriptSizing="dynamic">
+                        <mat-label>Κατάσταση</mat-label>
+                        <mat-select [value]="editDraft().status"
+                            (selectionChange)="editDraft.set({ status: $event.value, shippingAmount: editDraft().shippingAmount, shipping: editDraft().shipping })">
+                            @for (opt of STATUS_OPTIONS; track opt.value) {
+                            <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
+                            }
+                        </mat-select>
+                    </mat-form-field>
+                    <button mat-flat-button color="primary" class="!rounded-xl" (click)="saveEdit()"
+                        [disabled]="saving()">
+                        <mat-icon [svgIcon]="'heroicons_outline:check'"></mat-icon>
+                        <span class="ml-2">{{ saving() ? 'Αποθήκευση…' : 'Αποθήκευση' }}</span>
+                    </button>
+                    <button mat-stroked-button class="!rounded-xl" (click)="cancelEdit()"
+                        [disabled]="saving()">Άκυρο</button>
                     } @else {
-                        <mat-chip class="!rounded-full !px-3 !text-xs !font-semibold"
-                            [ngClass]="getStatusChipClass(order()!.status)">
-                            {{ getStatusLabel(order()!.status) }}
-                        </mat-chip>
-                        <button mat-stroked-button class="!rounded-xl" (click)="startEdit()" matTooltip="Επεξεργασία παραγγελίας">
-                            <mat-icon [svgIcon]="'heroicons_outline:pencil-square'"></mat-icon>
-                            <span class="ml-2">Επεξεργασία</span>
-                        </button>
+                    <mat-chip class="!rounded-full !px-3 !text-xs !font-semibold"
+                        [ngClass]="getStatusChipClass(order()!.status)">
+                        {{ getStatusLabel(order()!.status) }}
+                    </mat-chip>
+                    <button mat-stroked-button class="!rounded-xl" (click)="startEdit()"
+                        matTooltip="Επεξεργασία παραγγελίας">
+                        <mat-icon [svgIcon]="'heroicons_outline:pencil-square'"></mat-icon>
+                        <span class="ml-2">Επεξεργασία</span>
+                    </button>
                     }
-                    <button mat-stroked-button class="!rounded-xl" (click)="retry()" matTooltip="Ανανέωση" [disabled]="saving() || editMode()">
+                    <button mat-stroked-button class="!rounded-xl" (click)="retry()" matTooltip="Ανανέωση"
+                        [disabled]="saving() || editMode()">
                         <mat-icon [svgIcon]="'heroicons_outline:arrow-path'"></mat-icon>
                     </button>
                 </div>
@@ -140,16 +144,15 @@
                         <div class="rounded-2xl border px-4 py-3 bg-gray-50/70 dark:bg-white/5">
                             <div class="text-xs text-secondary">Μεταφορικά</div>
                             @if (editMode()) {
-                                <div class="flex items-center gap-1 mt-1">
-                                    <input
-                                        class="w-20 bg-transparent text-lg font-bold focus:outline-none border-b border-gray-400 dark:border-gray-500"
-                                        type="number" min="0" step="0.01"
-                                        [value]="editDraft().shippingAmount"
-                                        (change)="editDraft.set({ status: editDraft().status, shippingAmount: +$any($event.target).value, shipping: editDraft().shipping })" />
-                                    <span class="text-lg font-bold">€</span>
-                                </div>
+                            <div class="flex items-center gap-1 mt-1">
+                                <input
+                                    class="w-20 bg-transparent text-lg font-bold focus:outline-none border-b border-gray-400 dark:border-gray-500"
+                                    type="number" min="0" step="0.01" [value]="editDraft().shippingAmount"
+                                    (change)="editDraft.set({ status: editDraft().status, shippingAmount: +$any($event.target).value, shipping: editDraft().shipping })" />
+                                <span class="text-lg font-bold">€</span>
+                            </div>
                             } @else {
-                                <div class="text-lg font-bold">{{ shipping() | number:'1.2-2' }} €</div>
+                            <div class="text-lg font-bold">{{ shipping() | number:'1.2-2' }} €</div>
                             }
                         </div>
 
@@ -204,12 +207,13 @@
                             <div class="rounded-xl border p-4 bg-gray-50/70 dark:bg-white/5">
                                 <div class="text-xs text-secondary mb-1">Όνομα</div>
                                 @if (editMode()) {
-                                    <input class="w-full bg-transparent font-semibold focus:outline-none border-b border-gray-300 dark:border-gray-600 pb-0.5"
-                                        type="text"
-                                        [value]="editDraft().shipping.firstName ?? (shippingDetails()?.firstName ?? '')"
-                                        (input)="patchShipping('firstName', $any($event.target).value)" />
+                                <input
+                                    class="w-full bg-transparent font-semibold focus:outline-none border-b border-gray-300 dark:border-gray-600 pb-0.5"
+                                    type="text"
+                                    [value]="editDraft().shipping.firstName ?? (shippingDetails()?.firstName ?? '')"
+                                    (input)="patchShipping('firstName', $any($event.target).value)" />
                                 } @else {
-                                    <div class="font-semibold">{{ shippingDetails()?.firstName || '—' }}</div>
+                                <div class="font-semibold">{{ shippingDetails()?.firstName || '—' }}</div>
                                 }
                             </div>
 
@@ -217,12 +221,13 @@
                             <div class="rounded-xl border p-4 bg-gray-50/70 dark:bg-white/5">
                                 <div class="text-xs text-secondary mb-1">Επώνυμο</div>
                                 @if (editMode()) {
-                                    <input class="w-full bg-transparent font-semibold focus:outline-none border-b border-gray-300 dark:border-gray-600 pb-0.5"
-                                        type="text"
-                                        [value]="editDraft().shipping.lastName ?? (shippingDetails()?.lastName ?? '')"
-                                        (input)="patchShipping('lastName', $any($event.target).value)" />
+                                <input
+                                    class="w-full bg-transparent font-semibold focus:outline-none border-b border-gray-300 dark:border-gray-600 pb-0.5"
+                                    type="text"
+                                    [value]="editDraft().shipping.lastName ?? (shippingDetails()?.lastName ?? '')"
+                                    (input)="patchShipping('lastName', $any($event.target).value)" />
                                 } @else {
-                                    <div class="font-semibold">{{ shippingDetails()?.lastName || '—' }}</div>
+                                <div class="font-semibold">{{ shippingDetails()?.lastName || '—' }}</div>
                                 }
                             </div>
 
@@ -230,12 +235,13 @@
                             <div class="rounded-xl border p-4 bg-gray-50/70 dark:bg-white/5">
                                 <div class="text-xs text-secondary mb-1">Email</div>
                                 @if (editMode()) {
-                                    <input class="w-full bg-transparent font-semibold focus:outline-none border-b border-gray-300 dark:border-gray-600 pb-0.5"
-                                        type="email"
-                                        [value]="editDraft().shipping.email ?? (shippingDetails()?.email ?? '')"
-                                        (input)="patchShipping('email', $any($event.target).value)" />
+                                <input
+                                    class="w-full bg-transparent font-semibold focus:outline-none border-b border-gray-300 dark:border-gray-600 pb-0.5"
+                                    type="email"
+                                    [value]="editDraft().shipping.email ?? (shippingDetails()?.email ?? '')"
+                                    (input)="patchShipping('email', $any($event.target).value)" />
                                 } @else {
-                                    <div class="font-semibold">{{ shippingDetails()?.email || '—' }}</div>
+                                <div class="font-semibold">{{ shippingDetails()?.email || '—' }}</div>
                                 }
                             </div>
 
@@ -243,12 +249,12 @@
                             <div class="rounded-xl border p-4 bg-gray-50/70 dark:bg-white/5">
                                 <div class="text-xs text-secondary mb-1">Τηλέφωνο</div>
                                 @if (editMode()) {
-                                    <input class="w-full bg-transparent font-semibold focus:outline-none border-b border-gray-300 dark:border-gray-600 pb-0.5"
-                                        type="tel"
-                                        [value]="editDraft().shipping.phone ?? (shippingDetails()?.phone ?? '')"
-                                        (input)="patchShipping('phone', $any($event.target).value)" />
+                                <input
+                                    class="w-full bg-transparent font-semibold focus:outline-none border-b border-gray-300 dark:border-gray-600 pb-0.5"
+                                    type="tel" [value]="editDraft().shipping.phone ?? (shippingDetails()?.phone ?? '')"
+                                    (input)="patchShipping('phone', $any($event.target).value)" />
                                 } @else {
-                                    <div class="font-semibold">{{ shippingDetails()?.phone || '—' }}</div>
+                                <div class="font-semibold">{{ shippingDetails()?.phone || '—' }}</div>
                                 }
                             </div>
 
@@ -256,12 +262,13 @@
                             <div class="rounded-xl border p-4 bg-gray-50/70 dark:bg-white/5">
                                 <div class="text-xs text-secondary mb-1">Διεύθυνση 1</div>
                                 @if (editMode()) {
-                                    <input class="w-full bg-transparent font-semibold focus:outline-none border-b border-gray-300 dark:border-gray-600 pb-0.5"
-                                        type="text"
-                                        [value]="editDraft().shipping.addressLine1 ?? (shippingDetails()?.addressLine1 ?? '')"
-                                        (input)="patchShipping('addressLine1', $any($event.target).value)" />
+                                <input
+                                    class="w-full bg-transparent font-semibold focus:outline-none border-b border-gray-300 dark:border-gray-600 pb-0.5"
+                                    type="text"
+                                    [value]="editDraft().shipping.addressLine1 ?? (shippingDetails()?.addressLine1 ?? '')"
+                                    (input)="patchShipping('addressLine1', $any($event.target).value)" />
                                 } @else {
-                                    <div class="font-semibold">{{ shippingDetails()?.addressLine1 || '—' }}</div>
+                                <div class="font-semibold">{{ shippingDetails()?.addressLine1 || '—' }}</div>
                                 }
                             </div>
 
@@ -269,12 +276,13 @@
                             <div class="rounded-xl border p-4 bg-gray-50/70 dark:bg-white/5">
                                 <div class="text-xs text-secondary mb-1">Διεύθυνση 2</div>
                                 @if (editMode()) {
-                                    <input class="w-full bg-transparent font-semibold focus:outline-none border-b border-gray-300 dark:border-gray-600 pb-0.5"
-                                        type="text"
-                                        [value]="editDraft().shipping.addressLine2 ?? (shippingDetails()?.addressLine2 ?? '')"
-                                        (input)="patchShipping('addressLine2', $any($event.target).value)" />
+                                <input
+                                    class="w-full bg-transparent font-semibold focus:outline-none border-b border-gray-300 dark:border-gray-600 pb-0.5"
+                                    type="text"
+                                    [value]="editDraft().shipping.addressLine2 ?? (shippingDetails()?.addressLine2 ?? '')"
+                                    (input)="patchShipping('addressLine2', $any($event.target).value)" />
                                 } @else {
-                                    <div class="font-semibold">{{ shippingDetails()?.addressLine2 || '—' }}</div>
+                                <div class="font-semibold">{{ shippingDetails()?.addressLine2 || '—' }}</div>
                                 }
                             </div>
 
@@ -282,12 +290,12 @@
                             <div class="rounded-xl border p-4 bg-gray-50/70 dark:bg-white/5">
                                 <div class="text-xs text-secondary mb-1">Ταχ. Κώδικας</div>
                                 @if (editMode()) {
-                                    <input class="w-full bg-transparent font-semibold focus:outline-none border-b border-gray-300 dark:border-gray-600 pb-0.5"
-                                        type="text"
-                                        [value]="editDraft().shipping.zip ?? (shippingDetails()?.zip ?? '')"
-                                        (input)="patchShipping('zip', $any($event.target).value)" />
+                                <input
+                                    class="w-full bg-transparent font-semibold focus:outline-none border-b border-gray-300 dark:border-gray-600 pb-0.5"
+                                    type="text" [value]="editDraft().shipping.zip ?? (shippingDetails()?.zip ?? '')"
+                                    (input)="patchShipping('zip', $any($event.target).value)" />
                                 } @else {
-                                    <div class="font-semibold">{{ shippingDetails()?.zip || '—' }}</div>
+                                <div class="font-semibold">{{ shippingDetails()?.zip || '—' }}</div>
                                 }
                             </div>
 
@@ -295,12 +303,12 @@
                             <div class="rounded-xl border p-4 bg-gray-50/70 dark:bg-white/5">
                                 <div class="text-xs text-secondary mb-1">Πόλη</div>
                                 @if (editMode()) {
-                                    <input class="w-full bg-transparent font-semibold focus:outline-none border-b border-gray-300 dark:border-gray-600 pb-0.5"
-                                        type="text"
-                                        [value]="editDraft().shipping.city ?? (shippingDetails()?.city ?? '')"
-                                        (input)="patchShipping('city', $any($event.target).value)" />
+                                <input
+                                    class="w-full bg-transparent font-semibold focus:outline-none border-b border-gray-300 dark:border-gray-600 pb-0.5"
+                                    type="text" [value]="editDraft().shipping.city ?? (shippingDetails()?.city ?? '')"
+                                    (input)="patchShipping('city', $any($event.target).value)" />
                                 } @else {
-                                    <div class="font-semibold">{{ shippingDetails()?.city || '—' }}</div>
+                                <div class="font-semibold">{{ shippingDetails()?.city || '—' }}</div>
                                 }
                             </div>
 
@@ -308,12 +316,13 @@
                             <div class="rounded-xl border p-4 bg-gray-50/70 dark:bg-white/5">
                                 <div class="text-xs text-secondary mb-1">Νομός / Περιοχή</div>
                                 @if (editMode()) {
-                                    <input class="w-full bg-transparent font-semibold focus:outline-none border-b border-gray-300 dark:border-gray-600 pb-0.5"
-                                        type="text"
-                                        [value]="editDraft().shipping.region ?? (shippingDetails()?.region ?? '')"
-                                        (input)="patchShipping('region', $any($event.target).value)" />
+                                <input
+                                    class="w-full bg-transparent font-semibold focus:outline-none border-b border-gray-300 dark:border-gray-600 pb-0.5"
+                                    type="text"
+                                    [value]="editDraft().shipping.region ?? (shippingDetails()?.region ?? '')"
+                                    (input)="patchShipping('region', $any($event.target).value)" />
                                 } @else {
-                                    <div class="font-semibold">{{ shippingDetails()?.region || '—' }}</div>
+                                <div class="font-semibold">{{ shippingDetails()?.region || '—' }}</div>
                                 }
                             </div>
 
@@ -321,12 +330,13 @@
                             <div class="rounded-xl border p-4 bg-gray-50/70 dark:bg-white/5">
                                 <div class="text-xs text-secondary mb-1">Χώρα</div>
                                 @if (editMode()) {
-                                    <input class="w-full bg-transparent font-semibold focus:outline-none border-b border-gray-300 dark:border-gray-600 pb-0.5"
-                                        type="text"
-                                        [value]="editDraft().shipping.country ?? (shippingDetails()?.country ?? '')"
-                                        (input)="patchShipping('country', $any($event.target).value)" />
+                                <input
+                                    class="w-full bg-transparent font-semibold focus:outline-none border-b border-gray-300 dark:border-gray-600 pb-0.5"
+                                    type="text"
+                                    [value]="editDraft().shipping.country ?? (shippingDetails()?.country ?? '')"
+                                    (input)="patchShipping('country', $any($event.target).value)" />
                                 } @else {
-                                    <div class="font-semibold">{{ shippingDetails()?.country || '—' }}</div>
+                                <div class="font-semibold">{{ shippingDetails()?.country || '—' }}</div>
                                 }
                             </div>
 
@@ -340,12 +350,13 @@
                             <div class="rounded-xl border p-4 bg-gray-50/70 dark:bg-white/5">
                                 <div class="text-xs text-secondary mb-1">Locker ID</div>
                                 @if (editMode()) {
-                                    <input class="w-full bg-transparent font-semibold focus:outline-none border-b border-gray-300 dark:border-gray-600 pb-0.5"
-                                        type="text"
-                                        [value]="editDraft().shipping.lockerId ?? (shippingDetails()?.lockerId ?? '')"
-                                        (input)="patchShipping('lockerId', $any($event.target).value)" />
+                                <input
+                                    class="w-full bg-transparent font-semibold focus:outline-none border-b border-gray-300 dark:border-gray-600 pb-0.5"
+                                    type="text"
+                                    [value]="editDraft().shipping.lockerId ?? (shippingDetails()?.lockerId ?? '')"
+                                    (input)="patchShipping('lockerId', $any($event.target).value)" />
                                 } @else {
-                                    <div class="font-semibold">{{ shippingDetails()?.lockerId || '—' }}</div>
+                                <div class="font-semibold">{{ shippingDetails()?.lockerId || '—' }}</div>
                                 }
                             </div>
 
@@ -397,9 +408,10 @@
                                     <div class="flex items-center gap-2 min-w-0">
                                         <div class="font-semibold truncate">{{ it.productTitle }}</div>
                                         @if (it.isGift) {
-                                            <span class="inline-flex items-center gap-1 rounded-full bg-pink-100 text-pink-700 dark:bg-pink-500/20 dark:text-pink-300 text-xs font-semibold px-2 py-0.5 shrink-0">
-                                                🎁 Δώρο
-                                            </span>
+                                        <span
+                                            class="inline-flex items-center gap-1 rounded-full bg-pink-100 text-pink-700 dark:bg-pink-500/20 dark:text-pink-300 text-xs font-semibold px-2 py-0.5 shrink-0">
+                                            🎁 Δώρο
+                                        </span>
                                         }
                                     </div>
                                     <div class="text-secondary text-xs mt-0.5">
@@ -408,7 +420,8 @@
                                             }}</span>
                                         <span class="mx-2">•</span>
                                         Σύνολο:
-                                        <span class="font-semibold text-gray-900 dark:text-gray-100">{{ it.isGift ? '0.00' : (it.lineTotal |
+                                        <span class="font-semibold text-gray-900 dark:text-gray-100">{{ it.isGift ?
+                                            '0.00' : (it.lineTotal |
                                             number:'1.2-2') }} €</span>
                                     </div>
                                 </div>
