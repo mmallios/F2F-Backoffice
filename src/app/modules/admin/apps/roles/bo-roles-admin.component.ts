@@ -16,6 +16,7 @@ import { MatListModule } from '@angular/material/list';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatSelectModule } from '@angular/material/select';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 import {
     RolesService,
@@ -26,6 +27,8 @@ import {
     UpdateRoleClaimRequest,
     AdminRowDto,
     AvailableUserDto,
+    UserClaimOverrideRowDto,
+    UpsertUserClaimOverrideRequest,
 } from '@fuse/services/roles/roles.service'; // adjust path
 
 @Component({
@@ -52,6 +55,7 @@ import {
         MatProgressBarModule,
         MatSnackBarModule,
         MatSelectModule,
+        MatTooltipModule,
         ReactiveFormsModule
     ],
 })
@@ -72,8 +76,6 @@ export class BoRolesAdminComponent implements OnInit {
     adminsLoading = false;
     admins: AdminRowDto[] = [];
     adminsColumns = ['user', 'role', 'active', 'actions'];
-
-    // ---------- TAB 3: Claims Matrix ----------
     selectedRoleId: number | null = null;
 
     claimsLoading = false;
@@ -242,6 +244,16 @@ export class BoRolesAdminComponent implements OnInit {
                         this._cdr.markForCheck();
                     }
                 });
+        });
+    }
+
+    openEditAdminClaims(row: AdminRowDto): void {
+        this._dialog.open(EditAdminClaimsDialogComponent, {
+            width: '1050px',
+            maxWidth: '98vw',
+            panelClass: ['fuse-mat-dialog', 'rounded-2xl'],
+            autoFocus: false,
+            data: { boUserId: row.boUserId, fullName: row.fullName, roleName: row.roleName },
         });
     }
 
@@ -782,6 +794,379 @@ export class AddAdministratorDialogComponent implements OnInit {
     select(u: AvailableUserDto): void {
         if (!this.roleId) return;
         this.ref.close({ userId: u.id, roleId: this.roleId });
+    }
+}
+
+/* ---------- Draft row used inside the dialog ---------- */
+interface DraftOverrideRow {
+    claimId: number;
+    domainName: string;
+    domainCode: string;
+    claimName: string;
+    claimCode: string;
+    roleCanView: boolean;
+    roleCanEdit: boolean;
+    roleCanDelete: boolean;
+    overrideCanView: boolean | null;
+    overrideCanEdit: boolean | null;
+    overrideCanDelete: boolean | null;
+}
+
+@Component({
+    selector: 'edit-admin-claims-dialog',
+    standalone: true,
+    imports: [
+        CommonModule,
+        MatButtonModule, MatIconModule, MatDividerModule,
+        MatTableModule, MatCheckboxModule, MatProgressBarModule,
+        MatTooltipModule,
+    ],
+    template: `
+<div class="flex flex-col" style="max-height:90vh">
+
+  <!-- Header -->
+  <div class="p-6 pb-4 shrink-0">
+    <div class="flex items-start justify-between gap-4">
+      <div>
+        <div class="text-xl font-extrabold">Δικαιώματα διαχειριστή</div>
+        <div class="text-secondary text-sm mt-1">
+          <span class="font-semibold text-primary">{{ data.fullName }}</span>
+          — ρόλος: <span class="font-medium">{{ data.roleName }}</span>
+        </div>
+        <div class="text-secondary text-xs mt-1">
+          Τα δικαιώματα κληρονομούνται από τον ρόλο. Μπορείς να κάνεις override ανά claim.
+          <span class="inline-flex items-center gap-1 text-orange-500 ml-1">
+            <mat-icon style="font-size:14px;width:14px;height:14px">edit_note</mat-icon>
+            = override ενεργό
+          </span>
+        </div>
+      </div>
+      <button mat-icon-button type="button" (click)="ref.close()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+
+    <mat-progress-bar *ngIf="loading || saving" mode="indeterminate" class="mt-3"></mat-progress-bar>
+
+    <div *ngIf="error" class="mt-3 rounded-xl border p-3 bg-red-50/60 dark:bg-red-500/10 text-red-700 dark:text-red-300 flex gap-2 text-sm">
+      <mat-icon class="shrink-0">error</mat-icon>
+      <span>{{ error }}</span>
+    </div>
+  </div>
+
+  <mat-divider class="shrink-0"></mat-divider>
+
+  <!-- Toolbar -->
+  <div class="px-6 py-3 flex items-center justify-between gap-3 shrink-0 bg-gray-50 dark:bg-transparent">
+    <div class="text-sm text-secondary">
+      <span *ngIf="overriddenCount > 0" class="text-orange-500 font-semibold">
+        {{ overriddenCount }} claims με override
+      </span>
+      <span *ngIf="overriddenCount === 0">Δεν υπάρχουν overrides.</span>
+    </div>
+
+    <div class="flex gap-2">
+      <button mat-button type="button" (click)="cancelEdit()" *ngIf="editMode" [disabled]="saving">
+        Ακύρωση
+      </button>
+      <button mat-stroked-button type="button" (click)="enableEdit()" *ngIf="!editMode" [disabled]="loading">
+        <mat-icon>edit</mat-icon>
+        <span class="ml-2">Επεξεργασία</span>
+      </button>
+      <button mat-flat-button color="primary" type="button" (click)="save()" *ngIf="editMode" [disabled]="saving || !dirty">
+        <mat-icon>save</mat-icon>
+        <span class="ml-2">{{ saving ? 'Αποθήκευση…' : 'Αποθήκευση' }}</span>
+      </button>
+    </div>
+  </div>
+
+  <mat-divider class="shrink-0"></mat-divider>
+
+  <!-- Table -->
+  <div class="overflow-auto flex-1 p-2">
+    <table mat-table [dataSource]="draft" class="w-full min-w-[780px]">
+
+      <!-- Domain -->
+      <ng-container matColumnDef="domain">
+        <th mat-header-cell *matHeaderCellDef>Domain</th>
+        <td mat-cell *matCellDef="let r">
+          <div class="min-w-0">
+            <div class="font-semibold truncate text-sm">{{ r.domainName }}</div>
+            <div class="text-secondary text-xs truncate">{{ r.domainCode }}</div>
+          </div>
+        </td>
+      </ng-container>
+
+      <!-- Claim -->
+      <ng-container matColumnDef="claim">
+        <th mat-header-cell *matHeaderCellDef>Claim</th>
+        <td mat-cell *matCellDef="let r">
+          <div class="flex items-center gap-1 min-w-0">
+            <div class="min-w-0">
+              <div class="font-semibold truncate text-sm">{{ r.claimName }}</div>
+              <div class="text-secondary text-xs truncate">{{ r.claimCode }}</div>
+            </div>
+            <!-- Orange icon if row has any override -->
+            <mat-icon *ngIf="isRowOverridden(r)"
+              class="text-orange-500 shrink-0 ml-1"
+              style="font-size:18px;width:18px;height:18px"
+              matTooltip="Αυτό το claim έχει override από τον ρόλο">edit_note</mat-icon>
+          </div>
+        </td>
+      </ng-container>
+
+      <!-- CanView -->
+      <ng-container matColumnDef="canView">
+        <th mat-header-cell *matHeaderCellDef class="text-center">Προβολή</th>
+        <td mat-cell *matCellDef="let r" class="text-center">
+          <div class="flex items-center justify-center gap-1">
+            <mat-checkbox
+              [checked]="effective(r, 'view')"
+              [disabled]="!editMode"
+              (change)="onToggle(r, 'view', $event.checked)">
+            </mat-checkbox>
+            <mat-icon *ngIf="r.overrideCanView !== null"
+              class="text-orange-500"
+              style="font-size:14px;width:14px;height:14px"
+              [matTooltip]="'Role default: ' + (r.roleCanView ? 'Ναι' : 'Όχι')">circle</mat-icon>
+          </div>
+        </td>
+      </ng-container>
+
+      <!-- CanEdit -->
+      <ng-container matColumnDef="canEdit">
+        <th mat-header-cell *matHeaderCellDef class="text-center">Επεξεργασία</th>
+        <td mat-cell *matCellDef="let r" class="text-center">
+          <div class="flex items-center justify-center gap-1">
+            <mat-checkbox
+              [checked]="effective(r, 'edit')"
+              [disabled]="!editMode"
+              (change)="onToggle(r, 'edit', $event.checked)">
+            </mat-checkbox>
+            <mat-icon *ngIf="r.overrideCanEdit !== null"
+              class="text-orange-500"
+              style="font-size:14px;width:14px;height:14px"
+              [matTooltip]="'Role default: ' + (r.roleCanEdit ? 'Ναι' : 'Όχι')">circle</mat-icon>
+          </div>
+        </td>
+      </ng-container>
+
+      <!-- CanDelete -->
+      <ng-container matColumnDef="canDelete">
+        <th mat-header-cell *matHeaderCellDef class="text-center">Διαγραφή</th>
+        <td mat-cell *matCellDef="let r" class="text-center">
+          <div class="flex items-center justify-center gap-1">
+            <mat-checkbox
+              [checked]="effective(r, 'delete')"
+              [disabled]="!editMode"
+              (change)="onToggle(r, 'delete', $event.checked)">
+            </mat-checkbox>
+            <mat-icon *ngIf="r.overrideCanDelete !== null"
+              class="text-orange-500"
+              style="font-size:14px;width:14px;height:14px"
+              [matTooltip]="'Role default: ' + (r.roleCanDelete ? 'Ναι' : 'Όχι')">circle</mat-icon>
+          </div>
+        </td>
+      </ng-container>
+
+      <!-- Reset -->
+      <ng-container matColumnDef="reset">
+        <th mat-header-cell *matHeaderCellDef class="text-center">Reset</th>
+        <td mat-cell *matCellDef="let r" class="text-center">
+          <button mat-icon-button type="button"
+            *ngIf="editMode && isRowOverridden(r)"
+            (click)="resetRow(r)"
+            matTooltip="Επαναφορά στις τιμές ρόλου"
+            class="text-orange-500">
+            <mat-icon>restore</mat-icon>
+          </button>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="cols; sticky: true"></tr>
+      <tr mat-row *matRowDef="let row; columns: cols"></tr>
+    </table>
+
+    <div *ngIf="!loading && draft.length === 0" class="p-8 text-center text-secondary">
+      Δεν βρέθηκαν δικαιώματα για αυτόν τον διαχειριστή.
+    </div>
+  </div>
+
+</div>
+  `,
+})
+export class EditAdminClaimsDialogComponent implements OnInit {
+    private _api = inject(RolesService);
+    private _cdr = inject(ChangeDetectorRef);
+    private _snack = inject(MatSnackBar);
+
+    cols = ['domain', 'claim', 'canView', 'canEdit', 'canDelete', 'reset'];
+
+    loading = false;
+    saving = false;
+    editMode = false;
+    dirty = false;
+    error: string | null = null;
+
+    rows: UserClaimOverrideRowDto[] = [];
+    draft: DraftOverrideRow[] = [];
+
+    constructor(
+        public ref: MatDialogRef<EditAdminClaimsDialogComponent>,
+        @Inject(MAT_DIALOG_DATA) public data: { boUserId: number; fullName: string; roleName: string }
+    ) { }
+
+    ngOnInit(): void {
+        this.load();
+    }
+
+    load(): void {
+        this.loading = true;
+        this.error = null;
+        this._cdr.markForCheck();
+
+        this._api.getUserClaimsWithOverrides(this.data.boUserId)
+            .pipe(finalize(() => {
+                this.loading = false;
+                this._cdr.markForCheck();
+            }))
+            .subscribe({
+                next: (rows) => {
+                    this.rows = rows ?? [];
+                    this.draft = this.toDraft(this.rows);
+                    this._cdr.markForCheck();
+                },
+                error: (err) => {
+                    this.error = err?.error?.message ?? err?.message ?? 'Αποτυχία φόρτωσης δικαιωμάτων';
+                    this._cdr.markForCheck();
+                }
+            });
+    }
+
+    private toDraft(rows: UserClaimOverrideRowDto[]): DraftOverrideRow[] {
+        return rows.map(r => ({
+            claimId: r.claimId,
+            domainName: r.domainName,
+            domainCode: r.domainCode,
+            claimName: r.claimName,
+            claimCode: r.claimCode,
+            roleCanView: r.roleCanView,
+            roleCanEdit: r.roleCanEdit,
+            roleCanDelete: r.roleCanDelete,
+            overrideCanView: r.overrideCanView,
+            overrideCanEdit: r.overrideCanEdit,
+            overrideCanDelete: r.overrideCanDelete,
+        }));
+    }
+
+    effective(r: DraftOverrideRow, field: 'view' | 'edit' | 'delete'): boolean {
+        switch (field) {
+            case 'view': return r.overrideCanView ?? r.roleCanView;
+            case 'edit': return r.overrideCanEdit ?? r.roleCanEdit;
+            case 'delete': return r.overrideCanDelete ?? r.roleCanDelete;
+        }
+    }
+
+    isRowOverridden(r: DraftOverrideRow): boolean {
+        return r.overrideCanView !== null || r.overrideCanEdit !== null || r.overrideCanDelete !== null;
+    }
+
+    get overriddenCount(): number {
+        return this.draft.filter(r => this.isRowOverridden(r)).length;
+    }
+
+    onToggle(r: DraftOverrideRow, field: 'view' | 'edit' | 'delete', checked: boolean): void {
+        if (!this.editMode) return;
+
+        switch (field) {
+            case 'view':
+                // If same as role default, no override needed; keep null if not yet diverged,
+                // but once user explicitly toggles, we store the override so it's tracked
+                r.overrideCanView = checked;
+                break;
+            case 'edit':
+                r.overrideCanEdit = checked;
+                break;
+            case 'delete':
+                r.overrideCanDelete = checked;
+                break;
+        }
+        this.dirty = true;
+        this._cdr.markForCheck();
+    }
+
+    resetRow(r: DraftOverrideRow): void {
+        r.overrideCanView = null;
+        r.overrideCanEdit = null;
+        r.overrideCanDelete = null;
+        this.dirty = true;
+        this._cdr.markForCheck();
+    }
+
+    enableEdit(): void {
+        this.editMode = true;
+        this.dirty = false;
+        this.draft = this.toDraft(this.rows);
+        this._cdr.markForCheck();
+    }
+
+    cancelEdit(): void {
+        this.editMode = false;
+        this.dirty = false;
+        this.draft = this.toDraft(this.rows);
+        this._cdr.markForCheck();
+    }
+
+    save(): void {
+        if (!this.editMode || !this.dirty) return;
+
+        const payload: UpsertUserClaimOverrideRequest[] = this.draft.map(r => ({
+            claimId: r.claimId,
+            overrideCanView: r.overrideCanView,
+            overrideCanEdit: r.overrideCanEdit,
+            overrideCanDelete: r.overrideCanDelete,
+        }));
+
+        this.saving = true;
+        this.error = null;
+        this._cdr.markForCheck();
+
+        this._api.saveUserClaimOverridesBatch(this.data.boUserId, payload)
+            .pipe(finalize(() => {
+                this.saving = false;
+                this._cdr.markForCheck();
+            }))
+            .subscribe({
+                next: () => {
+                    this.editMode = false;
+                    this.dirty = false;
+                    // Reload to get fresh server state
+                    this.rows = this.draft.map(r => ({
+                        domainId: 0,
+                        domainCode: r.domainCode,
+                        domainName: r.domainName,
+                        claimId: r.claimId,
+                        claimCode: r.claimCode,
+                        claimName: r.claimName,
+                        roleCanView: r.roleCanView,
+                        roleCanEdit: r.roleCanEdit,
+                        roleCanDelete: r.roleCanDelete,
+                        overrideCanView: r.overrideCanView,
+                        overrideCanEdit: r.overrideCanEdit,
+                        overrideCanDelete: r.overrideCanDelete,
+                        effectiveCanView: r.overrideCanView ?? r.roleCanView,
+                        effectiveCanEdit: r.overrideCanEdit ?? r.roleCanEdit,
+                        effectiveCanDelete: r.overrideCanDelete ?? r.roleCanDelete,
+                    }));
+                    this._snack.open('✅ Τα overrides αποθηκεύτηκαν επιτυχώς.', 'OK', { duration: 3000 });
+                    this._cdr.markForCheck();
+                },
+                error: (err) => {
+                    this.error = err?.error?.message ?? err?.message ?? 'Αποτυχία αποθήκευσης';
+                    this._snack.open('❌ Αποτυχία αποθήκευσης overrides.', 'OK', { duration: 3500 });
+                    this._cdr.markForCheck();
+                }
+            });
     }
 }
 

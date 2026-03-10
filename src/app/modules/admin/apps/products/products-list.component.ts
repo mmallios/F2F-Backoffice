@@ -176,4 +176,9 @@ export class ProductsListComponent implements OnInit, OnDestroy {
     viewDetails(g: any): void {
         this._router.navigate(['/apps/products', g.id]);
     }
+
+    getTotalStock(p: ProductDto): number {
+        if (p.skUs?.length) return p.skUs.reduce((s, x) => s + (Number(x.stock) || 0), 0);
+        return Number(p.stock) || 0;
+    }
 }

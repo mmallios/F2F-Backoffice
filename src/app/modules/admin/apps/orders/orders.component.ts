@@ -42,7 +42,6 @@ type UserOptionVm = { id: number; fullname: string; image?: string | null };
         RouterLink,
         FormsModule,
         ReactiveFormsModule,
-        AsyncPipe,
         I18nPluralPipe,
         NgClass,
         MatFormFieldModule,

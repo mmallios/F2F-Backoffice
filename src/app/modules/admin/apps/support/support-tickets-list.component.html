@@ -1,7 +1,7 @@
 <div class="absolute inset-0 flex min-w-0 flex-col overflow-hidden">
     <mat-drawer-container class="bg-card h-full flex-auto dark:bg-transparent" (backdropClick)="onBackdropClicked()">
         <!-- Drawer (optional) -->
-        <mat-drawer class="w-full dark:bg-gray-900 md:w-160" [mode]="drawerMode" [position]="'end'"
+        <mat-drawer class="w-full dark:bg-gray-900" [mode]="drawerMode" [position]="'end'"
             [disableClose]="drawerMode === 'side'" #matDrawer>
             <router-outlet></router-outlet>
         </mat-drawer>

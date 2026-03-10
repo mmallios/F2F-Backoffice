@@ -1,5 +1,8 @@
+﻿import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { delay, Observable, of, throwError } from 'rxjs';
+import { Observable } from 'rxjs';
+
+import { environment } from '../../environments/environment';
 
 export enum SupportTicketStatus {
     Pending = 1,
@@ -16,10 +19,13 @@ export interface SupportTicketAdminDto {
 
     userFullName?: string | null;
     userEmail?: string | null;
+    userCode?: string | null;
+    userImage?: string | null;
+    userUsername?: string | null;
+    userPoints?: number | null;
 
     subject?: string | null;
     category?: string | null;
-    body: string;
 
     status: SupportTicketStatus;
 
@@ -42,6 +48,7 @@ export interface SupportTicketMessageDto {
 
     isReadByUser?: boolean;
     isReadByAdmin?: boolean;
+    senderAdminId?: number | null;
 }
 
 export interface SupportTicketDetailsAdminDto {
@@ -72,205 +79,88 @@ export interface UpdateTicketAdminRequest {
 }
 
 export interface SendAdminReplyRequest {
+    adminId: number;
     body: string;
+}
+
+/** Matches AdminRowDto from /api/BORoles/admins */
+export interface AdminUserDto {
+    boUserId: number;
+    userId: number;
+    fullName: string;
+    firstname?: string | null;
+    lastname?: string | null;
+    email?: string | null;
+    image?: string | null;
+    isActive: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
 export class SupportTicketsAdminService {
-    private tickets: SupportTicketAdminDto[] = [];
-    private messages: SupportTicketMessageDto[] = [];
+    private readonly base: string;
 
-    private nextTicketId = 2001;
-    private nextMsgId = 5001;
-
-    constructor() {
-        this.seed();
+    constructor(private http: HttpClient) {
+        this.base = `${environment.apiUrl}/BOSupport`;
     }
 
-    // =========================================================
-    // LIST
-    // =========================================================
+    /**
+     * List tickets with filters and pagination.
+     * GET /api/BOSupport/tickets
+     */
     list(query: SupportTicketsQuery): Observable<PagedResult<SupportTicketAdminDto>> {
-        let data = [...this.tickets];
+        let params = new HttpParams();
 
-        if (query.q) {
-            const q = query.q.toLowerCase();
-            data = data.filter(t =>
-                (t.subject || '').toLowerCase().includes(q) ||
-                (t.userFullName || '').toLowerCase().includes(q)
-            );
-        }
+        if (query.q) params = params.set('q', query.q);
+        if (query.status != null) params = params.set('status', String(query.status));
+        if (query.category) params = params.set('category', query.category);
+        if (query.assigneeAdminId != null) params = params.set('assigneeAdminId', String(query.assigneeAdminId));
+        if (query.from) params = params.set('from', query.from);
+        if (query.to) params = params.set('to', query.to);
+        if (query.page) params = params.set('page', String(query.page));
+        if (query.pageSize) params = params.set('pageSize', String(query.pageSize));
+        if (query.sort) params = params.set('sort', query.sort);
 
-        if (query.status) {
-            data = data.filter(t => t.status === query.status);
-        }
-
-        if (query.category) {
-            data = data.filter(t => t.category === query.category);
-        }
-
-        if (query.assigneeAdminId != null) {
-            data = data.filter(t => t.assigneeAdminId === query.assigneeAdminId);
-        }
-
-        // sorting
-        if (query.sort === 'createdAt:desc') {
-            data.sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
-        } else {
-            data.sort((a, b) => +new Date(a.createdAt) - +new Date(b.createdAt));
-        }
-
-        const page = query.page ?? 1;
-        const pageSize = query.pageSize ?? 10;
-        const start = (page - 1) * pageSize;
-        const paged = data.slice(start, start + pageSize);
-
-        return of({
-            items: paged,
-            total: data.length
-        }).pipe(delay(300));
+        return this.http.get<PagedResult<SupportTicketAdminDto>>(`${this.base}/tickets`, { params });
     }
 
-    // =========================================================
-    // DETAILS
-    // =========================================================
+    /**
+     * Get ticket details for admin.
+     * GET /api/BOSupport/tickets/{id}
+     */
     getDetails(ticketId: number): Observable<SupportTicketDetailsAdminDto> {
-        const ticket = this.tickets.find(t => t.id === ticketId);
-        if (!ticket) return throwError(() => new Error('Ticket not found'));
-
-        const msgs = this.messages
-            .filter(m => m.ticketId === ticketId)
-            .sort((a, b) => +new Date(a.createdAt) - +new Date(b.createdAt));
-
-        return of({
-            ticket: { ...ticket },
-            messages: msgs.map(m => ({ ...m }))
-        }).pipe(delay(250));
+        return this.http.get<SupportTicketDetailsAdminDto>(`${this.base}/tickets/${ticketId}`);
     }
 
-    // =========================================================
-    // UPDATE META
-    // =========================================================
+    /**
+     * Update ticket status / assignee.
+     * PUT /api/BOSupport/tickets/{id}
+     */
     update(ticketId: number, req: UpdateTicketAdminRequest): Observable<SupportTicketAdminDto> {
-        const ticket = this.tickets.find(t => t.id === ticketId);
-        if (!ticket) return throwError(() => new Error('Ticket not found'));
-
-        if (req.status != null) {
-            ticket.status = req.status;
-        }
-
-        if (req.assigneeAdminId !== undefined) {
-            ticket.assigneeAdminId = req.assigneeAdminId;
-            ticket.assigneeAdminName = req.assigneeAdminId
-                ? `Admin #${req.assigneeAdminId}`
-                : null;
-        }
-
-        ticket.updatedAt = new Date().toISOString();
-        this.recompute(ticketId);
-
-        return of({ ...ticket }).pipe(delay(250));
+        return this.http.put<SupportTicketAdminDto>(`${this.base}/tickets/${ticketId}`, req);
     }
 
-    // =========================================================
-    // SEND ADMIN REPLY
-    // =========================================================
+    /**
+     * Send an admin reply.
+     * POST /api/BOSupport/tickets/{id}/reply
+     */
     sendAdminReply(ticketId: number, req: SendAdminReplyRequest): Observable<SupportTicketDetailsAdminDto> {
-        const ticket = this.tickets.find(t => t.id === ticketId);
-        if (!ticket) return throwError(() => new Error('Ticket not found'));
-
-        const now = new Date().toISOString();
-
-        this.messages.push({
-            id: this.nextMsgId++,
-            ticketId,
-            sender: 'ADMIN',
-            body: req.body.trim(),
-            createdAt: now,
-            isReadByUser: false,
-            isReadByAdmin: true,
-        });
-
-        ticket.status = SupportTicketStatus.Answered;
-        ticket.updatedAt = now;
-
-        this.recompute(ticketId);
-
-        return this.getDetails(ticketId);
+        return this.http.post<SupportTicketDetailsAdminDto>(`${this.base}/tickets/${ticketId}/reply`, req);
     }
 
-    // =========================================================
-    // MARK READ
-    // =========================================================
-    markReadByAdmin(ticketId: number): Observable<boolean> {
-        this.messages
-            .filter(m => m.ticketId === ticketId)
-            .forEach(m => (m.isReadByAdmin = true));
-
-        return of(true).pipe(delay(150));
+    /**
+     * Mark all user messages as read by admin.
+     * PUT /api/BOSupport/tickets/{id}/mark-read
+     */
+    markReadByAdmin(ticketId: number): Observable<void> {
+        return this.http.put<void>(`${this.base}/tickets/${ticketId}/mark-read`, {});
     }
 
-    // =========================================================
-    // INTERNAL HELPERS
-    // =========================================================
-    private recompute(ticketId: number): void {
-        const ticket = this.tickets.find(t => t.id === ticketId);
-        if (!ticket) return;
-
-        const msgs = this.messages.filter(m => m.ticketId === ticketId);
-
-        ticket.repliesCount = Math.max(0, msgs.length - 1);
-        ticket.hasUnreadAdminReply = msgs.some(
-            m => m.sender === 'ADMIN' && m.isReadByUser === false
-        );
-    }
-
-    private seed(): void {
-        const now = new Date();
-        const iso = (d: Date) => d.toISOString();
-
-        const t1: SupportTicketAdminDto = {
-            id: this.nextTicketId++,
-            userId: 10,
-            userFullName: 'Μιχάλης Μαλλιός',
-            userEmail: 'mixalis@example.com',
-            subject: 'Πρόβλημα σύνδεσης',
-            category: 'Λογαριασμός',
-            body: 'Δεν μπορώ να κάνω login.',
-            status: SupportTicketStatus.Pending,
-            createdAt: iso(new Date(now.getTime() - 3600000)),
-            repliesCount: 0,
-            assigneeAdminId: 1,
-            assigneeAdminName: 'Michalis Mallios'
-        };
-
-        const t2: SupportTicketAdminDto = {
-            id: this.nextTicketId++,
-            userId: 10,
-            userFullName: 'Αγγέλος Παπακώστας',
-            userEmail: 'aggelos@example.com',
-            subject: 'Πρόβλημα αποστολής μηνύματος',
-            category: 'Λογαριασμός',
-            body: 'Δεν μπορώ να στειλω μηνυματα.',
-            status: SupportTicketStatus.Pending,
-            createdAt: iso(new Date(now.getTime() - 3600000)),
-            repliesCount: 0,
-            assigneeAdminId: 1,
-            assigneeAdminName: 'Anargiri Garavela'
-        };
-
-        this.tickets.push(t1);
-        this.tickets.push(t2);
-
-        this.messages.push({
-            id: this.nextMsgId++,
-            ticketId: t1.id,
-            sender: 'USER',
-            body: t1.body,
-            createdAt: t1.createdAt,
-            isReadByAdmin: false
-        });
-
-        this.recompute(t1.id);
+    /**
+     * Load all backoffice admin users (with BOUserId).
+     * GET /api/BORoles/admins
+     */
+    loadAdmins(): Observable<AdminUserDto[]> {
+        const rolesBase = `${environment.apiUrl}/BORoles`;
+        return this.http.get<AdminUserDto[]>(`${rolesBase}/admins`);
     }
 }

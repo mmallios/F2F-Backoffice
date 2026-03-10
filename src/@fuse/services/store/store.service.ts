@@ -60,15 +60,34 @@ export interface UpdateProductRequest {
 }
 
 export interface CreateCategoryRequest {
-    title: string;
+    name: string;
     code: string;
+    description?: string | null;
+    imageUrl?: string | null;
+    isActive?: boolean;
+    order?: number;
 }
 
 /** Your backend didn't include the DTO type; keep it generic but useful */
 export interface CategoryDto {
     id: number;
-    title: string;
     code: string;
+    name: string;
+    description?: string | null;
+    imageUrl?: string | null;
+    isActive: boolean;
+    order: number;
+    createdOn?: string;
+    updatedOn?: string | null;
+}
+
+export interface UpdateCategoryRequest {
+    code: string;
+    name: string;
+    description?: string | null;
+    imageUrl?: string | null;
+    isActive: boolean;
+    order: number;
 }
 
 export interface AddToCartRequest {
@@ -86,6 +105,7 @@ export interface CartItemDto {
     unitPrice: number;
     lineTotal: number;
     size?: ProductSize | null;
+    isGift: boolean;
 }
 
 export interface CartDto {
@@ -103,6 +123,26 @@ export interface CreateOrderRequest {
     shippingMethod?: number | null; // enum int
     paymentMethod?: number | null;  // enum int
     orderData?: string | null;      // JSON string
+}
+
+export interface UpdateOrderItemRequest {
+    id: number;          // existing item id; <=0 means new
+    productId: number;
+    quantity: number;
+    unitPrice: number;
+    lineTotal: number;
+    size?: ProductSize | null;
+    isGift: boolean;
+}
+
+export interface UpdateOrderItemsBatchRequest {
+    items: UpdateOrderItemRequest[];
+}
+
+export interface UpdateOrderHeaderRequest {
+    status: number;
+    shippingAmount?: number | null;
+    orderData?: string | null;
 }
 
 // src/app/services/store/store.models.ts
@@ -244,6 +284,10 @@ export class StoreService {
         return this.http.get<CategoryDto[]>(`${this.base}/categories`);
     }
 
+    getCategoryById(id: number): Observable<CategoryDto> {
+        return this.http.get<CategoryDto>(`${this.base}/categories/${id}`);
+    }
+
     getProductsByCategory(categoryId: number): Observable<ProductDto[]> {
         return this.http.get<ProductDto[]>(`${this.base}/categories/${categoryId}/products`);
     }
@@ -252,9 +296,23 @@ export class StoreService {
         return this.http.post<CategoryDto>(`${this.base}/categories`, payload);
     }
 
+    updateCategory(id: number, payload: UpdateCategoryRequest): Observable<CategoryDto> {
+        return this.http.put<CategoryDto>(`${this.base}/categories/${id}`, payload);
+    }
+
+    deleteCategory(id: number): Observable<void> {
+        return this.http.delete<void>(`${this.base}/categories/${id}`);
+    }
+
+    addProductToCategory(categoryId: number, productId: number): Observable<{ message: string }> {
+        return this.http.post<{ message: string }>(
+            `${this.base}/categories/${categoryId}/products/${productId}`, {}
+        );
+    }
+
     removeProductFromCategory(categoryId: number, productId: number): Observable<{ message: string }> {
         return this.http.delete<{ message: string }>(
-            `${this.base}/categories/${categoryId}/product/${productId}`
+            `${this.base}/categories/${categoryId}/products/${productId}`
         );
     }
 
@@ -292,5 +350,17 @@ export class StoreService {
 
     getOrderByCode(code: string): Observable<OrderDetailsResponse> {
         return this.http.get<OrderDetailsResponse>(`${this.base}/orders/${encodeURIComponent(code)}`);
+    }
+
+    updateOrderItems(code: string, payload: UpdateOrderItemsBatchRequest): Observable<OrderDetailsResponse> {
+        return this.http.put<OrderDetailsResponse>(`${this.base}/orders/${encodeURIComponent(code)}/items`, payload);
+    }
+
+    updateOrderHeader(code: string, payload: UpdateOrderHeaderRequest): Observable<OrderDetailsResponse> {
+        return this.http.put<OrderDetailsResponse>(`${this.base}/orders/${encodeURIComponent(code)}`, payload);
+    }
+
+    getOrdersByProduct(productId: number): Observable<OrderDetailsResponse[]> {
+        return this.http.get<OrderDetailsResponse[]>(`${this.base}/products/${productId}/orders`);
     }
 }

@@ -94,6 +94,31 @@ export interface AvailableUserDto {
     isActive: boolean;
 }
 
+export interface UserClaimOverrideRowDto {
+    domainId: number;
+    domainCode: string;
+    domainName: string;
+    claimId: number;
+    claimCode: string;
+    claimName: string;
+    roleCanView: boolean;
+    roleCanEdit: boolean;
+    roleCanDelete: boolean;
+    overrideCanView: boolean | null;
+    overrideCanEdit: boolean | null;
+    overrideCanDelete: boolean | null;
+    effectiveCanView: boolean;
+    effectiveCanEdit: boolean;
+    effectiveCanDelete: boolean;
+}
+
+export interface UpsertUserClaimOverrideRequest {
+    claimId: number;
+    overrideCanView: boolean | null;
+    overrideCanEdit: boolean | null;
+    overrideCanDelete: boolean | null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class RolesService {
     private http = inject(HttpClient);
@@ -161,5 +186,13 @@ export class RolesService {
 
     removeUserFromRole(roleId: number, boUserId: number) {
         return this.http.delete<void>(`${this.baseUrl}/roles/${roleId}/users/${boUserId}`);
+    }
+
+    getUserClaimsWithOverrides(boUserId: number) {
+        return this.http.get<UserClaimOverrideRowDto[]>(`${this.baseUrl}/admins/${boUserId}/claims`);
+    }
+
+    saveUserClaimOverridesBatch(boUserId: number, items: UpsertUserClaimOverrideRequest[]) {
+        return this.http.put<void>(`${this.baseUrl}/admins/${boUserId}/claims/overrides`, items);
     }
 }
