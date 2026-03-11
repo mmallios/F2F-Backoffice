@@ -172,5 +172,58 @@ export class UsersService {
         );
     }
 
+    // ── Registration Requests ──────────────────────────────────────
 
+    getRegistrationStats(): Observable<RegistrationStats> {
+        return this.http.get<RegistrationStats>(`${environment.apiUrl}/BORegistrationRequests/stats`);
+    }
+
+    getRegistrationRequests(): Observable<RegistrationRequest[]> {
+        return this.http.get<RegistrationRequest[]>(`${environment.apiUrl}/BORegistrationRequests`);
+    }
+
+    acceptRegistrationRequest(userId: number, adminUserId: number | null, linkedUserId: number | null): Observable<any> {
+        return this.http.post(`${environment.apiUrl}/BORegistrationRequests/${userId}/accept`, {
+            adminUserId,
+            linkedUserId,
+        });
+    }
+
+    rejectRegistrationRequest(userId: number, adminUserId: number | null): Observable<any> {
+        return this.http.post(`${environment.apiUrl}/BORegistrationRequests/${userId}/reject`, {
+            adminUserId,
+        });
+    }
+
+    getCompletedRequests(): Observable<RegistrationRequest[]> {
+        return this.http.get<RegistrationRequest[]>(`${environment.apiUrl}/BORegistrationRequests/completed`);
+    }
+
+}
+
+export interface RegistrationStats {
+    total: number;
+    newRequests: number;
+    totalAccepted: number;
+    totalRejected: number;
+}
+
+export interface RegistrationRequest {
+    id: number;
+    firstname: string;
+    lastname: string;
+    email: string;
+    mobile?: string;
+    mobileCountryCode?: string;
+    linkedUserInput?: string;
+    linkedUserId?: number;
+    socialMediaPlatform?: number;
+    socialMediaAccount?: string;
+    status: number;
+    createdOn: string;
+    image?: string;
+    code: string;
+    reviewedByAdminId?: number;
+    reviewedAt?: string;
+    reviewedByAdminName?: string;
 }

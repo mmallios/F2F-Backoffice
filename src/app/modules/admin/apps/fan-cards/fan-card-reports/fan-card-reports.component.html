@@ -1,0 +1,220 @@
+<div class="w-full max-w-none px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- ===== HEADER ===== -->
+    <div class="bg-card rounded-2xl border shadow-sm p-5">
+        <div class="flex items-center justify-between gap-3">
+            <div>
+                <div class="text-xl font-extrabold">Αναφορές Καρτών Φιλάθλου</div>
+                <div class="text-secondary text-sm mt-0.5">Όλες οι αναφορές για κάρτες φιλάθλου</div>
+            </div>
+            <span class="px-3 py-1 rounded-xl border text-sm font-semibold">
+                {{ total }} αναφορές
+            </span>
+        </div>
+    </div>
+
+    <!-- ===== FILTER BAR ===== -->
+    <div class="bg-card rounded-2xl border shadow-sm p-4">
+        <div class="grid grid-cols-1 md:grid-cols-[1fr_220px_140px] gap-3 items-center">
+
+            <!-- Owner filter -->
+            <mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
+                <mat-label>Ιδιοκτήτης κάρτας</mat-label>
+                <mat-select [formControl]="filterOwner">
+                    <mat-select-trigger *ngIf="selectedUser">
+                        <div class="flex items-center gap-2">
+                            <img [src]="selectedUser.image || 'assets/images/avatars/male-01.jpg'"
+                                class="h-6 w-6 rounded-full object-cover" alt="" />
+                            <span class="font-medium">{{ selectedUser.firstname }} {{ selectedUser.lastname }}</span>
+                            <span class="text-secondary text-xs">#{{ selectedUser.code }}</span>
+                        </div>
+                    </mat-select-trigger>
+                    <mat-option [value]="null">Όλοι</mat-option>
+                    <mat-option *ngFor="let u of users" [value]="u.id">
+                        <div class="flex items-center gap-2">
+                            <img [src]="u.image || 'assets/images/avatars/male-01.jpg'"
+                                class="h-6 w-6 rounded-full object-cover" alt="" />
+                            <span>{{ u.firstname }} {{ u.lastname }}</span>
+                            <span class="text-secondary text-xs ml-auto">#{{ u.code }}</span>
+                        </div>
+                    </mat-option>
+                </mat-select>
+            </mat-form-field>
+
+            <!-- Status filter -->
+            <mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
+                <mat-label>Κατάσταση</mat-label>
+                <mat-select [formControl]="filterStatus">
+                    <mat-option [value]="null">Όλες</mat-option>
+                    <mat-option [value]="1">Εκκρεμεί</mat-option>
+                    <mat-option [value]="2">Επιλύθηκε</mat-option>
+                </mat-select>
+            </mat-form-field>
+
+            <!-- Clear -->
+            <button mat-stroked-button type="button" (click)="clearFilters()">
+                <mat-icon>clear</mat-icon>
+                <span class="ml-1">Καθαρισμός</span>
+            </button>
+
+        </div>
+    </div>
+
+    <!-- ===== PROGRESS BAR ===== -->
+    <mat-progress-bar *ngIf="loading" mode="indeterminate"></mat-progress-bar>
+
+    <!-- ===== EMPTY ===== -->
+    <div *ngIf="!loading && items.length === 0"
+        class="bg-card rounded-2xl border shadow-sm p-10 text-center text-secondary">
+        Δεν βρέθηκαν αναφορές.
+    </div>
+
+    <!-- ===== TABLE ===== -->
+    <div class="bg-card rounded-2xl border shadow-sm overflow-hidden" *ngIf="items.length > 0">
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+
+                <!-- ── HEAD ── -->
+                <thead>
+                    <tr
+                        class="bg-gray-50/80 dark:bg-white/5 border-b text-xs font-semibold text-secondary uppercase tracking-wide">
+                        <th class="px-4 py-3 text-left whitespace-nowrap">ID</th>
+                        <th class="px-4 py-3 text-left whitespace-nowrap">Ημερομηνία</th>
+                        <th class="px-4 py-3 text-left whitespace-nowrap">Αρ. Κάρτας</th>
+                        <th class="px-4 py-3 text-left whitespace-nowrap">Αναφέρθηκε από</th>
+                        <th class="px-4 py-3 text-left whitespace-nowrap">Αγώνας</th>
+                        <th class="px-4 py-3 text-left whitespace-nowrap">Διοργάνωση</th>
+                        <th class="px-4 py-3 text-left whitespace-nowrap">Αγων.</th>
+                        <th class="px-4 py-3 text-left whitespace-nowrap">Κατάσταση</th>
+                        <th class="px-4 py-3 text-left whitespace-nowrap">Σχόλιο Admin</th>
+                    </tr>
+                </thead>
+
+                <!-- ── BODY ── -->
+                <tbody class="divide-y divide-gray-200/70 dark:divide-white/10">
+
+                    <ng-container *ngFor="let r of items">
+                        <tr class="hover:bg-gray-50/60 dark:hover:bg-white/5 transition align-top">
+
+                            <!-- ID -->
+                            <td class="px-4 py-3 font-mono text-xs text-secondary whitespace-nowrap">
+                                #{{ r.id }}
+                            </td>
+
+                            <!-- Date -->
+                            <td class="px-4 py-3 whitespace-nowrap text-secondary">
+                                {{ r.reportedAt | date:'dd/MM/yyyy' }}<br />
+                                <span class="text-xs">{{ r.reportedAt | date:'HH:mm' }}</span>
+                            </td>
+
+                            <!-- Card number -->
+                            <td class="px-4 py-3 font-medium whitespace-nowrap">
+                                {{ r.cardCode || '—' }}
+                            </td>
+
+                            <!-- Reporter -->
+                            <td class="px-4 py-3">
+                                <div class="flex items-center gap-2 min-w-[140px]">
+                                    <img [src]="r.reportedByImage || 'assets/images/avatars/male-01.jpg'"
+                                        class="h-8 w-8 rounded-full object-cover border shrink-0" alt="" />
+                                    <div class="min-w-0">
+                                        <div class="font-medium truncate">{{ r.reportedByFullName || '—' }}</div>
+                                        <div *ngIf="r.reportedByCode" class="text-xs text-secondary">#{{
+                                            r.reportedByCode }}</div>
+                                    </div>
+                                </div>
+                            </td>
+
+                            <!-- Event teams -->
+                            <td class="px-4 py-3">
+                                <div *ngIf="r.homeTeamName || r.awayTeamName; else noEvent"
+                                    class="flex items-center gap-1.5 min-w-[160px] flex-wrap">
+                                    <img *ngIf="r.homeTeamLogo" [src]="r.homeTeamLogo"
+                                        class="h-5 w-5 object-contain shrink-0" alt="" />
+                                    <span class="text-xs font-medium">{{ r.homeTeamName }}</span>
+                                    <span class="text-xs text-secondary">vs</span>
+                                    <img *ngIf="r.awayTeamLogo" [src]="r.awayTeamLogo"
+                                        class="h-5 w-5 object-contain shrink-0" alt="" />
+                                    <span class="text-xs font-medium">{{ r.awayTeamName }}</span>
+                                </div>
+                                <ng-template #noEvent><span class="text-secondary">—</span></ng-template>
+                            </td>
+
+                            <!-- Competition -->
+                            <td class="px-4 py-3 text-xs whitespace-nowrap">
+                                {{ r.competitionName || '—' }}
+                            </td>
+
+                            <!-- Matchday -->
+                            <td class="px-4 py-3 text-xs text-center whitespace-nowrap">
+                                {{ r.matchday || '—' }}
+                            </td>
+
+                            <!-- Status -->
+                            <td class="px-4 py-3 whitespace-nowrap">
+                                <span class="px-2 py-0.5 rounded-full text-xs font-semibold border"
+                                    [class.bg-amber-50]="r.status === 1" [class.text-amber-700]="r.status === 1"
+                                    [class.border-amber-300]="r.status === 1" [class.bg-green-50]="r.status === 2"
+                                    [class.text-green-700]="r.status === 2" [class.border-green-300]="r.status === 2">
+                                    {{ statusLabel(r.status) }}
+                                </span>
+                            </td>
+
+                            <!-- Admin comment -->
+                            <td class="px-4 py-3 min-w-[230px]">
+                                <!-- Preview mode -->
+                                <div *ngIf="!commentExpanded[r.id]" class="flex items-start gap-2">
+                                    <span *ngIf="r.adminComment" class="flex-1 text-xs leading-snug line-clamp-2"
+                                        [matTooltip]="r.adminComment">
+                                        {{ r.adminComment }}
+                                    </span>
+                                    <span *ngIf="!r.adminComment" class="flex-1 text-xs text-secondary italic">
+                                        Χωρίς σχόλιο
+                                    </span>
+                                    <button mat-icon-button type="button" class="shrink-0 !w-7 !h-7"
+                                        [matTooltip]="r.adminComment ? 'Επεξεργασία σχολίου' : 'Προσθήκη σχολίου'"
+                                        (click)="toggleComment(r.id)">
+                                        <mat-icon class="text-[16px]">{{ r.adminComment ? 'edit' : 'add_comment'
+                                            }}</mat-icon>
+                                    </button>
+                                </div>
+
+                                <!-- Edit mode -->
+                                <div *ngIf="commentExpanded[r.id]" class="space-y-2">
+                                    <mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
+                                        <textarea matInput rows="3" placeholder="Σχόλιο admin…"
+                                            [(ngModel)]="commentDrafts[r.id]">
+                                        </textarea>
+                                    </mat-form-field>
+                                    <div class="flex gap-1">
+                                        <button mat-flat-button color="primary" type="button"
+                                            class="text-xs !h-8 !min-w-0 !px-3" [disabled]="savingComment[r.id]"
+                                            (click)="saveComment(r)">
+                                            <mat-icon class="text-[14px] mr-1"
+                                                *ngIf="!savingComment[r.id]">save</mat-icon>
+                                            {{ savingComment[r.id] ? 'Αποθήκευση…' : 'Αποθήκευση' }}
+                                        </button>
+                                        <button mat-button type="button" class="text-xs !h-8 !min-w-0 !px-3"
+                                            (click)="toggleComment(r.id)">
+                                            Ακύρωση
+                                        </button>
+                                    </div>
+                                </div>
+                            </td>
+
+                        </tr>
+                    </ng-container>
+
+                </tbody>
+            </table>
+        </div>
+
+        <!-- PAGINATOR -->
+        <div class="border-t px-4 py-2">
+            <mat-paginator [length]="total" [pageSize]="pageSize" [pageSizeOptions]="[10, 20, 50]"
+                (page)="onPage($event)" showFirstLastButtons>
+            </mat-paginator>
+        </div>
+    </div>
+
+</div>

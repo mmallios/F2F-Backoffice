@@ -132,6 +132,12 @@ export interface UpdateCompetitionDto {
  */
 export type EventsResultDto = any;
 
+export interface EventStats {
+    fanCardUsagesCount: number;
+    ticketRequestsCount: number;
+    subscriptionsCount: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class EventsService {
 
@@ -165,6 +171,14 @@ export class EventsService {
         return this.getEvents(false).pipe(
             map((list) => list.find((x) => x.id === id) ?? null)
         );
+    }
+
+    getEventStats(id: number): Observable<EventStats> {
+        return this.http.get<EventStats>(`${this.baseUrl}/events/${id}/stats`);
+    }
+
+    deleteEvent(id: number): Observable<void> {
+        return this.http.delete<void>(`${this.baseUrl}/events/${id}`);
     }
 
     /** (Optional) Update event — αν έχεις endpoint στο backend, βάλε το εδώ */

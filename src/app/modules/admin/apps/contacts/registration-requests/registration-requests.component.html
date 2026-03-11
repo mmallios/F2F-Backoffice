@@ -1,0 +1,576 @@
+<div class="w-full max-w-none px-4 sm:px-6 lg:px-8 py-6 space-y-5">
+
+    <!-- ── Progress bar ─────────────────────────────────────────── -->
+    <mat-progress-bar *ngIf="loading" mode="indeterminate" class="!absolute top-0 left-0 right-0" style="z-index:10">
+    </mat-progress-bar>
+
+    <!-- ── Header ───────────────────────────────────────────────── -->
+    <div>
+        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight leading-none">Αιτήματα Εγγραφής</h1>
+        <p class="text-secondary text-sm mt-1">Διαχείριση νέων αιτημάτων εγγραφής χρηστών</p>
+    </div>
+
+    <!-- ── Stats strip ──────────────────────────────────────────── -->
+    <div class="grid grid-cols-2 xl:grid-cols-4 gap-4">
+
+        <!-- Νέα Αιτήματα -->
+        <div class="flex items-center gap-4 rounded-2xl border bg-card p-4 shadow-sm">
+            <div class="flex items-center justify-center w-12 h-12 rounded-xl bg-yellow-500/10 shrink-0">
+                <mat-icon class="text-yellow-500">hourglass_empty</mat-icon>
+            </div>
+            <div>
+                <div class="text-2xl font-extrabold leading-none">{{ stats?.newRequests ?? '—' }}</div>
+                <div class="text-secondary text-xs mt-1">Νέα Αιτήματα</div>
+            </div>
+        </div>
+
+        <!-- Σύνολο -->
+        <div class="flex items-center gap-4 rounded-2xl border bg-card p-4 shadow-sm">
+            <div class="flex items-center justify-center w-12 h-12 rounded-xl bg-indigo-500/10 shrink-0">
+                <mat-icon class="text-indigo-500">list_alt</mat-icon>
+            </div>
+            <div>
+                <div class="text-2xl font-extrabold leading-none">{{ stats?.total ?? '—' }}</div>
+                <div class="text-secondary text-xs mt-1">Σύνολο Αιτημάτων</div>
+            </div>
+        </div>
+
+        <!-- Αποδεκτά -->
+        <div class="flex items-center gap-4 rounded-2xl border bg-card p-4 shadow-sm">
+            <div class="flex items-center justify-center w-12 h-12 rounded-xl bg-green-500/10 shrink-0">
+                <mat-icon class="text-green-500">verified_user</mat-icon>
+            </div>
+            <div>
+                <div class="text-2xl font-extrabold leading-none">{{ stats?.totalAccepted ?? '—' }}</div>
+                <div class="text-secondary text-xs mt-1">Αποδεκτά</div>
+            </div>
+        </div>
+
+        <!-- Απορριφθέντα -->
+        <div class="flex items-center gap-4 rounded-2xl border bg-card p-4 shadow-sm">
+            <div class="flex items-center justify-center w-12 h-12 rounded-xl bg-red-500/10 shrink-0">
+                <mat-icon class="text-red-500">cancel</mat-icon>
+            </div>
+            <div>
+                <div class="text-2xl font-extrabold leading-none">{{ stats?.totalRejected ?? '—' }}</div>
+                <div class="text-secondary text-xs mt-1">Απορριφθέντα</div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ── Tabs ─────────────────────────────────────────────────── -->
+    <mat-tab-group (selectedIndexChange)="onTabChange($event)" animationDuration="200ms">
+
+        <!-- ══ TAB 1: Εκκρεμή Αιτήματα ══════════════════════════════ -->
+        <mat-tab label="Εκκρεμή Αιτήματα">
+
+            <!-- Filter bar -->
+            <div class="bg-gray-50/80 dark:bg-white/5 border rounded-2xl shadow-sm px-4 py-4 mt-5">
+                <div class="flex flex-wrap items-end gap-3">
+                    <mat-form-field class="flex-1 min-w-[180px]" subscriptSizing="dynamic">
+                        <mat-icon matPrefix>search</mat-icon>
+                        <mat-label>Αναζήτηση</mat-label>
+                        <input matInput [formControl]="searchCtrl" placeholder="Όνομα, email, κωδικός…" />
+                    </mat-form-field>
+                    <mat-form-field class="w-44" subscriptSizing="dynamic">
+                        <mat-label>Από</mat-label>
+                        <input matInput [matDatepicker]="pendingFrom" [formControl]="fromDateCtrl" />
+                        <mat-datepicker-toggle matSuffix [for]="pendingFrom"></mat-datepicker-toggle>
+                        <mat-datepicker #pendingFrom></mat-datepicker>
+                    </mat-form-field>
+                    <mat-form-field class="w-44" subscriptSizing="dynamic">
+                        <mat-label>Έως</mat-label>
+                        <input matInput [matDatepicker]="pendingTo" [formControl]="toDateCtrl" />
+                        <mat-datepicker-toggle matSuffix [for]="pendingTo"></mat-datepicker-toggle>
+                        <mat-datepicker #pendingTo></mat-datepicker>
+                    </mat-form-field>
+                    <button *ngIf="searchCtrl.value || fromDateCtrl.value || toDateCtrl.value" mat-icon-button
+                        type="button" matTooltip="Εκκαθάριση φίλτρων"
+                        (click)="searchCtrl.reset(); fromDateCtrl.reset(); toDateCtrl.reset()">
+                        <mat-icon class="text-secondary">filter_alt_off</mat-icon>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Pending table -->
+            <div class="bg-card rounded-2xl border shadow-sm overflow-hidden mt-5">
+                <div *ngIf="!loading && !dataSource.data.length" class="p-10 text-center">
+                    <mat-icon class="text-4xl text-secondary">inbox</mat-icon>
+                    <div class="text-xl font-semibold mt-2">Δεν υπάρχουν αιτήματα εγγραφής.</div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table mat-table [dataSource]="dataSource" matSort #pendingSort="matSort"
+                        class="min-w-[900px] w-full">
+
+                        <!-- Name -->
+                        <ng-container matColumnDef="name">
+                            <th mat-header-cell *matHeaderCellDef mat-sort-header class="px-5">Ονοματεπώνυμο</th>
+                            <td mat-cell *matCellDef="let r" class="px-5 py-3">
+                                <div class="min-w-0">
+                                    <div class="font-semibold truncate">{{ r.firstname }} {{ r.lastname }}</div>
+                                    <div class="text-secondary text-xs truncate">{{ r.code }}</div>
+                                </div>
+                            </td>
+                        </ng-container>
+
+                        <!-- Email -->
+                        <ng-container matColumnDef="email">
+                            <th mat-header-cell *matHeaderCellDef mat-sort-header class="px-5">Email</th>
+                            <td mat-cell *matCellDef="let r" class="px-5 py-3 text-sm">{{ r.email }}</td>
+                        </ng-container>
+
+                        <!-- Mobile -->
+                        <ng-container matColumnDef="mobile">
+                            <th mat-header-cell *matHeaderCellDef class="px-5">Κινητό</th>
+                            <td mat-cell *matCellDef="let r" class="px-5 py-3">
+                                <div class="flex items-center gap-2 text-sm">
+                                    <ng-container *ngIf="r.mobileCountryCode">
+                                        <img *ngIf="flagUrl(r.mobileCountryCode)" [src]="flagUrl(r.mobileCountryCode)"
+                                            class="h-3.5 w-5 rounded-sm border border-gray-200 dark:border-white/10 object-cover shrink-0"
+                                            [alt]="r.mobileCountryCode"
+                                            (error)="$any($event.target).style.display='none'" />
+                                        <span class="shrink-0 text-xs font-semibold text-secondary">+{{
+                                            r.mobileCountryCode }}</span>
+                                    </ng-container>
+                                    <span class="truncate">{{ r.mobile || '—' }}</span>
+                                </div>
+                            </td>
+                        </ng-container>
+
+                        <!-- Linked user -->
+                        <ng-container matColumnDef="linkedUser">
+                            <th mat-header-cell *matHeaderCellDef class="px-5">Συσχέτιση</th>
+                            <td mat-cell *matCellDef="let r" class="px-5 py-3 text-sm text-secondary">{{
+                                r.linkedUserInput || '—' }}</td>
+                        </ng-container>
+
+                        <!-- Social -->
+                        <ng-container matColumnDef="social">
+                            <th mat-header-cell *matHeaderCellDef class="px-5">Social Media</th>
+                            <td mat-cell *matCellDef="let r" class="px-5 py-3">
+                                <div *ngIf="r.socialMediaAccount" class="flex items-center gap-2 text-sm">
+                                    <svg *ngIf="r.socialMediaPlatform === 1" class="w-4 h-4 text-blue-600 shrink-0"
+                                        viewBox="0 0 24 24" fill="currentColor">
+                                        <path
+                                            d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987H8.079V12h2.359V9.797c0-2.33 1.388-3.617 3.514-3.617 1.017 0 2.082.182 2.082.182v2.285h-1.173c-1.155 0-1.515.717-1.515 1.452V12h2.578l-.412 2.891h-2.166v6.987C18.343 21.128 22 16.991 22 12" />
+                                    </svg>
+                                    <svg *ngIf="r.socialMediaPlatform === 2" class="w-4 h-4 text-pink-500 shrink-0"
+                                        viewBox="0 0 24 24" fill="currentColor">
+                                        <path
+                                            d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+                                    </svg>
+                                    <span class="truncate max-w-[120px]">{{ r.socialMediaAccount }}</span>
+                                </div>
+                                <span *ngIf="!r.socialMediaAccount" class="text-secondary text-sm">—</span>
+                            </td>
+                        </ng-container>
+
+                        <!-- Actions -->
+                        <ng-container matColumnDef="actions">
+                            <th mat-header-cell *matHeaderCellDef class="px-5"></th>
+                            <td mat-cell *matCellDef="let r" class="px-5 py-3">
+                                <button mat-stroked-button type="button" (click)="openModal(r)">
+                                    <mat-icon class="icon-size-4">visibility</mat-icon>
+                                    <span class="ml-1 text-sm">Προβολή Λεπτομερειών</span>
+                                </button>
+                            </td>
+                        </ng-container>
+
+                        <tr mat-header-row *matHeaderRowDef="columns"
+                            class="!bg-gray-800 dark:!bg-gray-900 [&_th]:!text-gray-100 [&_.mat-sort-header-button]:!text-gray-100">
+                        </tr>
+                        <tr mat-row *matRowDef="let r; columns: columns;"
+                            class="hover:bg-gray-50/60 dark:hover:bg-white/3 transition"></tr>
+                    </table>
+                </div>
+                <mat-paginator #pendingPaginator [pageSizeOptions]="[15, 30, 50]" showFirstLastButtons
+                    class="border-t"></mat-paginator>
+            </div>
+
+        </mat-tab>
+
+        <!-- ══ TAB 2: Ολοκληρωμένα ═══════════════════════════════════ -->
+        <mat-tab label="Ολοκληρωμένα">
+
+            <!-- Filter bar -->
+            <div class="bg-gray-50/80 dark:bg-white/5 border rounded-2xl shadow-sm px-4 py-4 mt-5">
+                <div class="flex flex-wrap items-end gap-3">
+                    <mat-form-field class="flex-1 min-w-[180px]" subscriptSizing="dynamic">
+                        <mat-icon matPrefix>search</mat-icon>
+                        <mat-label>Αναζήτηση</mat-label>
+                        <input matInput [formControl]="completedSearchCtrl" placeholder="Όνομα, email, κωδικός…" />
+                    </mat-form-field>
+                    <mat-form-field class="w-44" subscriptSizing="dynamic">
+                        <mat-label>Από</mat-label>
+                        <input matInput [matDatepicker]="completedFrom" [formControl]="completedFromDateCtrl" />
+                        <mat-datepicker-toggle matSuffix [for]="completedFrom"></mat-datepicker-toggle>
+                        <mat-datepicker #completedFrom></mat-datepicker>
+                    </mat-form-field>
+                    <mat-form-field class="w-44" subscriptSizing="dynamic">
+                        <mat-label>Έως</mat-label>
+                        <input matInput [matDatepicker]="completedTo" [formControl]="completedToDateCtrl" />
+                        <mat-datepicker-toggle matSuffix [for]="completedTo"></mat-datepicker-toggle>
+                        <mat-datepicker #completedTo></mat-datepicker>
+                    </mat-form-field>
+                    <mat-form-field class="w-52" subscriptSizing="dynamic">
+                        <mat-label>Admin</mat-label>
+                        <mat-select [formControl]="adminFilterCtrl">
+                            <mat-option [value]="null">Όλοι οι Admins</mat-option>
+                            <mat-option *ngFor="let a of reviewerAdmins" [value]="a.id">{{ a.name }}</mat-option>
+                        </mat-select>
+                    </mat-form-field>
+                    <button
+                        *ngIf="completedSearchCtrl.value || completedFromDateCtrl.value || completedToDateCtrl.value || adminFilterCtrl.value"
+                        mat-icon-button type="button" matTooltip="Εκκαθάριση φίλτρων"
+                        (click)="completedSearchCtrl.reset(); completedFromDateCtrl.reset(); completedToDateCtrl.reset(); adminFilterCtrl.reset()">
+                        <mat-icon class="text-secondary">filter_alt_off</mat-icon>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Completed table -->
+            <div class="bg-card rounded-2xl border shadow-sm overflow-hidden mt-5">
+                <mat-progress-bar *ngIf="loadingCompleted" mode="indeterminate"></mat-progress-bar>
+                <div *ngIf="!loadingCompleted && !completedDataSource.data.length" class="p-10 text-center">
+                    <mat-icon class="text-4xl text-secondary">check_circle</mat-icon>
+                    <div class="text-xl font-semibold mt-2">Δεν υπάρχουν ολοκληρωμένα αιτήματα.</div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table mat-table [dataSource]="completedDataSource" matSort #completedSort="matSort"
+                        class="min-w-[900px] w-full">
+
+                        <!-- Name -->
+                        <ng-container matColumnDef="name">
+                            <th mat-header-cell *matHeaderCellDef mat-sort-header class="px-5">Ονοματεπώνυμο</th>
+                            <td mat-cell *matCellDef="let r" class="px-5 py-3">
+                                <div class="flex items-center gap-3">
+                                    <div
+                                        class="h-9 w-9 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-800 flex items-center justify-center shrink-0">
+                                        <img *ngIf="r.image" [src]="r.image" class="h-full w-full object-cover" />
+                                        <span *ngIf="!r.image"
+                                            class="text-sm font-bold uppercase text-gray-600 dark:text-gray-300">{{
+                                            r.firstname?.charAt(0) || '?' }}</span>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <div class="font-semibold truncate">{{ r.firstname }} {{ r.lastname }}</div>
+                                        <div class="text-secondary text-xs truncate">{{ r.code }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                        </ng-container>
+
+                        <!-- Date of request -->
+                        <ng-container matColumnDef="createdOn">
+                            <th mat-header-cell *matHeaderCellDef mat-sort-header class="px-5">Ημ/νία Αίτησης</th>
+                            <td mat-cell *matCellDef="let r" class="px-5 py-3 text-sm text-secondary">
+                                {{ r.createdOn ? (r.createdOn | date:'dd/MM/yyyy') : '—' }}
+                            </td>
+                        </ng-container>
+
+                        <!-- Email -->
+                        <ng-container matColumnDef="email">
+                            <th mat-header-cell *matHeaderCellDef mat-sort-header class="px-5">Email</th>
+                            <td mat-cell *matCellDef="let r" class="px-5 py-3 text-sm">{{ r.email }}</td>
+                        </ng-container>
+
+                        <!-- Mobile -->
+                        <ng-container matColumnDef="mobile">
+                            <th mat-header-cell *matHeaderCellDef class="px-5">Κινητό</th>
+                            <td mat-cell *matCellDef="let r" class="px-5 py-3">
+                                <div class="flex items-center gap-2 text-sm">
+                                    <ng-container *ngIf="r.mobileCountryCode">
+                                        <img *ngIf="flagUrl(r.mobileCountryCode)" [src]="flagUrl(r.mobileCountryCode)"
+                                            class="h-3.5 w-5 rounded-sm border border-gray-200 dark:border-white/10 object-cover shrink-0"
+                                            [alt]="r.mobileCountryCode"
+                                            (error)="$any($event.target).style.display='none'" />
+                                        <span class="shrink-0 text-xs font-semibold text-secondary">+{{
+                                            r.mobileCountryCode }}</span>
+                                    </ng-container>
+                                    <span class="truncate">{{ r.mobile || '—' }}</span>
+                                </div>
+                            </td>
+                        </ng-container>
+
+                        <!-- Result -->
+                        <ng-container matColumnDef="result">
+                            <th mat-header-cell *matHeaderCellDef class="px-5">Αποτέλεσμα</th>
+                            <td mat-cell *matCellDef="let r" class="px-5 py-3">
+                                <div *ngIf="r.status === 2"
+                                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-500/10 text-green-600 text-xs font-semibold">
+                                    <mat-icon class="icon-size-4">check_circle</mat-icon> Αποδεκτό
+                                </div>
+                                <div *ngIf="r.status === 5"
+                                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-500/10 text-red-600 text-xs font-semibold">
+                                    <mat-icon class="icon-size-4">cancel</mat-icon> Απορρίφθηκε
+                                </div>
+                            </td>
+                        </ng-container>
+
+                        <!-- Reviewed by admin -->
+                        <ng-container matColumnDef="reviewedBy">
+                            <th mat-header-cell *matHeaderCellDef class="px-5">Admin</th>
+                            <td mat-cell *matCellDef="let r" class="px-5 py-3 text-sm">
+                                <span *ngIf="r.reviewedByAdminName" class="font-medium">{{ r.reviewedByAdminName
+                                    }}</span>
+                                <span *ngIf="!r.reviewedByAdminName" class="text-secondary">—</span>
+                            </td>
+                        </ng-container>
+
+                        <!-- Reviewed at -->
+                        <ng-container matColumnDef="reviewedAt">
+                            <th mat-header-cell *matHeaderCellDef mat-sort-header class="px-5">Ημ/νία Απόφασης</th>
+                            <td mat-cell *matCellDef="let r" class="px-5 py-3 text-sm text-secondary">
+                                {{ r.reviewedAt ? (r.reviewedAt | date:'dd/MM/yyyy HH:mm') : '—' }}
+                            </td>
+                        </ng-container>
+
+                        <!-- Actions -->
+                        <ng-container matColumnDef="actions">
+                            <th mat-header-cell *matHeaderCellDef class="px-5"></th>
+                            <td mat-cell *matCellDef="let r" class="px-5 py-3">
+                                <button mat-stroked-button type="button" (click)="openModal(r)">
+                                    <mat-icon class="icon-size-4">edit</mat-icon>
+                                    <span class="ml-1 text-sm">Επεξεργασία</span>
+                                </button>
+                            </td>
+                        </ng-container>
+
+                        <tr mat-header-row *matHeaderRowDef="completedColumns"
+                            class="!bg-gray-800 dark:!bg-gray-900 [&_th]:!text-gray-100 [&_.mat-sort-header-button]:!text-gray-100">
+                        </tr>
+                        <tr mat-row *matRowDef="let r; columns: completedColumns;"
+                            class="hover:bg-gray-50/60 dark:hover:bg-white/3 transition"></tr>
+                    </table>
+                </div>
+                <mat-paginator #completedPaginator [pageSizeOptions]="[15, 30, 50]" showFirstLastButtons
+                    class="border-t"></mat-paginator>
+            </div>
+
+        </mat-tab>
+
+    </mat-tab-group>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODAL — Details + Review
+     ══════════════════════════════════════════════════════════════ -->
+<div *ngIf="modalOpen && modalRequest"
+    class="fixed inset-0 z-50 flex items-start justify-center bg-black/40 backdrop-blur-sm overflow-y-auto py-8 px-4">
+    <div class="bg-card rounded-2xl border shadow-2xl w-full max-w-2xl">
+
+        <!-- Modal header -->
+        <div class="flex items-center justify-between gap-3 px-6 pt-6 pb-4 border-b">
+            <div class="flex items-center gap-3">
+                <div
+                    class="h-12 w-12 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-800 flex items-center justify-center shrink-0">
+                    <img *ngIf="modalRequest.image" [src]="modalRequest.image" class="h-full w-full object-cover" />
+                    <span *ngIf="!modalRequest.image"
+                        class="text-lg font-bold uppercase text-gray-600 dark:text-gray-300">
+                        {{ modalRequest.firstname?.charAt(0) || '?' }}
+                    </span>
+                </div>
+                <div>
+                    <div class="font-extrabold text-lg">{{ modalRequest.firstname }} {{ modalRequest.lastname }}</div>
+                    <div class="text-secondary text-sm">{{ modalRequest.code }}</div>
+                </div>
+            </div>
+            <button mat-icon-button type="button" (click)="closeModal()">
+                <mat-icon>close</mat-icon>
+            </button>
+        </div>
+
+        <!-- Detail fields -->
+        <div class="px-6 py-5">
+            <div class="text-[11px] font-bold uppercase tracking-widest text-secondary mb-4">Στοιχεία Αιτήματος</div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+
+                <!-- Email -->
+                <div
+                    class="rounded-xl border p-4 flex items-center gap-4 hover:bg-gray-50/60 dark:hover:bg-white/5 transition">
+                    <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-red-500/10 shrink-0">
+                        <mat-icon class="text-red-500">email</mat-icon>
+                    </div>
+                    <div class="min-w-0">
+                        <div class="text-sm text-secondary font-medium">Email</div>
+                        <div class="text-base font-semibold truncate">{{ modalRequest.email }}</div>
+                    </div>
+                </div>
+
+                <!-- Mobile -->
+                <div
+                    class="rounded-xl border p-4 flex items-center gap-4 hover:bg-gray-50/60 dark:hover:bg-white/5 transition">
+                    <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-red-500/10 shrink-0">
+                        <mat-icon class="text-red-500">phone</mat-icon>
+                    </div>
+                    <div class="min-w-0">
+                        <div class="text-sm text-secondary font-medium">Κινητό</div>
+                        <div class="text-base font-semibold flex items-center gap-2">
+                            <span *ngIf="modalRequest.mobileCountryCode"
+                                class="shrink-0 text-xs font-semibold px-1.5 py-0.5 rounded bg-gray-100 dark:bg-white/10 text-secondary">
+                                +{{ modalRequest.mobileCountryCode }}
+                            </span>
+                            <span class="truncate">{{ modalRequest.mobile || '—' }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Linked user input -->
+                <div
+                    class="rounded-xl border p-4 flex items-center gap-4 hover:bg-gray-50/60 dark:hover:bg-white/5 transition">
+                    <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-red-500/10 shrink-0">
+                        <mat-icon class="text-red-500">link</mat-icon>
+                    </div>
+                    <div class="min-w-0">
+                        <div class="text-sm text-secondary font-medium">Συσχετισμένο Πρόσωπο</div>
+                        <div class="text-base font-semibold truncate">{{ modalRequest.linkedUserInput || '—' }}</div>
+                    </div>
+                </div>
+
+                <!-- Social media -->
+                <div
+                    class="rounded-xl border p-4 flex items-center gap-4 hover:bg-gray-50/60 dark:hover:bg-white/5 transition">
+                    <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-red-500/10 shrink-0">
+                        <!-- Facebook -->
+                        <svg *ngIf="modalRequest.socialMediaPlatform === 1" class="w-5 h-5 text-red-500"
+                            viewBox="0 0 24 24" fill="currentColor">
+                            <path
+                                d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987H8.079V12h2.359V9.797c0-2.33 1.388-3.617 3.514-3.617 1.017 0 2.082.182 2.082.182v2.285h-1.173c-1.155 0-1.515.717-1.515 1.452V12h2.578l-.412 2.891h-2.166v6.987C18.343 21.128 22 16.991 22 12" />
+                        </svg>
+                        <!-- Instagram -->
+                        <svg *ngIf="modalRequest.socialMediaPlatform === 2" class="w-5 h-5 text-red-500"
+                            viewBox="0 0 24 24" fill="currentColor">
+                            <path
+                                d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+                        </svg>
+                        <!-- Generic -->
+                        <mat-icon *ngIf="!modalRequest.socialMediaPlatform" class="text-red-500">share</mat-icon>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <div class="text-sm text-secondary font-medium">{{ socialLabel(modalRequest.socialMediaPlatform)
+                            }}</div>
+                        <div class="flex items-center gap-2 min-w-0">
+                            <span
+                                class="text-base font-semibold min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap">{{
+                                modalRequest.socialMediaAccount || '—' }}</span>
+                            <a *ngIf="socialUrl(modalRequest)" [href]="socialUrl(modalRequest)!" target="_blank"
+                                rel="noopener"
+                                class="shrink-0 inline-flex items-center justify-center w-7 h-7 rounded-lg bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 transition"
+                                matTooltip="Άνοιγμα προφίλ">
+                                <mat-icon class="!text-sm">open_in_new</mat-icon>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Registration date -->
+                <div
+                    class="rounded-xl border p-4 flex items-center gap-4 hover:bg-gray-50/60 dark:hover:bg-white/5 transition">
+                    <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-red-500/10 shrink-0">
+                        <mat-icon class="text-red-500">calendar_today</mat-icon>
+                    </div>
+                    <div class="min-w-0">
+                        <div class="text-sm text-secondary font-medium">Ημ/νία Εγγραφής</div>
+                        <div class="text-base font-semibold truncate">{{ modalRequest.createdOn | date:'dd/MM/yyyy
+                            HH:mm' }}</div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Divider -->
+        <div class="border-t mx-6"></div>
+
+        <!-- Link user section -->
+        <div class="px-6 py-5">
+            <div class="text-[11px] font-bold uppercase tracking-widest text-secondary mb-4">Σύνδεση με υπάρχοντα χρήστη
+            </div>
+
+            <!-- Selected user card -->
+            <div *ngIf="selectedLinkedUser"
+                class="flex items-center gap-4 rounded-2xl border border-primary/40 bg-primary/5 p-4 mb-4">
+                <div
+                    class="h-14 w-14 rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 flex items-center justify-center shrink-0">
+                    <img *ngIf="selectedLinkedUser.image" [src]="selectedLinkedUser.image"
+                        class="h-full w-full object-cover" />
+                    <span *ngIf="!selectedLinkedUser.image"
+                        class="text-xl font-bold uppercase text-gray-600 dark:text-gray-300">
+                        {{ selectedLinkedUser.firstname?.charAt(0) || '?' }}
+                    </span>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="font-bold text-base truncate">{{ selectedLinkedUser.firstname }} {{
+                        selectedLinkedUser.lastname }}</div>
+                    <div class="text-secondary text-sm">{{ selectedLinkedUser.code }}</div>
+                </div>
+                <button mat-icon-button type="button" (click)="clearLinkedUser()" matTooltip="Αφαίρεση">
+                    <mat-icon class="text-secondary">close</mat-icon>
+                </button>
+            </div>
+
+            <!-- Search input -->
+            <mat-form-field class="w-full" subscriptSizing="dynamic">
+                <mat-icon matPrefix>search</mat-icon>
+                <mat-label>Αναζήτηση χρήστη για σύνδεση</mat-label>
+                <input matInput [formControl]="userSearchCtrl" placeholder="Όνομα ή κωδικός…" autocomplete="off" />
+            </mat-form-field>
+
+            <!-- Results dropdown -->
+            <div *ngIf="filteredUsers.length"
+                class="mt-1 rounded-xl border bg-card shadow-lg overflow-hidden max-h-48 overflow-y-auto">
+                <button *ngFor="let u of filteredUsers" type="button"
+                    class="flex items-center gap-3 w-full px-4 py-2.5 text-left hover:bg-gray-50/80 dark:hover:bg-white/5 transition"
+                    (click)="selectLinkedUser(u)">
+                    <div
+                        class="h-8 w-8 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-800 flex items-center justify-center shrink-0">
+                        <img *ngIf="u.image" [src]="u.image" class="h-full w-full object-cover" />
+                        <span *ngIf="!u.image" class="text-xs font-bold uppercase text-gray-600 dark:text-gray-300">
+                            {{ u.firstname?.charAt(0) || '?' }}
+                        </span>
+                    </div>
+                    <div class="min-w-0">
+                        <div class="font-semibold text-sm truncate">{{ u.firstname }} {{ u.lastname }}</div>
+                        <div class="text-secondary text-xs">{{ u.code }}</div>
+                    </div>
+                </button>
+            </div>
+        </div>
+
+        <!-- Action buttons -->
+        <div class="flex items-center justify-end gap-3 px-6 pb-6 pt-2 border-t mt-0">
+            <button mat-button type="button" (click)="closeModal()">Κλείσιμο</button>
+            <button mat-flat-button color="warn" type="button" (click)="reject()">
+                <mat-icon>block</mat-icon>
+                <span class="ml-1">Απόρριψη</span>
+            </button>
+            <button mat-flat-button color="primary" type="button" [disabled]="!selectedLinkedUser" (click)="accept()"
+                [matTooltip]="!selectedLinkedUser ? 'Επιλέξτε συνδεδεμένο χρήστη για αποδοχή' : ''">
+                <mat-icon>check_circle</mat-icon>
+                <span class="ml-1">Αποδοχή</span>
+            </button>
+        </div>
+
+    </div>
+</div>
+
+<!-- ── Success Modal ────────────────────────────────────────── -->
+<div *ngIf="successModalOpen"
+    class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+    <div class="bg-card rounded-2xl border shadow-2xl w-full max-w-md text-center px-8 py-10">
+        <!-- Green check icon -->
+        <div class="flex items-center justify-center w-20 h-20 rounded-full bg-green-500/10 mx-auto mb-6">
+            <mat-icon class="text-green-500" style="font-size:48px;width:48px;height:48px;">check_circle</mat-icon>
+        </div>
+        <div class="text-2xl font-extrabold mb-2">Αποδοχή Επιτυχής!</div>
+        <div class="text-secondary text-sm mb-6">Ο χρήστης εγκρίθηκε. Ο κωδικός που αποδόθηκε είναι:</div>
+        <!-- Big code display -->
+        <div class="text-5xl sm:text-6xl font-black tracking-widest text-primary my-6 select-all">
+            {{ successCode }}
+        </div>
+        <button mat-flat-button color="primary" class="w-full" type="button" (click)="closeSuccessModal()">
+            Κλείσιμο
+        </button>
+    </div>
+</div>

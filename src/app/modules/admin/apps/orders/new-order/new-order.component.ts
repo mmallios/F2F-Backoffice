@@ -54,7 +54,7 @@ export class NewOrderComponent implements OnInit {
     // ── State ────────────────────────────────────
     loading = true;
     submitting = false;
-    step = signal(0); // 0=user  1=address  2=products
+    step = signal(0); // 0=user  1=address  2=products  3=confirm
 
     // ── Step 0 — User ───────────────────────────
     userSearch = '';
@@ -136,6 +136,24 @@ export class NewOrderComponent implements OnInit {
     sizeLabel(size: number | null): string {
         if (size === null || size === undefined) return 'Χωρίς μέγεθος';
         return SIZE_LABELS[size] ?? String(size);
+    }
+
+    get shippingMethodLabel(): string {
+        switch (this.addressForm.value.shippingMethod) {
+            case 0: return 'Courier';
+            case 1: return 'Παράδοση στο χώρο';
+            case 2: return 'Click & Collect';
+            default: return '—';
+        }
+    }
+
+    get paymentMethodLabel(): string {
+        switch (this.addressForm.value.paymentMethod) {
+            case 0: return 'Κάρτα';
+            case 1: return 'Αντικαταβολή';
+            case 2: return 'Revolut';
+            default: return '—';
+        }
     }
 
     userInitials(u: User | null): string {

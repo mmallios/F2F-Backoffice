@@ -1,0 +1,354 @@
+<div class="flex flex-col max-h-[92vh]">
+
+    <!-- ── Dialog header ──────────────────────────────────────────── -->
+    <div class="shrink-0 px-6 pt-6 pb-4 flex items-start justify-between gap-4 border-b">
+        <div>
+            <div class="flex items-center gap-3">
+                <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-indigo-500/10 shrink-0">
+                    <mat-icon class="text-indigo-500">credit_card</mat-icon>
+                </div>
+                <div>
+                    <div class="text-xl font-extrabold tracking-tight leading-none font-mono">
+                        {{ card.cardCode }}
+                    </div>
+                    <div class="text-secondary text-xs mt-0.5">Κάρτα #{{ card.id }}</div>
+                </div>
+            </div>
+
+            <!-- Owner mini-info -->
+            <div *ngIf="card.ownerFullName" class="flex items-center gap-2 mt-3">
+                <img *ngIf="card.ownerImage" [src]="card.ownerImage"
+                    class="w-6 h-6 rounded-full object-cover border shrink-0" alt="">
+                <div *ngIf="!card.ownerImage"
+                    class="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-[10px] shrink-0">
+                    {{ card.ownerFullName.charAt(0) }}
+                </div>
+                <span class="text-sm font-semibold">{{ card.ownerFullName }}</span>
+                <span *ngIf="card.ownerCode" class="font-mono text-xs text-secondary/60">{{ card.ownerCode }}</span>
+            </div>
+        </div>
+        <button mat-icon-button (click)="close()">
+            <mat-icon>close</mat-icon>
+        </button>
+    </div>
+
+    <!-- ── Tabs ───────────────────────────────────────────────────── -->
+    <mat-tab-group class="flex-1 min-h-0 overflow-hidden" animationDuration="150ms">
+
+        <!-- ── Tab 1: Usage history ──────────────────────────────── -->
+        <mat-tab>
+            <ng-template mat-tab-label>
+                <mat-icon class="!text-sm mr-1">history</mat-icon>
+                Ιστορικό Χρήσης
+                <span *ngIf="!loadingUsages && usages.length"
+                    class="ml-2 text-xs bg-sky-500/10 text-sky-600 dark:text-sky-400 font-bold rounded-full px-2 py-0.5">
+                    {{ usages.length }}
+                </span>
+            </ng-template>
+
+            <div class="overflow-auto" style="max-height: calc(90vh - 210px)">
+                <mat-progress-bar *ngIf="loadingUsages" mode="indeterminate" class="shrink-0"></mat-progress-bar>
+
+                <div *ngIf="!loadingUsages && usages.length === 0"
+                    class="py-16 flex flex-col items-center gap-3 text-secondary opacity-40">
+                    <mat-icon class="!text-5xl">history_toggle_off</mat-icon>
+                    <span class="text-sm">Καμία χρήση ακόμα</span>
+                </div>
+
+                <table class="w-full text-sm" *ngIf="!loadingUsages && usages.length > 0">
+                    <thead class="bg-black/3 dark:bg-black/20 sticky top-0">
+                        <tr>
+                            <th class="px-4 py-2 text-left text-xs font-bold text-secondary uppercase">#</th>
+                            <th class="px-4 py-2 text-left text-xs font-bold text-secondary uppercase">Χρήστης</th>
+                            <th class="px-4 py-2 text-left text-xs font-bold text-secondary uppercase">Αγώνας</th>
+                            <th class="px-4 py-2 text-left text-xs font-bold text-secondary uppercase">Ημ/νία</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y">
+                        <tr *ngFor="let u of pagedUsages"
+                            class="hover:bg-black/2 dark:hover:bg-white/2 transition-colors">
+
+                            <!-- ID -->
+                            <td class="px-4 py-3 font-mono text-xs text-secondary">#{{ u.id }}</td>
+
+                            <!-- User -->
+                            <td class="px-4 py-3">
+                                <div class="flex items-center gap-2">
+                                    <img *ngIf="u.usedByImage" [src]="u.usedByImage"
+                                        class="w-7 h-7 rounded-full object-cover border shrink-0" alt="">
+                                    <div *ngIf="!u.usedByImage"
+                                        class="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary text-xs shrink-0">
+                                        {{ u.usedByFullName?.charAt(0) ?? '?' }}
+                                    </div>
+                                    <div>
+                                        <div class="font-semibold text-sm leading-snug">{{ u.usedByFullName }}</div>
+                                        <div *ngIf="u.usedByCode" class="font-mono text-[10px] text-secondary/60">{{
+                                            u.usedByCode }}</div>
+                                    </div>
+                                </div>
+                            </td>
+
+                            <!-- Event (teams + competition/matchday below) -->
+                            <td class="px-4 py-3">
+                                <div class="flex items-center gap-2">
+                                    <img *ngIf="u.homeTeamLogo" [src]="u.homeTeamLogo" class="w-5 h-5 object-contain"
+                                        alt="">
+                                    <span class="font-semibold text-sm">
+                                        {{ u.homeTeamName ?? '—' }} – {{ u.awayTeamName ?? '—' }}
+                                    </span>
+                                    <img *ngIf="u.awayTeamLogo" [src]="u.awayTeamLogo" class="w-5 h-5 object-contain"
+                                        alt="">
+                                </div>
+                                <div class="text-secondary text-xs mt-0.5 flex items-center gap-1.5 pl-0.5">
+                                    <span *ngIf="u.competitionName">{{ u.competitionName }}</span>
+                                    <span *ngIf="u.matchday" class="opacity-60">· {{ u.matchday }}</span>
+                                </div>
+                            </td>
+
+                            <!-- Date -->
+                            <td class="px-4 py-3 text-xs text-secondary whitespace-nowrap">
+                                {{ u.usedAt | date:'dd/MM/yy HH:mm' }}
+                            </td>
+
+                        </tr>
+                    </tbody>
+                </table>
+
+                <!-- Usages pagination -->
+                <div *ngIf="usagesTotalPages > 1" class="flex items-center justify-center gap-4 py-3 border-t text-sm">
+                    <button mat-icon-button [disabled]="usagesPage === 0" (click)="usagesPage = usagesPage - 1">
+                        <mat-icon>chevron_left</mat-icon>
+                    </button>
+                    <span class="text-secondary">{{ usagesPage + 1 }} / {{ usagesTotalPages }}</span>
+                    <button mat-icon-button [disabled]="usagesPage >= usagesTotalPages - 1"
+                        (click)="usagesPage = usagesPage + 1">
+                        <mat-icon>chevron_right</mat-icon>
+                    </button>
+                </div>
+            </div>
+        </mat-tab>
+
+        <!-- ── Tab 2: Requests ───────────────────────────────────── -->
+        <mat-tab>
+            <ng-template mat-tab-label>
+                <mat-icon class="!text-sm mr-1">assignment</mat-icon>
+                Αιτήματα
+                <span *ngIf="!loadingRequests && requests.length"
+                    class="ml-2 text-xs bg-primary/10 text-primary font-bold rounded-full px-2 py-0.5">
+                    {{ requests.length }}
+                </span>
+            </ng-template>
+
+            <div class="overflow-auto" style="max-height: calc(90vh - 210px)">
+                <mat-progress-bar *ngIf="loadingRequests" mode="indeterminate" class="shrink-0"></mat-progress-bar>
+
+                <div *ngIf="!loadingRequests && requests.length === 0"
+                    class="py-16 flex flex-col items-center gap-3 text-secondary opacity-40">
+                    <mat-icon class="!text-5xl">assignment_turned_in</mat-icon>
+                    <span class="text-sm">Κανένα αίτημα</span>
+                </div>
+
+                <table class="w-full text-sm" *ngIf="!loadingRequests && requests.length > 0">
+                    <thead class="bg-black/3 dark:bg-black/20 sticky top-0">
+                        <tr>
+                            <th class="px-4 py-2 text-left text-xs font-bold text-secondary uppercase">#</th>
+                            <th class="px-4 py-2 text-left text-xs font-bold text-secondary uppercase">Χρήστης</th>
+                            <th class="px-4 py-2 text-left text-xs font-bold text-secondary uppercase">Αγώνας</th>
+                            <th class="px-4 py-2 text-center text-xs font-bold text-secondary uppercase">Χρήση</th>
+                            <th class="px-4 py-2 text-left text-xs font-bold text-secondary uppercase">Ημ/νία</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y">
+                        <tr *ngFor="let r of pagedRequests"
+                            class="hover:bg-black/2 dark:hover:bg-white/2 transition-colors">
+
+                            <!-- ID -->
+                            <td class="px-4 py-3 font-mono text-xs text-secondary">#{{ r.id }}</td>
+
+                            <!-- User -->
+                            <td class="px-4 py-3">
+                                <div class="flex items-center gap-2">
+                                    <img *ngIf="r.usedByImage" [src]="r.usedByImage"
+                                        class="w-7 h-7 rounded-full object-cover border shrink-0" alt="">
+                                    <div *ngIf="!r.usedByImage"
+                                        class="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary text-xs shrink-0">
+                                        {{ r.usedByFullName?.charAt(0) ?? '?' }}
+                                    </div>
+                                    <div>
+                                        <div class="font-semibold text-sm leading-snug">{{ r.usedByFullName }}</div>
+                                        <div *ngIf="r.usedByCode" class="font-mono text-[10px] text-secondary/60">{{
+                                            r.usedByCode }}</div>
+                                    </div>
+                                </div>
+                            </td>
+
+                            <!-- Event -->
+                            <td class="px-4 py-3">
+                                <div class="flex items-center gap-2">
+                                    <img *ngIf="r.homeTeamLogo" [src]="r.homeTeamLogo" class="w-5 h-5 object-contain"
+                                        alt="">
+                                    <span class="font-semibold text-sm">
+                                        {{ r.homeTeamName ?? '—' }} – {{ r.awayTeamName ?? '—' }}
+                                    </span>
+                                    <img *ngIf="r.awayTeamLogo" [src]="r.awayTeamLogo" class="w-5 h-5 object-contain"
+                                        alt="">
+                                </div>
+                                <div class="text-secondary text-xs mt-0.5 pl-0.5 flex items-center gap-1.5">
+                                    <span *ngIf="r.competitionName">{{ r.competitionName }}</span>
+                                    <span *ngIf="r.matchday" class="opacity-60">· {{ r.matchday }}</span>
+                                </div>
+                            </td>
+
+                            <!-- Used badge -->
+                            <td class="px-4 py-3 text-center">
+                                <span class="inline-flex items-center gap-1 text-xs font-bold rounded-full px-2.5 py-1"
+                                    [ngClass]="r.used
+                                        ? 'bg-green-500/10 text-green-600 dark:text-green-400'
+                                        : 'bg-black/5 dark:bg-white/5 text-secondary'">
+                                    <mat-icon class="!text-xs !w-3 !h-3">
+                                        {{ r.used ? 'check_circle' : 'cancel' }}
+                                    </mat-icon>
+                                    {{ r.used ? 'Χρησιμοποιήθηκε' : 'Όχι' }}
+                                </span>
+                            </td>
+
+                            <!-- Date -->
+                            <td class="px-4 py-3 text-xs text-secondary whitespace-nowrap">
+                                {{ r.usedAt | date:'dd/MM/yy HH:mm' }}
+                            </td>
+
+                        </tr>
+                    </tbody>
+                </table>
+
+                <!-- Requests pagination -->
+                <div *ngIf="requestsTotalPages > 1"
+                    class="flex items-center justify-center gap-4 py-3 border-t text-sm">
+                    <button mat-icon-button [disabled]="requestsPage === 0" (click)="requestsPage = requestsPage - 1">
+                        <mat-icon>chevron_left</mat-icon>
+                    </button>
+                    <span class="text-secondary">{{ requestsPage + 1 }} / {{ requestsTotalPages }}</span>
+                    <button mat-icon-button [disabled]="requestsPage >= requestsTotalPages - 1"
+                        (click)="requestsPage = requestsPage + 1">
+                        <mat-icon>chevron_right</mat-icon>
+                    </button>
+                </div>
+            </div>
+        </mat-tab>
+
+        <!-- ── Tab 3: Reports ────────────────────────────────────── -->
+        <mat-tab>
+            <ng-template mat-tab-label>
+                <mat-icon class="!text-sm mr-1">flag</mat-icon>
+                Αναφορές
+                <span *ngIf="!loadingReports && reports.length"
+                    class="ml-2 text-xs bg-red-500/10 text-red-600 dark:text-red-400 font-bold rounded-full px-2 py-0.5">
+                    {{ reports.length }}
+                </span>
+            </ng-template>
+
+            <div class="overflow-auto" style="max-height: calc(90vh - 210px)">
+                <mat-progress-bar *ngIf="loadingReports" mode="indeterminate" class="shrink-0"></mat-progress-bar>
+
+                <div *ngIf="!loadingReports && reports.length === 0"
+                    class="py-16 flex flex-col items-center gap-3 text-secondary opacity-40">
+                    <mat-icon class="!text-5xl">outlined_flag</mat-icon>
+                    <span class="text-sm">Καμία αναφορά</span>
+                </div>
+
+                <table class="w-full text-sm" *ngIf="!loadingReports && reports.length > 0">
+                    <thead class="bg-black/3 dark:bg-black/20 sticky top-0">
+                        <tr>
+                            <th class="px-4 py-2 text-left text-xs font-bold text-secondary uppercase">#</th>
+                            <th class="px-4 py-2 text-left text-xs font-bold text-secondary uppercase">Αναφέρθηκε από
+                            </th>
+                            <th class="px-4 py-2 text-left text-xs font-bold text-secondary uppercase">Αγώνας Αναφοράς
+                            </th>
+                            <th class="px-4 py-2 text-center text-xs font-bold text-secondary uppercase">Κατάσταση</th>
+                            <th class="px-4 py-2 text-left text-xs font-bold text-secondary uppercase">Ημ/νία</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y">
+                        <tr *ngFor="let rep of pagedReports"
+                            class="hover:bg-black/2 dark:hover:bg-white/2 transition-colors">
+
+                            <!-- ID -->
+                            <td class="px-4 py-3 font-mono text-xs text-secondary">#{{ rep.id }}</td>
+
+                            <!-- Reporter -->
+                            <td class="px-4 py-3">
+                                <div class="flex items-center gap-2">
+                                    <img *ngIf="rep.reportedByImage" [src]="rep.reportedByImage"
+                                        class="w-7 h-7 rounded-full object-cover border shrink-0" alt="">
+                                    <div *ngIf="!rep.reportedByImage"
+                                        class="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary text-xs shrink-0">
+                                        {{ rep.reportedByFullName?.charAt(0) ?? '#' }}
+                                    </div>
+                                    <div>
+                                        <div class="font-semibold text-sm leading-snug">
+                                            {{ rep.reportedByFullName ?? ('#' + rep.reportedByUserId) }}
+                                        </div>
+                                        <div *ngIf="rep.reportedByCode" class="font-mono text-[10px] text-secondary/60">
+                                            {{ rep.reportedByCode }}</div>
+                                    </div>
+                                </div>
+                            </td>
+
+                            <!-- Event details -->
+                            <td class="px-4 py-3">
+                                <div class="flex items-center gap-2">
+                                    <img *ngIf="rep.homeTeamLogo" [src]="rep.homeTeamLogo"
+                                        class="w-5 h-5 object-contain" alt="">
+                                    <span class="font-semibold text-sm">
+                                        {{ rep.homeTeamName ?? '—' }} – {{ rep.awayTeamName ?? '—' }}
+                                    </span>
+                                    <img *ngIf="rep.awayTeamLogo" [src]="rep.awayTeamLogo"
+                                        class="w-5 h-5 object-contain" alt="">
+                                </div>
+                                <div class="text-secondary text-xs mt-0.5 pl-0.5 flex items-center gap-1.5">
+                                    <span *ngIf="rep.competitionName">{{ rep.competitionName }}</span>
+                                    <span *ngIf="rep.matchday" class="opacity-60">· {{ rep.matchday }}</span>
+                                </div>
+                            </td>
+
+                            <!-- Status badge -->
+                            <td class="px-4 py-3 text-center">
+                                <span class="inline-flex items-center gap-1 text-xs font-bold rounded-full px-2.5 py-1"
+                                    [ngClass]="rep.status === 2
+                                        ? 'bg-green-500/10 text-green-600 dark:text-green-400'
+                                        : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'">
+                                    {{ reportStatusLabel(rep.status) }}
+                                </span>
+                            </td>
+
+                            <!-- Date -->
+                            <td class="px-4 py-3 text-xs text-secondary whitespace-nowrap">
+                                {{ rep.reportedAt | date:'dd/MM/yy HH:mm' }}
+                            </td>
+
+                        </tr>
+                    </tbody>
+                </table>
+
+                <!-- Reports pagination -->
+                <div *ngIf="reportsTotalPages > 1" class="flex items-center justify-center gap-4 py-3 border-t text-sm">
+                    <button mat-icon-button [disabled]="reportsPage === 0" (click)="reportsPage = reportsPage - 1">
+                        <mat-icon>chevron_left</mat-icon>
+                    </button>
+                    <span class="text-secondary">{{ reportsPage + 1 }} / {{ reportsTotalPages }}</span>
+                    <button mat-icon-button [disabled]="reportsPage >= reportsTotalPages - 1"
+                        (click)="reportsPage = reportsPage + 1">
+                        <mat-icon>chevron_right</mat-icon>
+                    </button>
+                </div>
+            </div>
+        </mat-tab>
+
+    </mat-tab-group>
+
+    <!-- ── Footer ────────────────────────────────────────────────── -->
+    <div class="shrink-0 border-t px-6 py-3 flex justify-end bg-card">
+        <button mat-stroked-button class="!rounded-xl" (click)="close()">Κλείσιμο</button>
+    </div>
+
+</div>

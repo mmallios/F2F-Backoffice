@@ -22,7 +22,7 @@
             <!-- Step 1 -->
             <li class="flex items-center gap-3 cursor-pointer" (click)="goToStep(0)">
                 <div class="flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold transition-all shrink-0"
-                    [ngClass]="step() > 0 ? 'bg-green-500 text-white' : step() === 0 ? 'bg-primary text-white' : 'bg-black/10 dark:bg-white/10 text-secondary'">
+                    [ngClass]="step() > 0 ? 'bg-sky-400 text-white' : step() === 0 ? 'bg-primary text-white' : 'bg-black/10 dark:bg-white/10 text-secondary'">
                     <mat-icon *ngIf="step() > 0" class="!text-sm !w-5 !h-5">check</mat-icon>
                     <span *ngIf="step() <= 0">1</span>
                 </div>
@@ -32,13 +32,13 @@
                 </div>
             </li>
 
-            <div class="flex-1 h-px mx-3" [ngClass]="step() > 0 ? 'bg-green-400' : 'bg-black/15 dark:bg-white/10'">
+            <div class="flex-1 h-px mx-3" [ngClass]="step() > 0 ? 'bg-sky-300' : 'bg-black/15 dark:bg-white/10'">
             </div>
 
             <!-- Step 2 -->
             <li class="flex items-center gap-3 cursor-pointer" (click)="goToStep(1)">
                 <div class="flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold transition-all shrink-0"
-                    [ngClass]="step() > 1 ? 'bg-green-500 text-white' : step() === 1 ? 'bg-primary text-white' : 'bg-black/10 dark:bg-white/10 text-secondary'">
+                    [ngClass]="step() > 1 ? 'bg-sky-400 text-white' : step() === 1 ? 'bg-primary text-white' : 'bg-black/10 dark:bg-white/10 text-secondary'">
                     <mat-icon *ngIf="step() > 1" class="!text-sm !w-5 !h-5">check</mat-icon>
                     <span *ngIf="step() <= 1">2</span>
                 </div>
@@ -49,18 +49,35 @@
                 </div>
             </li>
 
-            <div class="flex-1 h-px mx-3" [ngClass]="step() > 1 ? 'bg-green-400' : 'bg-black/15 dark:bg-white/10'">
+            <div class="flex-1 h-px mx-3" [ngClass]="step() > 1 ? 'bg-sky-300' : 'bg-black/15 dark:bg-white/10'">
             </div>
 
             <!-- Step 3 -->
-            <li class="flex items-center gap-3">
+            <li class="flex items-center gap-3 cursor-pointer" (click)="goToStep(2)">
                 <div class="flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold transition-all shrink-0"
-                    [ngClass]="step() === 2 ? 'bg-primary text-white' : 'bg-black/10 dark:bg-white/10 text-secondary'">
-                    <span>3</span>
+                    [ngClass]="step() > 2 ? 'bg-sky-400 text-white' : step() === 2 ? 'bg-primary text-white' : 'bg-black/10 dark:bg-white/10 text-secondary'">
+                    <mat-icon *ngIf="step() > 2" class="!text-sm !w-5 !h-5">check</mat-icon>
+                    <span *ngIf="step() <= 2">3</span>
                 </div>
                 <div class="hidden sm:block">
                     <div class="text-xs font-semibold uppercase tracking-wide text-secondary">Βήμα 3</div>
                     <div class="text-sm font-bold leading-none mt-0.5" [class.text-primary]="step() === 2">Προϊόντα
+                    </div>
+                </div>
+            </li>
+
+            <div class="flex-1 h-px mx-3" [ngClass]="step() > 2 ? 'bg-sky-300' : 'bg-black/15 dark:bg-white/10'">
+            </div>
+
+            <!-- Step 4 -->
+            <li class="flex items-center gap-3">
+                <div class="flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold transition-all shrink-0"
+                    [ngClass]="step() === 3 ? 'bg-primary text-white' : 'bg-black/10 dark:bg-white/10 text-secondary'">
+                    <span>4</span>
+                </div>
+                <div class="hidden sm:block">
+                    <div class="text-xs font-semibold uppercase tracking-wide text-secondary">Βήμα 4</div>
+                    <div class="text-sm font-bold leading-none mt-0.5" [class.text-primary]="step() === 3">Επιβεβαίωση
                     </div>
                 </div>
             </li>
@@ -142,36 +159,39 @@
     <ng-container *ngIf="step() === 1">
 
         <div class="flex-1 flex flex-col min-h-0 overflow-hidden">
-            <div class="flex-1 overflow-y-auto px-4 sm:px-8 py-6">
 
-                <!-- Selected user mini-card -->
-                <div
-                    class="flex items-center gap-4 p-4 rounded-2xl bg-primary/6 border border-primary/15 mb-7 max-w-lg">
-                    <img *ngIf="selectedUser()?.image" [src]="selectedUser()!.image!"
-                        class="w-12 h-12 rounded-full object-cover shrink-0 border" alt="">
-                    <div *ngIf="!selectedUser()?.image"
-                        class="w-12 h-12 rounded-full bg-primary/15 flex items-center justify-center font-bold text-primary shrink-0 select-none">
-                        {{ userInitials(selectedUser()) }}
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <div class="font-bold truncate">
-                            {{ selectedUser()?.firstname }} {{ selectedUser()?.lastname }}
+            <!-- Two-column body: left=address fields, right=shipping & payment -->
+            <div [formGroup]="addressForm" class="flex-1 flex min-h-0 overflow-hidden">
+
+                <!-- LEFT: user card + address fields -->
+                <div class="flex-1 overflow-y-auto px-4 sm:px-6 py-6 border-r">
+
+                    <!-- Selected user mini-card -->
+                    <div
+                        class="flex items-center gap-4 p-4 rounded-2xl bg-primary/6 border border-primary/15 mb-7 max-w-lg">
+                        <img *ngIf="selectedUser()?.image" [src]="selectedUser()!.image!"
+                            class="w-12 h-12 rounded-full object-cover shrink-0 border" alt="">
+                        <div *ngIf="!selectedUser()?.image"
+                            class="w-12 h-12 rounded-full bg-primary/15 flex items-center justify-center font-bold text-primary shrink-0 select-none">
+                            {{ userInitials(selectedUser()) }}
                         </div>
-                        <div class="text-secondary text-sm truncate">{{ selectedUser()?.email }}</div>
+                        <div class="flex-1 min-w-0">
+                            <div class="font-bold truncate">
+                                {{ selectedUser()?.firstname }} {{ selectedUser()?.lastname }}
+                            </div>
+                            <div class="text-secondary text-sm truncate">{{ selectedUser()?.email }}</div>
+                        </div>
+                        <button mat-stroked-button class="!rounded-xl !h-8 !text-xs shrink-0" type="button"
+                            (click)="step.set(0)">
+                            <mat-icon class="!text-sm">edit</mat-icon> Αλλαγή
+                        </button>
                     </div>
-                    <button mat-stroked-button class="!rounded-xl !h-8 !text-xs shrink-0" type="button"
-                        (click)="step.set(0)">
-                        <mat-icon class="!text-sm">edit</mat-icon> Αλλαγή
-                    </button>
-                </div>
 
-                <!-- Address form -->
-                <form [formGroup]="addressForm" class="max-w-2xl">
-                    <h3 class="text-base font-bold mb-4 text-secondary uppercase tracking-wide text-xs">
+                    <h3 class="text-xs font-bold mb-4 text-secondary uppercase tracking-wide">
                         Στοιχεία αποστολής
                     </h3>
 
-                    <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div class="grid grid-cols-2 gap-4 mb-4">
 
                         <mat-form-field appearance="outline" subscriptSizing="dynamic">
                             <mat-label>Όνομα</mat-label>
@@ -229,13 +249,16 @@
 
                     </div>
 
-                    <mat-divider class="my-2"></mat-divider>
+                </div>
 
-                    <h3 class="text-xs font-bold mb-4 mt-5 text-secondary uppercase tracking-wide">
+                <!-- RIGHT: Αποστολή & Πληρωμή -->
+                <div class="w-80 xl:w-96 shrink-0 overflow-y-auto px-4 sm:px-6 py-6">
+
+                    <h3 class="text-xs font-bold mb-4 text-secondary uppercase tracking-wide">
                         Αποστολή &amp; Πληρωμή
                     </h3>
 
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="flex flex-col gap-4">
 
                         <mat-form-field appearance="outline" subscriptSizing="dynamic">
                             <mat-label>Τρόπος αποστολής</mat-label>
@@ -266,7 +289,8 @@
                         </mat-form-field>
 
                     </div>
-                </form>
+
+                </div>
 
             </div>
 
@@ -291,8 +315,8 @@
 
         <div class="flex-1 flex min-h-0 overflow-hidden">
 
-            <!-- LEFT: product catalogue -->
-            <div class="flex-1 flex flex-col min-w-0 overflow-hidden border-r">
+            <!-- LEFT: product catalogue (60%) -->
+            <div class="flex flex-col min-w-0 overflow-hidden border-r" style="flex: 3">
 
                 <!-- Search -->
                 <div class="shrink-0 px-4 py-3 border-b">
@@ -318,15 +342,15 @@
                                 (click)="openAddPanel(p)">
 
                                 <img *ngIf="p.imageUrl" [src]="p.imageUrl"
-                                    class="w-12 h-12 rounded-xl object-cover shrink-0 border" alt="">
+                                    class="w-14 h-14 rounded-xl object-cover shrink-0 border" alt="">
                                 <div *ngIf="!p.imageUrl"
-                                    class="w-12 h-12 rounded-xl bg-primary/8 flex items-center justify-center shrink-0">
+                                    class="w-14 h-14 rounded-xl bg-primary/8 flex items-center justify-center shrink-0">
                                     <mat-icon class="text-primary opacity-50">inventory_2</mat-icon>
                                 </div>
 
                                 <div class="flex-1 min-w-0">
-                                    <div class="font-semibold text-sm truncate">{{ p.title }}</div>
-                                    <div class="text-sm font-bold text-primary">{{ p.price | number:'1.2-2' }}€</div>
+                                    <div class="font-semibold text-base truncate">{{ p.title }}</div>
+                                    <div class="text-base font-bold text-primary">{{ p.price | number:'1.2-2' }}€</div>
                                     <div *ngIf="hasSizes(p)" class="text-xs text-secondary flex gap-1 flex-wrap mt-0.5">
                                         <span *ngFor="let s of productSizes(p)"
                                             class="px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/5 font-mono text-[10px]">
@@ -410,8 +434,8 @@
                 </div>
             </div>
 
-            <!-- RIGHT: Cart summary -->
-            <div class="w-64 xl:w-72 shrink-0 flex flex-col overflow-hidden">
+            <!-- RIGHT: Cart summary (40%) -->
+            <div class="flex flex-col overflow-hidden" style="flex: 2">
 
                 <!-- Cart header -->
                 <div class="shrink-0 px-4 py-3 border-b flex items-center gap-2">
@@ -443,8 +467,8 @@
                         </div>
 
                         <div class="flex-1 min-w-0">
-                            <div class="text-xs font-semibold truncate leading-snug">{{ item.product.title }}</div>
-                            <div class="text-[11px] text-secondary">
+                            <div class="text-sm font-semibold truncate leading-snug">{{ item.product.title }}</div>
+                            <div class="text-xs text-secondary">
                                 {{ item.qty }}×{{ item.product.price | number:'1.2-2' }}€
                                 <span *ngIf="item.size !== null"
                                     class="ml-1 font-mono bg-black/5 dark:bg-white/5 px-1 rounded">
@@ -488,28 +512,190 @@
                     </div>
                 </div>
 
-                <!-- Submit button -->
-                <div class="shrink-0 px-4 pb-5 pt-2">
-                    <button mat-flat-button color="primary" class="w-full !rounded-xl !py-2 !text-base" type="button"
-                        (click)="submit()" [disabled]="submitting || !orderItems().length">
-                        <mat-icon class="mr-1">
-                            {{ submitting ? 'hourglass_empty' : 'check_circle' }}
-                        </mat-icon>
-                        {{ submitting ? 'Δημιουργία...' : 'Δημιουργία Παραγγελίας' }}
-                    </button>
-                </div>
-
             </div>
             <!-- /cart -->
-
-            <!-- Back button (bottom-left overlay on mobile could be footer) -->
         </div>
 
-        <!-- Footer: back button -->
-        <div class="shrink-0 border-t px-4 sm:px-6 py-3 flex justify-start bg-card">
+        <!-- Footer: back + next to confirmation -->
+        <div class="shrink-0 border-t px-4 sm:px-6 py-3 flex justify-between bg-card">
             <button mat-stroked-button class="!rounded-xl" (click)="step.set(1)">
                 <mat-icon>arrow_back</mat-icon> Πίσω
             </button>
+            <button mat-flat-button color="primary" class="!rounded-xl" [disabled]="!orderItems().length"
+                (click)="step.set(3)">
+                Επόμενο <mat-icon>arrow_forward</mat-icon>
+            </button>
+        </div>
+
+    </ng-container>
+
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- STEP 3 — Confirmation                                      -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <ng-container *ngIf="step() === 3">
+
+        <div class="flex-1 flex flex-col min-h-0 overflow-hidden">
+            <div class="flex-1 overflow-y-auto px-4 sm:px-8 py-6">
+
+                <p class="text-secondary text-sm mb-6 max-w-2xl">
+                    Ελέγξτε τα παρακάτω στοιχεία πριν δημιουργήσετε την παραγγελία.
+                </p>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 max-w-5xl">
+
+                    <!-- Left: User + Address + Shipping -->
+                    <div class="flex flex-col gap-4">
+
+                        <!-- User -->
+                        <div class="rounded-2xl border p-4">
+                            <div class="text-xs font-bold text-secondary uppercase tracking-wide mb-3">Χρήστης</div>
+                            <div class="flex items-center gap-3">
+                                <img *ngIf="selectedUser()?.image" [src]="selectedUser()!.image!"
+                                    class="w-10 h-10 rounded-full object-cover border shrink-0" alt="">
+                                <div *ngIf="!selectedUser()?.image"
+                                    class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary text-sm shrink-0 select-none">
+                                    {{ userInitials(selectedUser()) }}
+                                </div>
+                                <div class="min-w-0">
+                                    <div class="font-bold truncate">{{ selectedUser()?.firstname }} {{
+                                        selectedUser()?.lastname }}</div>
+                                    <div class="text-secondary text-sm truncate">{{ selectedUser()?.email }}</div>
+                                    <div *ngIf="selectedUser()?.code" class="font-mono text-xs text-secondary/60">{{
+                                        selectedUser()?.code }}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Address -->
+                        <div class="rounded-2xl border p-4">
+                            <div class="text-xs font-bold text-secondary uppercase tracking-wide mb-3">Διεύθυνση
+                                αποστολής</div>
+                            <div class="text-sm space-y-1">
+                                <div class="font-semibold">{{ addressForm.value.firstName }} {{
+                                    addressForm.value.lastName }}</div>
+                                <div *ngIf="addressForm.value.addressLine1" class="text-secondary">{{
+                                    addressForm.value.addressLine1 }}</div>
+                                <div *ngIf="addressForm.value.zip || addressForm.value.city" class="text-secondary">{{
+                                    addressForm.value.zip }} {{ addressForm.value.city }}</div>
+                                <div *ngIf="addressForm.value.region" class="text-secondary">{{ addressForm.value.region
+                                    }}</div>
+                                <div *ngIf="addressForm.value.country" class="text-secondary">{{
+                                    addressForm.value.country }}</div>
+                                <div *ngIf="addressForm.value.phone || addressForm.value.email"
+                                    class="flex flex-col gap-1 mt-2 pt-2 border-t">
+                                    <div *ngIf="addressForm.value.phone"
+                                        class="text-secondary flex items-center gap-1.5">
+                                        <mat-icon class="!text-sm opacity-50">phone</mat-icon>{{ addressForm.value.phone
+                                        }}
+                                    </div>
+                                    <div *ngIf="addressForm.value.email"
+                                        class="text-secondary flex items-center gap-1.5">
+                                        <mat-icon class="!text-sm opacity-50">mail</mat-icon>{{ addressForm.value.email
+                                        }}
+                                    </div>
+                                </div>
+                                <div *ngIf="addressForm.value.notes"
+                                    class="text-secondary italic text-xs mt-2 pt-2 border-t opacity-70">
+                                    {{ addressForm.value.notes }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Shipping & Payment -->
+                        <div class="rounded-2xl border p-4">
+                            <div class="text-xs font-bold text-secondary uppercase tracking-wide mb-3">Αποστολή &amp;
+                                Πληρωμή</div>
+                            <div class="text-sm space-y-2">
+                                <div class="flex justify-between">
+                                    <span class="text-secondary">Τρόπος αποστολής</span>
+                                    <span class="font-semibold">{{ shippingMethodLabel }}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-secondary">Τρόπος πληρωμής</span>
+                                    <span class="font-semibold">{{ paymentMethodLabel }}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-secondary">Κόστος αποστολής</span>
+                                    <span class="font-semibold">{{ (addressForm.value.shippingAmount || 0) |
+                                        number:'1.2-2' }}€</span>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Right: Products + Totals -->
+                    <div class="flex flex-col gap-4">
+
+                        <!-- Products list -->
+                        <div class="rounded-2xl border overflow-hidden">
+                            <div
+                                class="px-4 py-3 bg-black/3 dark:bg-black/20 border-b flex items-center justify-between">
+                                <div class="text-xs font-bold text-secondary uppercase tracking-wide">Προϊόντα</div>
+                                <span
+                                    class="text-xs bg-black/5 dark:bg-white/5 px-2 py-0.5 rounded-full font-semibold">{{
+                                    orderItems().length }} τεμ.</span>
+                            </div>
+                            <div class="divide-y">
+                                <div *ngFor="let item of orderItems()" class="flex items-center gap-3 px-4 py-3">
+                                    <img *ngIf="item.product.imageUrl" [src]="item.product.imageUrl"
+                                        class="w-10 h-10 rounded-lg object-cover shrink-0" alt="">
+                                    <div *ngIf="!item.product.imageUrl"
+                                        class="w-10 h-10 rounded-lg bg-primary/8 flex items-center justify-center shrink-0">
+                                        <mat-icon class="text-primary opacity-40 !text-sm">inventory_2</mat-icon>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="font-semibold text-sm truncate">{{ item.product.title }}</div>
+                                        <div class="text-secondary text-xs flex items-center gap-1.5">
+                                            <span>{{ item.qty }} τεμ.</span>
+                                            <span *ngIf="item.size !== null"
+                                                class="font-mono bg-black/5 dark:bg-white/5 px-1.5 py-0.5 rounded text-[10px]">
+                                                {{ sizeLabel(item.size) }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="font-bold text-sm shrink-0">{{ item.product.price * item.qty |
+                                        number:'1.2-2' }}€</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Totals -->
+                        <div class="rounded-2xl border p-4">
+                            <div class="space-y-2">
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-secondary">Υποσύνολο</span>
+                                    <span>{{ subtotal | number:'1.2-2' }}€</span>
+                                </div>
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-secondary">Αποστολή</span>
+                                    <span>{{ (addressForm.value.shippingAmount || 0) | number:'1.2-2' }}€</span>
+                                </div>
+                                <div class="flex justify-between font-extrabold text-xl border-t pt-3 mt-1">
+                                    <span>Σύνολο</span>
+                                    <span class="text-primary">{{ grandTotal | number:'1.2-2' }}€</span>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- Footer -->
+            <div class="shrink-0 border-t px-4 sm:px-8 py-4 flex items-center justify-between bg-card">
+                <button mat-stroked-button class="!rounded-xl" type="button" (click)="step.set(2)">
+                    <mat-icon>arrow_back</mat-icon> Πίσω
+                </button>
+                <button mat-flat-button color="primary" class="!rounded-xl !h-12 !px-8 !text-base" type="button"
+                    (click)="submit()" [disabled]="submitting">
+                    <mat-icon class="mr-1">{{ submitting ? 'hourglass_empty' : 'check_circle' }}</mat-icon>
+                    {{ submitting ? 'Δημιουργία...' : 'Δημιουργία Παραγγελίας' }}
+                </button>
+            </div>
         </div>
 
     </ng-container>

@@ -1,0 +1,310 @@
+<div class="absolute inset-0 flex flex-col overflow-hidden bg-card">
+
+    <!-- ── Progress bar ─────────────────────────────────────────── -->
+    <mat-progress-bar *ngIf="loading" mode="indeterminate" class="shrink-0" style="z-index:10">
+    </mat-progress-bar>
+
+    <!-- ── Header ────────────────────────────────────────────────── -->
+    <div class="shrink-0 border-b px-6 sm:px-10 py-6 flex items-center justify-between gap-4 bg-card">
+        <div>
+            <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight leading-none">Κάρτες Φιλάθλου</h1>
+            <p class="text-secondary text-sm mt-1">Διαχείριση καρτών & ιστορικό χρήσης</p>
+        </div>
+        <button mat-flat-button color="primary" class="!rounded-xl" (click)="openCreate()">
+            <mat-icon>add_card</mat-icon>
+            <span class="ml-1">Νέα Κάρτα</span>
+        </button>
+    </div>
+
+    <!-- ── Stats row ─────────────────────────────────────────────── -->
+    <div class="shrink-0 px-6 sm:px-10 py-5 grid grid-cols-2 xl:grid-cols-4 gap-4 border-b bg-black/2 dark:bg-black/10">
+
+        <!-- Total Cards -->
+        <div class="flex items-center gap-4 rounded-2xl border bg-card p-4 shadow-sm">
+            <div class="flex items-center justify-center w-12 h-12 rounded-xl bg-indigo-500/10 shrink-0">
+                <mat-icon class="text-indigo-500">credit_card</mat-icon>
+            </div>
+            <div>
+                <div class="text-2xl font-extrabold leading-none">
+                    {{ stats?.totalCards ?? '—' }}
+                </div>
+                <div class="text-secondary text-xs mt-1">Σύνολο Καρτών</div>
+            </div>
+        </div>
+
+        <!-- Total Usages -->
+        <div class="flex items-center gap-4 rounded-2xl border bg-card p-4 shadow-sm">
+            <div class="flex items-center justify-center w-12 h-12 rounded-xl bg-sky-500/10 shrink-0">
+                <mat-icon class="text-sky-500">touch_app</mat-icon>
+            </div>
+            <div>
+                <div class="text-2xl font-extrabold leading-none">
+                    {{ stats?.totalUsages ?? '—' }}
+                </div>
+                <div class="text-secondary text-xs mt-1">Χρήσεις</div>
+            </div>
+        </div>
+
+        <!-- Used Cards -->
+        <div class="flex items-center gap-4 rounded-2xl border bg-card p-4 shadow-sm">
+            <div class="flex items-center justify-center w-12 h-12 rounded-xl bg-green-500/10 shrink-0">
+                <mat-icon class="text-green-500">check_circle</mat-icon>
+            </div>
+            <div>
+                <div class="text-2xl font-extrabold leading-none">
+                    {{ stats?.usedCards ?? '—' }}
+                </div>
+                <div class="text-secondary text-xs mt-1">Κάρτες Χρησιμοποιημένες</div>
+            </div>
+        </div>
+
+        <!-- Reports -->
+        <div class="flex items-center gap-4 rounded-2xl border bg-card p-4 shadow-sm">
+            <div class="flex items-center justify-center w-12 h-12 rounded-xl bg-red-500/10 shrink-0">
+                <mat-icon class="text-red-500">flag</mat-icon>
+            </div>
+            <div>
+                <div class="text-2xl font-extrabold leading-none">
+                    {{ stats?.totalReports ?? '—' }}
+                </div>
+                <div class="text-secondary text-xs mt-1">Αναφορές</div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ── Filter bar ────────────────────────────────────────────────── -->
+    <div class="shrink-0 px-6 sm:px-10 pt-4 pb-4 border-b">
+        <div class="bg-gray-50/80 dark:bg-white/5 border rounded-2xl shadow-sm px-4 py-4 md:px-5">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-center">
+
+                <!-- Search -->
+                <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full" subscriptSizing="dynamic">
+                    <mat-icon matPrefix class="opacity-50">search</mat-icon>
+                    <mat-label>Κωδικός κάρτας…</mat-label>
+                    <input matInput [formControl]="searchCtrl" placeholder="Κωδικός…">
+                    <button *ngIf="searchCtrl.value" mat-icon-button matSuffix type="button"
+                        (click)="searchCtrl.setValue('')">
+                        <mat-icon>close</mat-icon>
+                    </button>
+                </mat-form-field>
+
+                <!-- Owner dropdown -->
+                <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full" subscriptSizing="dynamic">
+                    <mat-icon matPrefix class="opacity-50">person</mat-icon>
+                    <mat-label>Κάτοχος</mat-label>
+                    <mat-select [formControl]="filterOwner">
+                        <mat-select-trigger>
+                            <ng-container *ngIf="selectedUser; else allTrigger">
+                                <div class="flex items-center gap-1.5">
+                                    <img *ngIf="selectedUser.image" [src]="selectedUser.image"
+                                        class="w-4 h-4 rounded-full object-cover shrink-0 border" alt="">
+                                    <div *ngIf="!selectedUser.image"
+                                        class="w-4 h-4 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-[9px] shrink-0">
+                                        {{ selectedUser.firstname?.charAt(0) ?? '?' }}
+                                    </div>
+                                    <span>{{ selectedUser.firstname }} {{ selectedUser.lastname }}</span>
+                                </div>
+                            </ng-container>
+                            <ng-template #allTrigger>Όλοι</ng-template>
+                        </mat-select-trigger>
+                        <mat-option [value]="null">Όλοι</mat-option>
+                        <mat-option *ngFor="let u of users" [value]="u.id">
+                            <div class="flex items-center gap-2">
+                                <img *ngIf="u.image" [src]="u.image"
+                                    class="w-6 h-6 rounded-full object-cover shrink-0 border" alt="">
+                                <div *ngIf="!u.image"
+                                    class="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-[10px] shrink-0">
+                                    {{ u.firstname?.charAt(0) ?? '?' }}
+                                </div>
+                                <span>{{ u.firstname }} {{ u.lastname }}</span>
+                                <span class="text-secondary text-xs ml-1">{{ u.code }}</span>
+                            </div>
+                        </mat-option>
+                    </mat-select>
+                </mat-form-field>
+
+                <!-- Has Reports -->
+                <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full" subscriptSizing="dynamic">
+                    <mat-icon matPrefix class="opacity-50 !text-sm">flag</mat-icon>
+                    <mat-label>Αναφορές</mat-label>
+                    <mat-select [formControl]="filterHasReports">
+                        <mat-option [value]="null">Όλες</mat-option>
+                        <mat-option value="true">Με αναφορές</mat-option>
+                        <mat-option value="false">Χωρίς αναφορές</mat-option>
+                    </mat-select>
+                </mat-form-field>
+
+                <!-- IsActive filter -->
+                <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full" subscriptSizing="dynamic">
+                    <mat-icon matPrefix class="opacity-50 !text-sm">toggle_on</mat-icon>
+                    <mat-label>Κατάσταση</mat-label>
+                    <mat-select [formControl]="filterIsActive">
+                        <mat-option [value]="null">Όλες</mat-option>
+                        <mat-option value="true">Ενεργές</mat-option>
+                        <mat-option value="false">Ανενεργές</mat-option>
+                    </mat-select>
+                </mat-form-field>
+
+                <!-- Clear -->
+                <button mat-stroked-button class="!rounded-xl h-9 w-full" (click)="clearFilters()">
+                    <mat-icon class="!text-sm">delete_sweep</mat-icon>
+                    <span class="ml-1 text-xs">Καθαρισμός</span>
+                </button>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Table ──────────────────────────────────────────────────── -->
+    <div class="flex-1 overflow-auto px-6 sm:px-10 py-6">
+        <div class="bg-card rounded-2xl border shadow-sm overflow-hidden">
+            <div class="overflow-x-auto">
+                <table mat-table [dataSource]="dataSource" matSort class="min-w-[980px] w-full">
+
+                    <!-- ID -->
+                    <ng-container matColumnDef="id">
+                        <th mat-header-cell *matHeaderCellDef mat-sort-header class="pl-6">ID</th>
+                        <td mat-cell *matCellDef="let row" class="pl-6 font-mono text-xs text-secondary">
+                            #{{ row.id }}
+                        </td>
+                    </ng-container>
+
+                    <!-- CODE -->
+                    <ng-container matColumnDef="cardCode">
+                        <th mat-header-cell *matHeaderCellDef mat-sort-header>Κωδικός</th>
+                        <td mat-cell *matCellDef="let row">
+                            <span class="font-mono font-bold text-sm tracking-widest select-all">{{ row.cardCode
+                                }}</span>
+                        </td>
+                    </ng-container>
+
+                    <!-- OWNER -->
+                    <ng-container matColumnDef="owner">
+                        <th mat-header-cell *matHeaderCellDef>Κάτοχος</th>
+                        <td mat-cell *matCellDef="let row">
+                            <div *ngIf="row.ownerFullName" class="flex items-center gap-2">
+                                <img *ngIf="row.ownerImage" [src]="row.ownerImage"
+                                    class="w-7 h-7 rounded-full object-cover shrink-0 border" alt="">
+                                <div *ngIf="!row.ownerImage"
+                                    class="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs shrink-0 select-none">
+                                    {{ row.ownerFullName.charAt(0) }}
+                                </div>
+                                <div class="min-w-0">
+                                    <div class="text-sm font-semibold truncate max-w-[140px]">{{ row.ownerFullName }}
+                                    </div>
+                                    <div *ngIf="row.ownerCode" class="font-mono text-[10px] text-secondary/70">{{
+                                        row.ownerCode
+                                        }}</div>
+                                </div>
+                            </div>
+                            <span *ngIf="!row.ownerFullName" class="text-secondary text-xs italic">—</span>
+                        </td>
+                    </ng-container>
+
+                    <!-- USAGES -->
+                    <ng-container matColumnDef="usageCount">
+                        <th mat-header-cell *matHeaderCellDef mat-sort-header class="text-center">Χρήσεις</th>
+                        <td mat-cell *matCellDef="let row" class="text-center">
+                            <span
+                                class="inline-flex items-center justify-center min-w-[28px] h-7 rounded-full text-sm font-bold"
+                                [ngClass]="row.usageCount > 0 ? 'bg-sky-500/10 text-sky-600 dark:text-sky-400 px-2' : 'text-secondary'">
+                                {{ row.usageCount }}
+                            </span>
+                        </td>
+                    </ng-container>
+
+                    <!-- REPORTS COUNT -->
+                    <ng-container matColumnDef="reportsCount">
+                        <th mat-header-cell *matHeaderCellDef mat-sort-header class="text-center">Αναφορές</th>
+                        <td mat-cell *matCellDef="let row" class="text-center">
+                            <span *ngIf="row.reportsCount > 0"
+                                class="inline-flex items-center justify-center min-w-[28px] h-7 rounded-full text-sm font-bold bg-red-500/10 text-red-600 dark:text-red-400 px-2">
+                                {{ row.reportsCount }}
+                            </span>
+                            <span *ngIf="!row.reportsCount" class="text-secondary text-xs">—</span>
+                        </td>
+                    </ng-container>
+
+                    <!-- LAST USED AT -->
+                    <ng-container matColumnDef="lastUsedAt">
+                        <th mat-header-cell *matHeaderCellDef mat-sort-header>Τελευταία Χρήση</th>
+                        <td mat-cell *matCellDef="let row">
+                            <span *ngIf="row.lastUsedAt" class="text-sm">
+                                {{ row.lastUsedAt | date:'dd/MM/yyyy HH:mm' }}
+                            </span>
+                            <span *ngIf="!row.lastUsedAt" class="text-secondary text-xs italic">—</span>
+                        </td>
+                    </ng-container>
+
+                    <!-- LAST USAGE TEAM LOGO -->
+                    <ng-container matColumnDef="lastUsageTeam">
+                        <th mat-header-cell *matHeaderCellDef class="text-center">Τελ. Αγώνας</th>
+                        <td mat-cell *matCellDef="let row" class="text-center">
+                            <img *ngIf="row.lastUsageTeamLogo" [src]="row.lastUsageTeamLogo"
+                                class="w-6 h-6 object-contain mx-auto" [matTooltip]="''" alt="team logo">
+                            <span *ngIf="!row.lastUsageTeamLogo" class="text-secondary text-xs">—</span>
+                        </td>
+                    </ng-container>
+
+                    <!-- IS ACTIVE -->
+                    <ng-container matColumnDef="isActive">
+                        <th mat-header-cell *matHeaderCellDef mat-sort-header class="text-center">Κατάσταση</th>
+                        <td mat-cell *matCellDef="let row" class="text-center">
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold"
+                                [ngClass]="row.isActive
+                                    ? 'bg-green-500/10 text-green-600 dark:text-green-400'
+                                    : 'bg-gray-500/10 text-gray-500'">
+                                <mat-icon class="!text-xs !w-3 !h-3 leading-none">
+                                    {{ row.isActive ? 'check_circle' : 'cancel' }}
+                                </mat-icon>
+                                {{ row.isActive ? 'Ενεργή' : 'Ανενεργή' }}
+                            </span>
+                        </td>
+                    </ng-container>
+
+                    <!-- ACTIONS -->
+                    <ng-container matColumnDef="actions">
+                        <th mat-header-cell *matHeaderCellDef></th>
+                        <td mat-cell *matCellDef="let row" class="pr-6 py-3 text-right">
+                            <div class="flex items-center justify-end gap-2">
+                                <button mat-stroked-button
+                                    class="!rounded-xl !h-8 !text-xs text-amber-600 border-amber-400/60" type="button"
+                                    (click)="openEdit(row); $event.stopPropagation()">
+                                    <mat-icon class="!text-sm">edit</mat-icon>
+                                    Επεξεργασία
+                                </button>
+                                <button mat-stroked-button class="!rounded-xl !h-8 !text-xs" type="button"
+                                    (click)="openDetails(row); $event.stopPropagation()">
+                                    <mat-icon class="!text-sm">info</mat-icon>
+                                    Λεπτομέρειες
+                                </button>
+                            </div>
+                        </td>
+                    </ng-container>
+
+                    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+                    <tr mat-row *matRowDef="let row; columns: displayedColumns;"
+                        class="hover:bg-gray-50 dark:hover:bg-white/5 cursor-pointer transition"
+                        (click)="openDetails(row)"></tr>
+
+                </table>
+            </div>
+
+            <!-- Empty state -->
+            <div *ngIf="!loading && dataSource.data.length === 0"
+                class="py-24 flex flex-col items-center gap-3 text-secondary opacity-40">
+                <mat-icon class="!text-6xl">credit_card_off</mat-icon>
+                <span>Δεν βρέθηκαν κάρτες φιλάθλου</span>
+            </div>
+
+            <div class="border-t">
+                <mat-paginator [length]="total" [pageSize]="pageSize" [pageSizeOptions]="[10, 20, 50, 100]"
+                    showFirstLastButtons (page)="onPage($event)">
+                </mat-paginator>
+            </div>
+        </div>
+
+    </div>
+
+</div>

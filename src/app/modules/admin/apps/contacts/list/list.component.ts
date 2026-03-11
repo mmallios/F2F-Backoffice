@@ -86,6 +86,16 @@ export class UsersListComponent implements OnInit, OnDestroy {
     // keep raw users (so we can re-apply filters cleanly)
     private _allUsers: User[] = [];
 
+    get userStats() {
+        const all = this._allUsers;
+        return {
+            total: all.length,
+            pending: all.filter(u => u.status === 0).length,
+            active: all.filter(u => u.status === 2).length,
+            banned: all.filter(u => u.status === 7 || u.status === 5 || u.status === 6).length,
+        };
+    }
+
 
     usersTableColumns: string[] = ['name', 'email', 'mobile', 'country', 'region', 'points', 'status', 'actions'];
 

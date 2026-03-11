@@ -1,0 +1,242 @@
+<div class="w-full max-w-none px-4 sm:px-6 lg:px-8 py-6 space-y-5">
+
+    <!-- ── Progress bar ─────────────────────────────────────────── -->
+    <mat-progress-bar *ngIf="loading" mode="indeterminate" class="!absolute top-0 left-0 right-0"
+        style="z-index:10"></mat-progress-bar>
+
+    <!-- ── Header ───────────────────────────────────────────────── -->
+    <div class="flex items-center justify-between flex-wrap gap-3">
+        <div>
+            <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight leading-none">Νέα & Άρθρα</h1>
+            <p class="text-secondary text-sm mt-1">Διαχείριση ορατότητας άρθρων από rednews.gr</p>
+        </div>
+        <button mat-stroked-button type="button" (click)="load()" [disabled]="loading">
+            <mat-icon>refresh</mat-icon>
+            <span class="ml-1">Ανανέωση</span>
+        </button>
+    </div>
+
+    <!-- ── Filter bar ───────────────────────────────────────────── -->
+    <div class="bg-gray-50/80 dark:bg-white/5 border rounded-2xl shadow-sm px-4 py-4">
+        <div class="flex flex-wrap items-end gap-3">
+            <mat-form-field class="flex-1 min-w-[180px]" subscriptSizing="dynamic">
+                <mat-icon matPrefix>search</mat-icon>
+                <mat-label>Αναζήτηση τίτλου / περιεχομένου</mat-label>
+                <input matInput [formControl]="searchCtrl" />
+            </mat-form-field>
+
+            <mat-form-field class="w-44" subscriptSizing="dynamic">
+                <mat-label>Από</mat-label>
+                <input matInput [matDatepicker]="fromPicker" [formControl]="fromDateCtrl" />
+                <mat-datepicker-toggle matSuffix [for]="fromPicker"></mat-datepicker-toggle>
+                <mat-datepicker #fromPicker></mat-datepicker>
+            </mat-form-field>
+
+            <mat-form-field class="w-44" subscriptSizing="dynamic">
+                <mat-label>Έως</mat-label>
+                <input matInput [matDatepicker]="toPicker" [formControl]="toDateCtrl" />
+                <mat-datepicker-toggle matSuffix [for]="toPicker"></mat-datepicker-toggle>
+                <mat-datepicker #toPicker></mat-datepicker>
+            </mat-form-field>
+
+            <mat-form-field class="w-44" subscriptSizing="dynamic">
+                <mat-label>Ορατότητα</mat-label>
+                <mat-select [formControl]="visibilityCtrl">
+                    <mat-option value="all">Όλα</mat-option>
+                    <mat-option value="visible">Ορατά</mat-option>
+                    <mat-option value="hidden">Κρυμμένα</mat-option>
+                </mat-select>
+            </mat-form-field>
+
+            <button *ngIf="searchCtrl.value || fromDateCtrl.value || toDateCtrl.value || visibilityCtrl.value !== 'all'"
+                mat-icon-button type="button" matTooltip="Εκκαθάριση φίλτρων"
+                (click)="searchCtrl.reset(); fromDateCtrl.reset(); toDateCtrl.reset(); visibilityCtrl.setValue('all')">
+                <mat-icon class="text-secondary">filter_alt_off</mat-icon>
+            </button>
+        </div>
+    </div>
+
+    <!-- ── Table ────────────────────────────────────────────────── -->
+    <div class="bg-card rounded-2xl border shadow-sm overflow-hidden">
+        <div *ngIf="!loading && !dataSource.data.length" class="p-10 text-center">
+            <mat-icon class="text-4xl text-secondary">newspaper</mat-icon>
+            <div class="text-xl font-semibold mt-2">Δεν βρέθηκαν άρθρα.</div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table mat-table [dataSource]="dataSource" matSort class="min-w-[900px] w-full">
+
+                <!-- Image -->
+                <ng-container matColumnDef="image">
+                    <th mat-header-cell *matHeaderCellDef class="px-4 w-32"></th>
+                    <td mat-cell *matCellDef="let r" class="px-4 py-2">
+                        <div class="w-28 h-20 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800 shrink-0">
+                            <img *ngIf="r.imageUrl" [src]="r.imageUrl" class="w-full h-full object-cover"
+                                (error)="$any($event.target).style.display='none'" />
+                            <div *ngIf="!r.imageUrl"
+                                class="w-full h-full flex items-center justify-center text-gray-400">
+                                <mat-icon class="text-gray-300">image</mat-icon>
+                            </div>
+                        </div>
+                    </td>
+                </ng-container>
+
+                <!-- Title + summary -->
+                <ng-container matColumnDef="title">
+                    <th mat-header-cell *matHeaderCellDef mat-sort-header class="px-4">Τίτλος</th>
+                    <td mat-cell *matCellDef="let r" class="px-4 py-3 max-w-xs">
+                        <div class="font-semibold text-sm leading-tight line-clamp-2 mb-1">{{ r.title }}</div>
+                        <div class="text-secondary text-xs line-clamp-2">{{ stripHtml(r.summary) }}</div>
+                    </td>
+                </ng-container>
+
+                <!-- Date -->
+                <ng-container matColumnDef="date">
+                    <th mat-header-cell *matHeaderCellDef mat-sort-header class="px-4">Ημ/νία</th>
+                    <td mat-cell *matCellDef="let r" class="px-4 py-3 text-sm text-secondary whitespace-nowrap">
+                        {{ r.publishedAt | date:'dd/MM/yyyy HH:mm' }}
+                    </td>
+                </ng-container>
+
+                <!-- Visibility badge -->
+                <ng-container matColumnDef="visibility">
+                    <th mat-header-cell *matHeaderCellDef class="px-4">Ορατότητα</th>
+                    <td mat-cell *matCellDef="let r" class="px-4 py-3">
+                        <div *ngIf="!r.isHidden"
+                            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-500/10 text-green-600 text-xs font-semibold">
+                            <mat-icon class="icon-size-3.5">visibility</mat-icon>
+                            Ορατό
+                        </div>
+                        <div *ngIf="r.isHidden"
+                            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-500/10 text-red-600 text-xs font-semibold">
+                            <mat-icon class="icon-size-3.5">visibility_off</mat-icon>
+                            Κρυμμένο
+                        </div>
+                    </td>
+                </ng-container>
+
+                <!-- Admin who last toggled -->
+                <ng-container matColumnDef="admin">
+                    <th mat-header-cell *matHeaderCellDef class="px-4">Τελ. Αλλαγή από</th>
+                    <td mat-cell *matCellDef="let r" class="px-4 py-3 text-sm">
+                        <ng-container *ngIf="r.toggledByAdminName">
+                            <div class="font-medium">{{ r.toggledByAdminName }}</div>
+                            <div class="text-secondary text-xs">{{ r.toggledAt | date:'dd/MM/yyyy HH:mm' }}</div>
+                        </ng-container>
+                        <span *ngIf="!r.toggledByAdminName" class="text-secondary">—</span>
+                    </td>
+                </ng-container>
+
+                <!-- Actions -->
+                <ng-container matColumnDef="actions">
+                    <th mat-header-cell *matHeaderCellDef class="px-4"></th>
+                    <td mat-cell *matCellDef="let r" class="px-4 py-3">
+                        <div class="flex items-center gap-2">
+                            <!-- View details -->
+                            <button mat-icon-button type="button" matTooltip="Λεπτομέρειες άρθρου"
+                                (click)="openDetail(r)">
+                                <mat-icon>open_in_new</mat-icon>
+                            </button>
+
+                            <!-- Toggle visibility -->
+                            <button *ngIf="!r.isHidden" mat-stroked-button type="button"
+                                class="text-red-600 border-red-300 hover:bg-red-50" [disabled]="toggling === r.link"
+                                (click)="toggleVisibility(r)" matTooltip="Απόκρυψη από την ιστοσελίδα">
+                                <mat-icon class="icon-size-4">visibility_off</mat-icon>
+                                <span class="ml-1 text-sm">Απόκρυψη</span>
+                            </button>
+
+                            <button *ngIf="r.isHidden" mat-stroked-button type="button"
+                                class="text-green-600 border-green-300 hover:bg-green-50"
+                                [disabled]="toggling === r.link" (click)="toggleVisibility(r)"
+                                matTooltip="Εμφάνιση στην ιστοσελίδα">
+                                <mat-icon class="icon-size-4">visibility</mat-icon>
+                                <span class="ml-1 text-sm">Εμφάνιση</span>
+                            </button>
+                        </div>
+                    </td>
+                </ng-container>
+
+                <tr mat-header-row *matHeaderRowDef="columns"
+                    class="!bg-gray-800 dark:!bg-gray-900 [&_th]:!text-gray-100 [&_.mat-sort-header-button]:!text-gray-100">
+                </tr>
+                <tr mat-row *matRowDef="let r; columns: columns;"
+                    class="hover:bg-gray-50/60 dark:hover:bg-white/3 transition" [class.opacity-50]="r.isHidden"></tr>
+            </table>
+        </div>
+
+        <mat-paginator [pageSizeOptions]="[20, 40, 100]" showFirstLastButtons class="border-t"></mat-paginator>
+    </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     DETAIL MODAL
+     ══════════════════════════════════════════════════════════════ -->
+<div *ngIf="detailOpen && detailItem"
+    class="fixed inset-0 z-50 flex items-start justify-center bg-black/40 backdrop-blur-sm overflow-y-auto py-8 px-4">
+    <div class="bg-card rounded-2xl border shadow-2xl w-full max-w-3xl">
+
+        <!-- Modal header -->
+        <div class="flex items-start justify-between gap-3 px-6 pt-6 pb-4 border-b">
+            <div class="min-w-0">
+                <div class="font-extrabold text-lg leading-tight">{{ detailItem.title }}</div>
+                <div class="text-secondary text-sm mt-1">
+                    {{ detailItem.publishedAt | date:'dd/MM/yyyy HH:mm' }}
+                    <a *ngIf="detailItem.link" [href]="detailItem.link" target="_blank" rel="noopener noreferrer"
+                        class="ml-3 text-blue-500 hover:underline inline-flex items-center gap-1 text-xs">
+                        <mat-icon class="icon-size-3.5">open_in_new</mat-icon> Πηγή
+                    </a>
+                </div>
+            </div>
+            <button mat-icon-button type="button" (click)="closeDetail()">
+                <mat-icon>close</mat-icon>
+            </button>
+        </div>
+
+        <!-- Image -->
+        <div *ngIf="detailItem.imageUrl" class="px-6 pt-5">
+            <img [src]="detailItem.imageUrl" class="w-full rounded-xl object-cover max-h-72"
+                (error)="$any($event.target).style.display='none'" />
+        </div>
+
+        <!-- Content -->
+        <div class="px-6 py-5">
+            <!-- Visibility badge -->
+            <div class="mb-4 flex items-center gap-3 flex-wrap">
+                <div *ngIf="!detailItem.isHidden"
+                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-500/10 text-green-600 text-xs font-semibold">
+                    <mat-icon class="icon-size-3.5">visibility</mat-icon> Ορατό
+                </div>
+                <div *ngIf="detailItem.isHidden"
+                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-500/10 text-red-600 text-xs font-semibold">
+                    <mat-icon class="icon-size-3.5">visibility_off</mat-icon> Κρυμμένο
+                </div>
+                <span *ngIf="detailItem.toggledByAdminName" class="text-secondary text-xs">
+                    Αλλαγή από <strong>{{ detailItem.toggledByAdminName }}</strong>
+                    στις {{ detailItem.toggledAt | date:'dd/MM/yyyy HH:mm' }}
+                </span>
+            </div>
+
+            <!-- Article HTML content -->
+            <div class="prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed"
+                [innerHTML]="detailSafeHtml"></div>
+        </div>
+
+        <!-- Footer actions -->
+        <div class="flex items-center justify-end gap-3 px-6 pb-6 pt-2 border-t">
+            <button mat-button type="button" (click)="closeDetail()">Κλείσιμο</button>
+            <button *ngIf="!detailItem.isHidden" mat-flat-button color="warn" type="button"
+                [disabled]="toggling === detailItem.link" (click)="toggleVisibility(detailItem)">
+                <mat-icon>visibility_off</mat-icon>
+                <span class="ml-1">Απόκρυψη</span>
+            </button>
+            <button *ngIf="detailItem.isHidden" mat-flat-button color="primary" type="button"
+                [disabled]="toggling === detailItem.link" (click)="toggleVisibility(detailItem)">
+                <mat-icon>visibility</mat-icon>
+                <span class="ml-1">Εμφάνιση</span>
+            </button>
+        </div>
+
+    </div>
+</div>

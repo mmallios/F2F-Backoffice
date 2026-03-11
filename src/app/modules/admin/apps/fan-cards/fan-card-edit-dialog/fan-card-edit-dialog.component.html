@@ -1,0 +1,107 @@
+<div class="flex flex-col w-full min-w-[380px] max-w-lg">
+
+    <!-- ── Header ─────────────────────────────────────────── -->
+    <div class="shrink-0 px-6 pt-6 pb-4 flex items-start justify-between gap-4 border-b">
+        <div class="flex items-center gap-3">
+            <div class="flex items-center justify-center w-10 h-10 rounded-xl shrink-0"
+                [class]="isEdit ? 'bg-amber-500/10' : 'bg-green-500/10'">
+                <mat-icon [class]="isEdit ? 'text-amber-500' : 'text-green-500'">
+                    {{ isEdit ? 'edit' : 'add_card' }}
+                </mat-icon>
+            </div>
+            <div>
+                <div class="text-xl font-extrabold tracking-tight leading-none">
+                    {{ isEdit ? 'Επεξεργασία Κάρτας' : 'Νέα Κάρτα' }}
+                </div>
+                <div *ngIf="isEdit" class="text-secondary text-xs mt-0.5 font-mono">
+                    {{ data.card?.cardCode }}
+                </div>
+            </div>
+        </div>
+        <button mat-icon-button type="button" (click)="cancel()">
+            <mat-icon>close</mat-icon>
+        </button>
+    </div>
+
+    <!-- ── Loading ────────────────────────────────────────── -->
+    <div *ngIf="loading" class="flex items-center justify-center py-16">
+        <mat-spinner diameter="40"></mat-spinner>
+    </div>
+
+    <!-- ── Error state ────────────────────────────────────── -->
+    <div *ngIf="error && !loading"
+        class="mx-6 mt-4 px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-sm">
+        {{ error }}
+    </div>
+
+    <!-- ── Form ───────────────────────────────────────────── -->
+    <form *ngIf="!loading" [formGroup]="form" class="flex flex-col gap-4 px-6 py-5">
+
+        <!-- Card Code -->
+        <mat-form-field class="w-full" appearance="outline">
+            <mat-label>Κωδικός Κάρτας</mat-label>
+            <mat-icon matPrefix class="mr-1 opacity-50">credit_card</mat-icon>
+            <input matInput formControlName="cardCode" autocomplete="off" style="text-transform:uppercase"
+                placeholder="πχ. ABC123456" />
+            <mat-error *ngIf="form.get('cardCode')?.hasError('required')">Υποχρεωτικό πεδίο</mat-error>
+            <mat-error *ngIf="form.get('cardCode')?.hasError('minlength')">Ελάχιστο 3 χαρακτήρες</mat-error>
+        </mat-form-field>
+
+        <!-- Owner -->
+        <mat-form-field class="w-full" appearance="outline">
+            <mat-label>Ιδιοκτήτης</mat-label>
+            <mat-select formControlName="ownerId">
+                <mat-option [value]="null">— Χωρίς ιδιοκτήτη —</mat-option>
+                <mat-option *ngFor="let u of users" [value]="u.id">
+                    <div class="flex items-center gap-2">
+                        <img *ngIf="u.image" [src]="u.image" class="w-6 h-6 rounded-full object-cover border shrink-0"
+                            alt="">
+                        <div *ngIf="!u.image"
+                            class="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary text-[10px] shrink-0">
+                            {{ userFullName(u).charAt(0) || '?' }}
+                        </div>
+                        <span>{{ userFullName(u) }}</span>
+                        <span *ngIf="u.code" class="font-mono text-xs text-secondary/60">{{ u.code }}</span>
+                    </div>
+                </mat-option>
+            </mat-select>
+        </mat-form-field>
+
+        <!-- Season -->
+        <mat-form-field class="w-full" appearance="outline">
+            <mat-label>Σεζόν</mat-label>
+            <mat-select formControlName="seasonId">
+                <mat-option [value]="null" disabled>— Επιλέξτε σεζόν —</mat-option>
+                <mat-option *ngFor="let s of seasons" [value]="s.id">
+                    {{ s.name }} <span class="font-mono text-xs text-secondary/60">({{ s.code }})</span>
+                </mat-option>
+            </mat-select>
+            <mat-error *ngIf="form.get('seasonId')?.hasError('required')">Υποχρεωτικό πεδίο</mat-error>
+        </mat-form-field>
+
+        <!-- IsActive toggle -->
+        <div class="flex items-center justify-between px-1 py-2">
+            <div>
+                <div class="font-medium text-sm">Κατάσταση κάρτας</div>
+                <div class="text-xs text-secondary mt-0.5">
+                    {{ form.get('isActive')?.value ? 'Ενεργή — μπορεί να χρησιμοποιηθεί' : 'Ανενεργή — μπλοκαρισμένη' }}
+                </div>
+            </div>
+            <mat-slide-toggle formControlName="isActive" color="primary"></mat-slide-toggle>
+        </div>
+
+    </form>
+
+    <!-- ── Footer ─────────────────────────────────────────── -->
+    <div *ngIf="!loading" class="shrink-0 px-6 pb-6 pt-2 flex items-center justify-end gap-3 border-t">
+        <button mat-button type="button" (click)="cancel()" [disabled]="saving">
+            Ακύρωση
+        </button>
+        <button mat-flat-button color="primary" type="button" (click)="save()" [disabled]="form.invalid || saving">
+            <mat-spinner *ngIf="saving" diameter="18" class="mr-2"></mat-spinner>
+            <mat-icon *ngIf="!saving">save</mat-icon>
+            <span class="ml-1">{{ isEdit ? 'Αποθήκευση' : 'Δημιουργία' }}</span>
+        </button>
+    </div>
+
+</div>
