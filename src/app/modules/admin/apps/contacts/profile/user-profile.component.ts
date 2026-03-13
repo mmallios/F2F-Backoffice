@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, OnInit, ViewEncapsulation, inject } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
+import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -9,7 +9,9 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { UsersService, User, UserTicket, UserCard } from '@fuse/services/users/users.service';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { UsersService, User, UserTicket, UserCard, RegistrationRequest, BanInfo, AuditLogDto, AuditLogListResult } from '@fuse/services/users/users.service';
 
 
 type Card = { id: number; code: string; active: boolean; };
@@ -46,10 +48,13 @@ export const DD_MM_YYYY_FORMAT = {
         MatSelectModule,
         MatTabsModule,
         MatDialogModule,
+        MatProgressBarModule,
+        MatTooltipModule,
     ],
 })
 export class UsersProfileComponent implements OnInit {
     private _route = inject(ActivatedRoute);
+    private _router = inject(Router);
     private _fb = inject(FormBuilder);
     private _usersService = inject(UsersService);
     private _cdr = inject(ChangeDetectorRef);
@@ -65,6 +70,29 @@ export class UsersProfileComponent implements OnInit {
     user!: User;
     avatarPreview: string | null = null;
 
+    // Rejection info modal
+    rejectionModalOpen = false;
+    rejectionInfo: RegistrationRequest | null = null;
+    loadingRejectionInfo = false;
+
+    // Ban confirm modal
+    readonly adminUserId: number | null = null;
+    banConfirmModalOpen = false;
+    banReasonCtrl = new FormControl('', { nonNullable: true });
+    banningInProgress = false;
+
+    // Ban info modal
+    banInfoModalOpen = false;
+    banInfo: BanInfo | null = null;
+    loadingBanInfo = false;
+
+    // Activity tab
+    activityLogs: AuditLogDto[] = [];
+    activityTotal = 0;
+    activityPage = 1;
+    activityLoaded = false;
+    loadingActivity = false; activityDetailLog: AuditLogDto | null = null;
+    activityDetailFields: { key: string; value: string }[] = [];
     // overview edit mode (μόνο το επάνω “card”)
 
     overviewEdit = false;
@@ -454,6 +482,174 @@ export class UsersProfileComponent implements OnInit {
         }
     }
 
+    openRejectionModal(): void {
+        if (!this.user?.id) return;
+        this.loadingRejectionInfo = true;
+        this.rejectionModalOpen = true;
+        this.rejectionInfo = null;
+        this._cdr.markForCheck();
+        this._usersService.getRegistrationRequestById(this.user.id).subscribe({
+            next: (info) => {
+                this.rejectionInfo = info;
+                this.loadingRejectionInfo = false;
+                this._cdr.markForCheck();
+            },
+            error: () => {
+                this.loadingRejectionInfo = false;
+                this._cdr.markForCheck();
+            },
+        });
+    }
+
+    closeRejectionModal(): void {
+        this.rejectionModalOpen = false;
+        this.rejectionInfo = null;
+        this._cdr.markForCheck();
+    }
+
+    goToRegistrationRequest(): void {
+        this._router.navigate(['/apps/registration-requests'], {
+            state: { openRequestId: this.user?.id },
+        });
+    }
+
+    // ── Ban ──────────────────────────────────────────────────────
+
+    openBanConfirmModal(): void {
+        this.banConfirmModalOpen = true;
+        this.banReasonCtrl.reset('');
+        this._cdr.markForCheck();
+    }
+
+    closeBanConfirmModal(): void {
+        this.banConfirmModalOpen = false;
+        this._cdr.markForCheck();
+    }
+
+    executeBan(): void {
+        if (this.banningInProgress) return;
+        this.banningInProgress = true;
+        this._cdr.markForCheck();
+        this._usersService.banUser(this.user.id!, this.adminUserId, this.banReasonCtrl.value || null).subscribe({
+            next: () => {
+                this.banningInProgress = false;
+                this.banConfirmModalOpen = false;
+                this.user = { ...this.user, status: 7 };
+                this.detailsForm.patchValue({ status: 7 });
+                this._cdr.markForCheck();
+            },
+            error: () => {
+                this.banningInProgress = false;
+                this._cdr.markForCheck();
+            },
+        });
+    }
+
+    openBanInfoModal(): void {
+        if (!this.user?.id) return;
+        this.loadingBanInfo = true;
+        this.banInfoModalOpen = true;
+        this.banInfo = null;
+        this._cdr.markForCheck();
+        this._usersService.getBanInfo(this.user.id).subscribe({
+            next: (info) => {
+                this.banInfo = info;
+                this.loadingBanInfo = false;
+                this._cdr.markForCheck();
+            },
+            error: () => {
+                this.loadingBanInfo = false;
+                this._cdr.markForCheck();
+            },
+        });
+    }
+
+    closeBanInfoModal(): void {
+        this.banInfoModalOpen = false;
+        this.banInfo = null;
+        this._cdr.markForCheck();
+    }
+
+    // ── Activity Tab ─────────────────────────────────────────────
+
+    onTabChange(index: number): void {
+        if (index === 3 && !this.activityLoaded) {
+            this.loadActivity();
+        }
+    }
+
+    loadActivity(page: number = 1): void {
+        if (!this.user?.id) return;
+        this.loadingActivity = true;
+        this.activityPage = page;
+        this._cdr.markForCheck();
+        this._usersService.getUserAuditLogs(this.user.id, page).subscribe({
+            next: (result) => {
+                this.activityLogs = result.items;
+                this.activityTotal = result.total;
+                this.activityLoaded = true;
+                this.loadingActivity = false;
+                this._cdr.markForCheck();
+            },
+            error: () => {
+                this.loadingActivity = false;
+                this._cdr.markForCheck();
+            },
+        });
+    }
+
+    auditLogLabel(type: number): string {
+        const map: Record<number, string> = {
+            1: 'Αίτημα εγγραφής', 2: 'Έγκριση εγγραφής',
+            3: 'Απόρριψη εγγραφής', 4: 'Ενημέρωση στοιχείων',
+            5: 'Ενημέρωση ρυθμίσεων', 6: 'Νέα παραγγελία',
+            7: 'Αίτημα υποστήριξης', 8: 'Αίτημα εισιτηρίου αγώνα',
+            9: 'Παραχώρηση εισιτηρίου', 10: 'Δημιουργία group chat',
+            11: 'Δωρεά', 12: 'Αίτημα κάρτας φιλάθλου',
+            13: 'Συμμετοχή σε διαγωνισμό', 14: 'Νίκη σε διαγωνισμό',
+            15: 'Νέα κάρτα διαρκείας', 16: 'Επεξεργασία κάρτας διαρκείας',
+            17: 'Διαγραφή κάρτας', 18: 'Αποκλεισμός χρήστη',
+        };
+        return map[type] ?? `Ενέργεια #${type}`;
+    }
+
+    auditLogIcon(type: number): string {
+        const map: Record<number, string> = {
+            1: 'how_to_reg', 2: 'check_circle', 3: 'cancel',
+            4: 'edit', 5: 'settings', 6: 'shopping_cart',
+            7: 'support_agent', 8: 'local_activity', 9: 'confirmation_number',
+            10: 'group', 11: 'favorite', 12: 'badge',
+            13: 'emoji_events', 14: 'star', 15: 'credit_card',
+            16: 'edit_note', 17: 'remove_circle', 18: 'block',
+        };
+        return map[type] ?? 'info';
+    }
+
+    openActivityDetailModal(log: AuditLogDto): void {
+        this.activityDetailLog = log;
+        this.activityDetailFields = this.parseTableData(log.tableData);
+        this._cdr.markForCheck();
+    }
+
+    closeActivityDetailModal(): void {
+        this.activityDetailLog = null;
+        this.activityDetailFields = [];
+        this._cdr.markForCheck();
+    }
+
+    parseTableData(raw: string | null | undefined): { key: string; value: string }[] {
+        if (!raw) return [];
+        try {
+            const obj = JSON.parse(raw);
+            if (typeof obj !== 'object' || obj === null || Array.isArray(obj)) return [];
+            return Object.entries(obj).map(([k, v]) => ({
+                key: k,
+                value: v === null || v === undefined ? '—' : String(v),
+            }));
+        } catch {
+            return [{ key: 'data', value: raw }];
+        }
+    }
 
     private buildStaticLookup(items: StaticData[]): void {
         this.staticData = items ?? [];

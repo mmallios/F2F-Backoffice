@@ -60,7 +60,7 @@
     </div>
 
     <!-- ── Tabs ─────────────────────────────────────────────────── -->
-    <mat-tab-group (selectedIndexChange)="onTabChange($event)" animationDuration="200ms">
+    <mat-tab-group #tabGroup (selectedIndexChange)="onTabChange($event)" animationDuration="200ms">
 
         <!-- ══ TAB 1: Εκκρεμή Αιτήματα ══════════════════════════════ -->
         <mat-tab label="Εκκρεμή Αιτήματα">
@@ -170,9 +170,9 @@
                         <ng-container matColumnDef="actions">
                             <th mat-header-cell *matHeaderCellDef class="px-5"></th>
                             <td mat-cell *matCellDef="let r" class="px-5 py-3">
-                                <button mat-stroked-button type="button" (click)="openModal(r)">
-                                    <mat-icon class="icon-size-4">visibility</mat-icon>
-                                    <span class="ml-1 text-sm">Προβολή Λεπτομερειών</span>
+                                <button mat-flat-button color="primary" type="button" (click)="openModal(r)">
+                                    <mat-icon class="icon-size-4">rate_review</mat-icon>
+                                    <span class="ml-1 text-sm">Απάντηση Αιτήματος</span>
                                 </button>
                             </td>
                         </ng-container>
@@ -330,8 +330,8 @@
                             <th mat-header-cell *matHeaderCellDef class="px-5"></th>
                             <td mat-cell *matCellDef="let r" class="px-5 py-3">
                                 <button mat-stroked-button type="button" (click)="openModal(r)">
-                                    <mat-icon class="icon-size-4">edit</mat-icon>
-                                    <span class="ml-1 text-sm">Επεξεργασία</span>
+                                    <mat-icon class="icon-size-4">visibility</mat-icon>
+                                    <span class="ml-1 text-sm">Προβολή Λεπτομερειών</span>
                                 </button>
                             </td>
                         </ng-container>
@@ -416,15 +416,38 @@
                     </div>
                 </div>
 
-                <!-- Linked user input -->
+                <!-- Linked person input: always show (what user typed on registration form) -->
                 <div
                     class="rounded-xl border p-4 flex items-center gap-4 hover:bg-gray-50/60 dark:hover:bg-white/5 transition">
                     <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-red-500/10 shrink-0">
                         <mat-icon class="text-red-500">link</mat-icon>
                     </div>
                     <div class="min-w-0">
-                        <div class="text-sm text-secondary font-medium">Συσχετισμένο Πρόσωπο</div>
+                        <div class="text-sm text-secondary font-medium">Συσχετισμένο Πρόσωπο (δήλωση)</div>
                         <div class="text-base font-semibold truncate">{{ modalRequest.linkedUserInput || '—' }}</div>
+                    </div>
+                </div>
+
+                <!-- Linked user card — only for accepted requests where admin linked a user -->
+                <div *ngIf="modalRequest?.status === 2 && modalRequest?.linkedUserId"
+                    class="rounded-xl border border-primary/40 bg-primary/5 p-4 flex items-center gap-4">
+                    <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10 shrink-0">
+                        <mat-icon class="text-primary">how_to_reg</mat-icon>
+                    </div>
+                    <div
+                        class="h-12 w-12 rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 flex items-center justify-center shrink-0">
+                        <img *ngIf="modalRequest.linkedUserImage" [src]="modalRequest.linkedUserImage"
+                            class="h-full w-full object-cover" />
+                        <span *ngIf="!modalRequest.linkedUserImage"
+                            class="text-base font-bold uppercase text-gray-600 dark:text-gray-300">
+                            {{ modalRequest.linkedUserFirstname?.charAt(0) || '?' }}
+                        </span>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <div class="text-xs text-secondary font-medium mb-0.5">Σύνδεση Admin</div>
+                        <div class="font-bold text-base truncate">{{ modalRequest.linkedUserFirstname }} {{
+                            modalRequest.linkedUserLastname }}</div>
+                        <div class="text-secondary text-sm">{{ modalRequest.linkedUserCode }}</div>
                     </div>
                 </div>
 
@@ -472,8 +495,8 @@
                     </div>
                     <div class="min-w-0">
                         <div class="text-sm text-secondary font-medium">Ημ/νία Εγγραφής</div>
-                        <div class="text-base font-semibold truncate">{{ modalRequest.createdOn | date:'dd/MM/yyyy
-                            HH:mm' }}</div>
+                        <div class="text-sm font-semibold truncate">{{ modalRequest.createdOn | date:'dd/MM/yyyy HH:mm'
+                            }}</div>
                     </div>
                 </div>
 
@@ -483,8 +506,8 @@
         <!-- Divider -->
         <div class="border-t mx-6"></div>
 
-        <!-- Link user section -->
-        <div class="px-6 py-5">
+        <!-- ── Pending: link user section ──────────────────────── -->
+        <div *ngIf="modalRequest?.status !== 2 && modalRequest?.status !== 5" class="px-6 py-5">
             <div class="text-[11px] font-bold uppercase tracking-widest text-secondary mb-4">Σύνδεση με υπάρχοντα χρήστη
             </div>
 
@@ -505,50 +528,163 @@
                         selectedLinkedUser.lastname }}</div>
                     <div class="text-secondary text-sm">{{ selectedLinkedUser.code }}</div>
                 </div>
-                <button mat-icon-button type="button" (click)="clearLinkedUser()" matTooltip="Αφαίρεση">
-                    <mat-icon class="text-secondary">close</mat-icon>
+                <button mat-stroked-button type="button" (click)="clearLinkedUser()" matTooltip="Αλλαγή χρήστη">
+                    <mat-icon class="icon-size-4">swap_horiz</mat-icon>
+                    <span class="ml-1 text-sm">Αλλαγή</span>
                 </button>
             </div>
 
-            <!-- Search input -->
-            <mat-form-field class="w-full" subscriptSizing="dynamic">
-                <mat-icon matPrefix>search</mat-icon>
-                <mat-label>Αναζήτηση χρήστη για σύνδεση</mat-label>
-                <input matInput [formControl]="userSearchCtrl" placeholder="Όνομα ή κωδικός…" autocomplete="off" />
-            </mat-form-field>
+            <!-- Search input: shown only when no user selected -->
+            <ng-container *ngIf="!selectedLinkedUser">
+                <mat-form-field class="w-full" subscriptSizing="dynamic">
+                    <mat-icon matPrefix>search</mat-icon>
+                    <mat-label>Αναζήτηση χρήστη για σύνδεση</mat-label>
+                    <input matInput [formControl]="userSearchCtrl" placeholder="Όνομα ή κωδικός…" autocomplete="off" />
+                </mat-form-field>
 
-            <!-- Results dropdown -->
-            <div *ngIf="filteredUsers.length"
-                class="mt-1 rounded-xl border bg-card shadow-lg overflow-hidden max-h-48 overflow-y-auto">
-                <button *ngFor="let u of filteredUsers" type="button"
-                    class="flex items-center gap-3 w-full px-4 py-2.5 text-left hover:bg-gray-50/80 dark:hover:bg-white/5 transition"
-                    (click)="selectLinkedUser(u)">
-                    <div
-                        class="h-8 w-8 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-800 flex items-center justify-center shrink-0">
-                        <img *ngIf="u.image" [src]="u.image" class="h-full w-full object-cover" />
-                        <span *ngIf="!u.image" class="text-xs font-bold uppercase text-gray-600 dark:text-gray-300">
-                            {{ u.firstname?.charAt(0) || '?' }}
-                        </span>
+                <!-- Results dropdown -->
+                <div *ngIf="filteredUsers.length"
+                    class="mt-1 rounded-xl border bg-card shadow-lg overflow-hidden max-h-48 overflow-y-auto">
+                    <button *ngFor="let u of filteredUsers" type="button"
+                        class="flex items-center gap-3 w-full px-4 py-2.5 text-left hover:bg-gray-50/80 dark:hover:bg-white/5 transition"
+                        (click)="selectLinkedUser(u)">
+                        <div
+                            class="h-8 w-8 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-800 flex items-center justify-center shrink-0">
+                            <img *ngIf="u.image" [src]="u.image" class="h-full w-full object-cover" />
+                            <span *ngIf="!u.image" class="text-xs font-bold uppercase text-gray-600 dark:text-gray-300">
+                                {{ u.firstname?.charAt(0) || '?' }}
+                            </span>
+                        </div>
+                        <div class="min-w-0">
+                            <div class="font-semibold text-sm truncate">{{ u.firstname }} {{ u.lastname }}</div>
+                            <div class="text-secondary text-xs">{{ u.code }}</div>
+                        </div>
+                    </button>
+                </div>
+            </ng-container>
+        </div>
+
+        <!-- ── Completed: admin details section ──────────────────── -->
+        <div *ngIf="modalRequest?.status === 2 || modalRequest?.status === 5" class="px-6 py-5">
+            <div class="text-[11px] font-bold uppercase tracking-widest text-secondary mb-4">Στοιχεία Απάντησης
+                Αιτήματος</div>
+            <div class="flex flex-wrap gap-3">
+
+                <!-- Result -->
+                <div class="rounded-xl border p-4 flex items-center gap-4 flex-1 min-w-[140px]">
+                    <div class="flex items-center justify-center w-10 h-10 rounded-xl shrink-0"
+                        [ngClass]="modalRequest?.status === 2 ? 'bg-green-500/10' : 'bg-red-500/10'">
+                        <mat-icon [ngClass]="modalRequest?.status === 2 ? 'text-green-500' : 'text-red-500'">
+                            {{ modalRequest?.status === 2 ? 'check_circle' : 'cancel' }}
+                        </mat-icon>
                     </div>
                     <div class="min-w-0">
-                        <div class="font-semibold text-sm truncate">{{ u.firstname }} {{ u.lastname }}</div>
-                        <div class="text-secondary text-xs">{{ u.code }}</div>
+                        <div class="text-sm text-secondary font-medium">Αποτέλεσμα</div>
+                        <div class="text-base font-semibold"
+                            [ngClass]="modalRequest?.status === 2 ? 'text-green-600' : 'text-red-600'">
+                            {{ modalRequest?.status === 2 ? 'Αποδεκτό' : 'Απορρίφθηκε' }}
+                        </div>
                     </div>
-                </button>
+                </div>
+
+                <!-- Admin who reviewed -->
+                <div class="rounded-xl border p-4 flex items-center gap-4 flex-1 min-w-[140px]">
+                    <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-indigo-500/10 shrink-0">
+                        <mat-icon class="text-indigo-500">admin_panel_settings</mat-icon>
+                    </div>
+                    <div class="min-w-0">
+                        <div class="text-sm text-secondary font-medium">Admin</div>
+                        <div class="text-base font-semibold truncate">{{ modalRequest?.reviewedByAdminName || '—' }}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Date of decision -->
+                <div class="rounded-xl border p-4 flex items-center gap-4 flex-1 min-w-[140px]">
+                    <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-gray-500/10 shrink-0">
+                        <mat-icon class="text-gray-500">event</mat-icon>
+                    </div>
+                    <div class="min-w-0">
+                        <div class="text-sm text-secondary font-medium">Ημ/νία Απόφασης</div>
+                        <div class="text-sm font-semibold">
+                            {{ modalRequest?.reviewedAt ? (modalRequest!.reviewedAt | date:'dd/MM/yyyy HH:mm') : '—' }}
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Review comment -->
+            <div *ngIf="modalRequest?.reviewComment"
+                class="mt-4 rounded-xl border border-orange-200 dark:border-orange-500/30 bg-orange-50/60 dark:bg-orange-500/5 p-4">
+                <div class="flex items-start gap-3">
+                    <mat-icon class="text-orange-500 shrink-0 mt-0.5">comment</mat-icon>
+                    <div>
+                        <div class="text-xs font-bold uppercase tracking-widest text-secondary mb-1">Σχόλιο Απόρριψης
+                        </div>
+                        <div class="text-sm leading-relaxed">{{ modalRequest.reviewComment }}</div>
+                    </div>
+                </div>
             </div>
         </div>
 
         <!-- Action buttons -->
         <div class="flex items-center justify-end gap-3 px-6 pb-6 pt-2 border-t mt-0">
             <button mat-button type="button" (click)="closeModal()">Κλείσιμο</button>
+            <ng-container *ngIf="modalRequest?.status !== 2 && modalRequest?.status !== 5">
+                <button mat-flat-button color="warn" type="button" (click)="openRejectModal()">
+                    <mat-icon>block</mat-icon>
+                    <span class="ml-1">Απόρριψη</span>
+                </button>
+                <button mat-flat-button color="primary" type="button" [disabled]="!selectedLinkedUser"
+                    (click)="accept()"
+                    [matTooltip]="!selectedLinkedUser ? 'Επιλέξτε συνδεδεμένο χρήστη για αποδοχή' : ''">
+                    <mat-icon>check_circle</mat-icon>
+                    <span class="ml-1">Αποδοχή</span>
+                </button>
+            </ng-container>
+        </div>
+
+    </div>
+</div>
+
+<!-- ── Reject Confirmation Modal ────────────────────────────── -->
+<div *ngIf="rejectModalOpen && modalRequest"
+    class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+    <div class="bg-card rounded-2xl border shadow-2xl w-full max-w-md">
+
+        <!-- Header -->
+        <div class="flex items-center gap-3 px-6 pt-6 pb-4 border-b">
+            <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-red-500/10 shrink-0">
+                <mat-icon class="text-red-500">block</mat-icon>
+            </div>
+            <div>
+                <div class="font-extrabold text-base">Απόρριψη Αιτήματος</div>
+                <div class="text-secondary text-sm">{{ modalRequest.firstname }} {{ modalRequest.lastname }}</div>
+            </div>
+            <button mat-icon-button type="button" class="ml-auto" (click)="closeRejectModal()">
+                <mat-icon>close</mat-icon>
+            </button>
+        </div>
+
+        <!-- Body -->
+        <div class="px-6 py-5">
+            <p class="text-sm text-secondary mb-4">Είστε σίγουροι ότι θέλετε να απορρίψετε το αίτημα; Μπορείτε να
+                προσθέσετε προαιρετικά σχόλιο.</p>
+            <mat-form-field class="w-full" subscriptSizing="dynamic">
+                <mat-icon matPrefix>comment</mat-icon>
+                <mat-label>Σχόλιο (προαιρετικό)</mat-label>
+                <textarea matInput [formControl]="rejectCommentCtrl" placeholder="Λόγος απόρριψης ή σχόλιο…" rows="3"
+                    cdkTextareaAutosize></textarea>
+            </mat-form-field>
+        </div>
+
+        <!-- Footer -->
+        <div class="flex items-center justify-end gap-3 px-6 pb-6 pt-2 border-t">
+            <button mat-button type="button" (click)="closeRejectModal()">Ακύρωση</button>
             <button mat-flat-button color="warn" type="button" (click)="reject()">
                 <mat-icon>block</mat-icon>
-                <span class="ml-1">Απόρριψη</span>
-            </button>
-            <button mat-flat-button color="primary" type="button" [disabled]="!selectedLinkedUser" (click)="accept()"
-                [matTooltip]="!selectedLinkedUser ? 'Επιλέξτε συνδεδεμένο χρήστη για αποδοχή' : ''">
-                <mat-icon>check_circle</mat-icon>
-                <span class="ml-1">Αποδοχή</span>
+                <span class="ml-1">Επιβεβαίωση Απόρριψης</span>
             </button>
         </div>
 

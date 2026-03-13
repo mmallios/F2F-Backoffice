@@ -15,9 +15,16 @@
                 </div>
 
                 <div class="min-w-0">
-                    <div class="text-xl md:text-2xl font-extrabold truncate">
-                        {{ detailsForm.get('firstname')?.value }}
-                        {{ detailsForm.get('lastname')?.value }}
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <div class="text-xl md:text-2xl font-extrabold truncate">
+                            {{ detailsForm.get('firstname')?.value }}
+                            {{ detailsForm.get('lastname')?.value }}
+                        </div>
+                        <div *ngIf="user?.reviewedAt && user?.status === 2"
+                            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-blue-300 dark:border-blue-500/50 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-semibold shrink-0">
+                            <mat-icon class="icon-size-3.5">verified</mat-icon>
+                            ΜΕΛΟΣ ΑΠΟ {{ user.reviewedAt | date:'dd/MM/yyyy' }}
+                        </div>
                     </div>
 
                     <div class="text-secondary text-m mt-0.5">
@@ -36,11 +43,24 @@
                 <!-- ✅ Status dropdown (left of Change Image) -->
                 <!-- Status dropdown (HEADER) -->
                 <!-- Readonly view -->
-                <div *ngIf="!overviewEdit"
-                    class="px-4 py-2 rounded-full text-m font-semibold inline-flex items-center gap-2"
-                    [ngClass]="getStatusChipClass(detailsForm.get('status')?.value)">
-                    <mat-icon class="icon-size-5" [svgIcon]="'heroicons_outline:shield-check'"></mat-icon>
-                    {{ getStatusLabel(detailsForm.get('status')?.value) }}
+                <div *ngIf="!overviewEdit" class="flex items-center gap-2">
+                    <div class="px-4 py-2 rounded-full text-m font-semibold inline-flex items-center gap-2"
+                        [ngClass]="getStatusChipClass(detailsForm.get('status')?.value)">
+                        <mat-icon class="icon-size-5" [svgIcon]="'heroicons_outline:shield-check'"></mat-icon>
+                        {{ getStatusLabel(detailsForm.get('status')?.value) }}
+                    </div>
+                    <!-- Rejection info button — shown only for rejected users -->
+                    <button *ngIf="detailsForm.get('status')?.value === 5" mat-icon-button type="button"
+                        (click)="openRejectionModal()" matTooltip="Λεπτομέρειες Απόρριψης"
+                        class="text-red-500 hover:bg-red-500/10">
+                        <mat-icon class="icon-size-5">info</mat-icon>
+                    </button>
+                    <!-- Ban info button — shown only for banned users -->
+                    <button *ngIf="detailsForm.get('status')?.value === 7" mat-icon-button type="button"
+                        (click)="openBanInfoModal()" matTooltip="Λεπτομέρειες Αποκλεισμού"
+                        class="text-red-500 hover:bg-red-500/10">
+                        <mat-icon class="icon-size-5">info</mat-icon>
+                    </button>
                 </div>
 
 
@@ -50,6 +70,12 @@
                 <button mat-stroked-button type="button" (click)="openEditUserModal()">
                     <mat-icon>edit</mat-icon>
                     <span class="ml-2">Επεξεργασία</span>
+                </button>
+
+                <button mat-stroked-button color="warn" *ngIf="detailsForm.get('status')?.value !== 7" type="button"
+                    (click)="openBanConfirmModal()">
+                    <mat-icon>block</mat-icon>
+                    <span class="ml-2">Αποκλεισμός</span>
                 </button>
 
 
@@ -93,6 +119,12 @@
                                     </span>
                                 </ng-container>
 
+                                <!-- birthdate: Greek dd/MM/yyyy format -->
+                                <ng-container *ngSwitchCase="'birthdate'">
+                                    {{ detailsForm.get('birthdate')?.value ? (detailsForm.get('birthdate')?.value |
+                                    date:'dd/MM/yyyy') : '-' }}
+                                </ng-container>
+
                                 <!-- default -->
                                 <ng-container *ngSwitchDefault>
                                     {{ detailsForm.get(field.control)?.value || '-' }}
@@ -113,7 +145,7 @@
 
     <!-- ================= TABS ================= -->
     <div class="bg-card rounded-2xl border shadow-sm overflow-hidden">
-        <mat-tab-group class="p-2 md:p-4">
+        <mat-tab-group class="p-2 md:p-4" (selectedTabChange)="onTabChange($event.index)">
 
 
             <!-- TAB: ΕΙΣΙΤΗΡΙΑ ΔΙΑΡΚΕΙΑΣ -->
@@ -313,12 +345,339 @@
 
             <!-- TAB 4 -->
             <mat-tab label="ΔΡΑΣΤΗΡΙΟΤΗΤΑ">
-                <div class="p-4 md:p-6 text-secondary">
-                    Θα προστεθεί σύντομα…
+                <div class="p-4 md:p-6 space-y-4">
+
+                    <!-- Header -->
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <div class="text-lg font-bold">Δραστηριότητα</div>
+                            <div class="text-secondary text-sm">Ιστορικό ενεργειών χρήστη</div>
+                        </div>
+                        <div *ngIf="activityTotal > 0" class="text-secondary text-sm">
+                            {{ activityTotal }} εγγραφές
+                        </div>
+                    </div>
+
+                    <!-- Loading -->
+                    <div *ngIf="loadingActivity" class="flex justify-center py-6">
+                        <mat-progress-bar mode="indeterminate" class="w-full max-w-xs"></mat-progress-bar>
+                    </div>
+
+                    <!-- Empty state -->
+                    <div *ngIf="!loadingActivity && activityLoaded && !activityLogs?.length"
+                        class="rounded-2xl border bg-white/40 dark:bg-transparent p-6 text-center text-secondary">
+                        Δεν υπάρχουν εγγραφές δραστηριότητας.
+                    </div>
+
+                    <!-- List -->
+                    <div *ngIf="!loadingActivity && activityLogs?.length" class="space-y-2">
+                        <div *ngFor="let log of activityLogs" class="rounded-2xl border bg-card shadow-sm p-4 flex items-start gap-4
+                                   hover:bg-gray-50/60 dark:hover:bg-white/5 transition">
+
+                            <!-- Icon -->
+                            <div class="flex items-center justify-center w-10 h-10 rounded-xl
+                                        bg-primary/10 text-primary shrink-0">
+                                <mat-icon class="icon-size-5">{{ auditLogIcon(log.type) }}</mat-icon>
+                            </div>
+
+                            <!-- Content -->
+                            <div class="min-w-0 flex-1">
+                                <div class="flex items-center justify-between gap-2 flex-wrap">
+                                    <div class="font-semibold text-sm">{{ auditLogLabel(log.type) }}</div>
+                                    <div class="text-secondary text-sm font-medium shrink-0">{{ log.date |
+                                        date:'dd/MM/yyyy HH:mm' }}</div>
+                                </div>
+                                <div class="text-secondary text-sm mt-0.5">{{ log.description }}</div>
+                            </div>
+
+                            <!-- Details button -->
+                            <button *ngIf="log.tableData" mat-stroked-button type="button" class="shrink-0 self-center"
+                                (click)="openActivityDetailModal(log)">
+                                <mat-icon class="icon-size-4 mr-1">info</mat-icon>
+                                <span class="text-xs">ΛΕΠΤΟΜΕΡΕΙΕΣ</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Pager -->
+                    <div *ngIf="activityLoaded && activityTotal > 20" class="flex items-center justify-between pt-2">
+                        <button mat-stroked-button type="button" [disabled]="activityPage <= 1"
+                            (click)="loadActivity(activityPage - 1)">
+                            <mat-icon>chevron_left</mat-icon>
+                            <span class="ml-1">Προηγούμενη</span>
+                        </button>
+                        <span class="text-secondary text-sm">Σελίδα {{ activityPage }}</span>
+                        <button mat-stroked-button type="button" [disabled]="activityPage * 20 >= activityTotal"
+                            (click)="loadActivity(activityPage + 1)">
+                            <span class="mr-1">Επόμενη</span>
+                            <mat-icon>chevron_right</mat-icon>
+                        </button>
+                    </div>
+
                 </div>
             </mat-tab>
 
         </mat-tab-group>
     </div>
 
+</div>
+
+<!-- ── Rejection Details Modal ───────────────────────────────── -->
+<div *ngIf="rejectionModalOpen"
+    class="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+    <div class="bg-card rounded-2xl border shadow-2xl w-full max-w-md">
+
+        <!-- Header -->
+        <div class="flex items-center gap-3 px-6 pt-6 pb-4 border-b">
+            <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-red-500/10 shrink-0">
+                <mat-icon class="text-red-500">cancel</mat-icon>
+            </div>
+            <div>
+                <div class="font-extrabold text-base">Λεπτομέρειες Απόρριψης</div>
+                <div class="text-secondary text-sm">{{ user.firstname }} {{ user.lastname }}</div>
+            </div>
+            <button mat-icon-button type="button" class="ml-auto" (click)="closeRejectionModal()">
+                <mat-icon>close</mat-icon>
+            </button>
+        </div>
+
+        <!-- Loading -->
+        <div *ngIf="loadingRejectionInfo" class="px-6 py-8 flex justify-center">
+            <mat-progress-bar mode="indeterminate" class="w-full max-w-xs"></mat-progress-bar>
+        </div>
+
+        <!-- Content -->
+        <div *ngIf="!loadingRejectionInfo && rejectionInfo" class="px-6 py-5 space-y-3">
+
+            <!-- Request date -->
+            <div class="flex items-center gap-3 rounded-xl border p-3">
+                <mat-icon class="text-secondary shrink-0">event_available</mat-icon>
+                <div>
+                    <div class="text-xs text-secondary font-medium">Ημ/νία Αιτήματος</div>
+                    <div class="text-sm font-semibold">{{ rejectionInfo.createdOn | date:'dd/MM/yyyy HH:mm' }}</div>
+                </div>
+            </div>
+
+            <!-- Answer date -->
+            <div class="flex items-center gap-3 rounded-xl border p-3">
+                <mat-icon class="text-secondary shrink-0">event_busy</mat-icon>
+                <div>
+                    <div class="text-xs text-secondary font-medium">Ημ/νία Απόρριψης</div>
+                    <div class="text-sm font-semibold">
+                        {{ rejectionInfo.reviewedAt ? (rejectionInfo.reviewedAt | date:'dd/MM/yyyy HH:mm') : '—' }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admin -->
+            <div class="flex items-center gap-3 rounded-xl border p-3">
+                <mat-icon class="text-secondary shrink-0">admin_panel_settings</mat-icon>
+                <div>
+                    <div class="text-xs text-secondary font-medium">Admin Απόρριψης</div>
+                    <div class="text-sm font-semibold">{{ rejectionInfo.reviewedByAdminName || '—' }}</div>
+                </div>
+            </div>
+
+            <!-- Comment -->
+            <div *ngIf="rejectionInfo.reviewComment"
+                class="flex items-start gap-3 rounded-xl border border-orange-200 dark:border-orange-500/30 bg-orange-50/60 dark:bg-orange-500/5 p-3">
+                <mat-icon class="text-orange-500 shrink-0 mt-0.5">comment</mat-icon>
+                <div>
+                    <div class="text-xs text-secondary font-medium mb-1">Σχόλιο</div>
+                    <div class="text-sm leading-relaxed">{{ rejectionInfo.reviewComment }}</div>
+                </div>
+            </div>
+
+            <div *ngIf="!rejectionInfo.reviewComment" class="text-sm text-secondary text-center py-1">Δεν υπάρχει
+                σχόλιο.</div>
+
+        </div>
+
+        <!-- Footer -->
+        <div class="flex items-center justify-between gap-3 px-6 pb-6 pt-3 border-t">
+            <button mat-button type="button" (click)="closeRejectionModal()">Κλείσιμο</button>
+            <button mat-stroked-button color="warn" type="button"
+                (click)="goToRegistrationRequest(); closeRejectionModal()">
+                <mat-icon>open_in_new</mat-icon>
+                <span class="ml-1">Προβολή στα Αιτήματα</span>
+            </button>
+        </div>
+
+    </div>
+</div>
+
+<!-- ── Ban Confirm Modal ─────────────────────────────────────── -->
+<div *ngIf="banConfirmModalOpen"
+    class="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+    <div class="bg-card rounded-2xl border shadow-2xl w-full max-w-md">
+
+        <!-- Header -->
+        <div class="flex items-center gap-3 px-6 pt-6 pb-4 border-b">
+            <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-red-500/10 shrink-0">
+                <mat-icon class="text-red-500">block</mat-icon>
+            </div>
+            <div>
+                <div class="font-extrabold text-base">Αποκλεισμός Χρήστη</div>
+                <div class="text-secondary text-sm">{{ user.firstname }} {{ user.lastname }}</div>
+            </div>
+            <button mat-icon-button type="button" class="ml-auto" (click)="closeBanConfirmModal()">
+                <mat-icon>close</mat-icon>
+            </button>
+        </div>
+
+        <!-- Body -->
+        <div class="px-6 py-5 space-y-4">
+            <p class="text-sm text-secondary">
+                Είσαι σίγουρος ότι θέλεις να αποκλείσεις αυτόν τον χρήστη; Η ενέργεια θα αλλάξει την
+                κατάστασή του σε <span class="font-semibold text-red-500">Αποκλεισμένος</span>.
+            </p>
+
+            <mat-form-field class="w-full" subscriptSizing="dynamic">
+                <mat-label>Αιτιολογία αποκλεισμού (προαιρετικό)</mat-label>
+                <textarea matInput [formControl]="banReasonCtrl" rows="3"
+                    placeholder="π.χ. Παραβίαση κανόνων κοινότητας..."></textarea>
+            </mat-form-field>
+        </div>
+
+        <!-- Footer -->
+        <div class="flex items-center justify-between gap-3 px-6 pb-6 pt-3 border-t">
+            <button mat-button type="button" (click)="closeBanConfirmModal()" [disabled]="banningInProgress">
+                Ακύρωση
+            </button>
+            <button mat-flat-button color="warn" type="button" (click)="executeBan()" [disabled]="banningInProgress">
+                <mat-icon class="mr-1">block</mat-icon>
+                {{ banningInProgress ? 'Αποκλεισμός...' : 'ΑΠΟΚΛΕΙΣΜΟΣ ΧΡΗΣΤΗ' }}
+            </button>
+        </div>
+
+    </div>
+</div>
+
+<!-- ── Ban Info Modal ────────────────────────────────────────── -->
+<div *ngIf="banInfoModalOpen"
+    class="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+    <div class="bg-card rounded-2xl border shadow-2xl w-full max-w-md">
+
+        <!-- Header -->
+        <div class="flex items-center gap-3 px-6 pt-6 pb-4 border-b">
+            <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-red-500/10 shrink-0">
+                <mat-icon class="text-red-500">block</mat-icon>
+            </div>
+            <div>
+                <div class="font-extrabold text-base">Λεπτομέρειες Αποκλεισμού</div>
+                <div class="text-secondary text-sm">{{ user.firstname }} {{ user.lastname }}</div>
+            </div>
+            <button mat-icon-button type="button" class="ml-auto" (click)="closeBanInfoModal()">
+                <mat-icon>close</mat-icon>
+            </button>
+        </div>
+
+        <!-- Loading -->
+        <div *ngIf="loadingBanInfo" class="px-6 py-8 flex justify-center">
+            <mat-progress-bar mode="indeterminate" class="w-full max-w-xs"></mat-progress-bar>
+        </div>
+
+        <!-- Content -->
+        <div *ngIf="!loadingBanInfo && banInfo" class="px-6 py-5 space-y-3">
+
+            <!-- Ban date -->
+            <div class="flex items-center gap-3 rounded-xl border p-3">
+                <mat-icon class="text-secondary shrink-0">event_busy</mat-icon>
+                <div>
+                    <div class="text-xs text-secondary font-medium">Ημ/νία Αποκλεισμού</div>
+                    <div class="text-sm font-semibold">
+                        {{ banInfo.bannedAt ? (banInfo.bannedAt | date:'dd/MM/yyyy HH:mm') : '—' }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admin -->
+            <div class="flex items-center gap-3 rounded-xl border p-3">
+                <mat-icon class="text-secondary shrink-0">admin_panel_settings</mat-icon>
+                <div>
+                    <div class="text-xs text-secondary font-medium">Admin Αποκλεισμού</div>
+                    <div class="text-sm font-semibold">{{ banInfo.bannedByAdminName || '—' }}</div>
+                </div>
+            </div>
+
+            <!-- Reason -->
+            <div *ngIf="banInfo.banReason"
+                class="flex items-start gap-3 rounded-xl border border-red-200 dark:border-red-500/30 bg-red-50/60 dark:bg-red-500/5 p-3">
+                <mat-icon class="text-red-500 shrink-0 mt-0.5">comment</mat-icon>
+                <div>
+                    <div class="text-xs text-secondary font-medium mb-1">Αιτιολογία</div>
+                    <div class="text-sm leading-relaxed">{{ banInfo.banReason }}</div>
+                </div>
+            </div>
+
+            <div *ngIf="!banInfo.banReason" class="text-sm text-secondary text-center py-1">Δεν υπάρχει αιτιολογία.
+            </div>
+
+        </div>
+
+        <!-- Footer -->
+        <div class="flex items-center justify-end gap-3 px-6 pb-6 pt-3 border-t">
+            <button mat-button type="button" (click)="closeBanInfoModal()">Κλείσιμο</button>
+        </div>
+
+    </div>
+</div>
+
+<!-- ── Activity Detail Modal ────────────────────────────────── -->
+<div *ngIf="activityDetailLog"
+    class="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+    <div class="bg-card rounded-2xl border shadow-2xl w-full max-w-lg">
+
+        <!-- Header -->
+        <div class="flex items-center gap-3 px-6 pt-6 pb-4 border-b">
+            <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10 shrink-0">
+                <mat-icon class="text-primary">info</mat-icon>
+            </div>
+            <div>
+                <div class="font-extrabold text-base">Λεπτομέρειες Ενέργειας</div>
+                <div class="text-secondary text-sm">{{ auditLogLabel(activityDetailLog.type) }} &bull; {{
+                    activityDetailLog.date | date:'dd/MM/yyyy HH:mm' }}</div>
+            </div>
+            <button mat-icon-button type="button" class="ml-auto" (click)="closeActivityDetailModal()">
+                <mat-icon>close</mat-icon>
+            </button>
+        </div>
+
+        <!-- Content -->
+        <div class="px-6 py-5 space-y-2 max-h-[60vh] overflow-y-auto">
+
+            <!-- Description -->
+            <div class="flex items-start gap-3 rounded-xl border p-3 mb-1">
+                <mat-icon class="text-secondary shrink-0 mt-0.5">description</mat-icon>
+                <div>
+                    <div class="text-xs text-secondary font-medium mb-0.5">Περιγραφή</div>
+                    <div class="text-sm">{{ activityDetailLog.description }}</div>
+                </div>
+            </div>
+
+            <!-- Data fields -->
+            <ng-container *ngIf="activityDetailFields.length > 0">
+                <div class="text-xs text-secondary font-semibold uppercase tracking-wide px-1 pt-1">Δεδομένα</div>
+                <div *ngFor="let field of activityDetailFields"
+                    class="flex items-start gap-3 rounded-xl border p-3 hover:bg-gray-50/60 dark:hover:bg-white/5 transition">
+                    <mat-icon class="text-secondary shrink-0 mt-0.5 icon-size-4">data_object</mat-icon>
+                    <div class="min-w-0">
+                        <div class="text-xs text-secondary font-medium">{{ field.key }}</div>
+                        <div class="text-sm font-semibold break-all">{{ field.value }}</div>
+                    </div>
+                </div>
+            </ng-container>
+
+            <div *ngIf="activityDetailFields.length === 0" class="text-sm text-secondary text-center py-2">
+                Δεν υπάρχουν επιπλέον δεδομένα.
+            </div>
+
+        </div>
+
+        <!-- Footer -->
+        <div class="flex items-center justify-end gap-3 px-6 pb-6 pt-3 border-t">
+            <button mat-button type="button" (click)="closeActivityDetailModal()">Κλείσιμο</button>
+        </div>
+
+    </div>
 </div>

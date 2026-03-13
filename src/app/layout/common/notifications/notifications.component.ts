@@ -17,7 +17,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { RouterLink } from '@angular/router';
 import { NotificationsService } from 'app/layout/common/notifications/notifications.service';
-import { Notification } from 'app/layout/common/notifications/notifications.types';
+import { BONotifIcon, BONotifLabel, Notification } from 'app/layout/common/notifications/notifications.types';
 import { Subject, takeUntil } from 'rxjs';
 
 @Component({
@@ -44,6 +44,10 @@ export class NotificationsComponent implements OnInit, OnDestroy {
 
     notifications: Notification[];
     unreadCount: number = 0;
+    selectedNotification: Notification | null = null;
+    detailModalOpen: boolean = false;
+    readonly BONotifIcon = BONotifIcon;
+    readonly BONotifLabel = BONotifLabel;
     private _overlayRef: OverlayRef;
     private _unsubscribeAll: Subject<any> = new Subject<any>();
 
@@ -131,6 +135,28 @@ export class NotificationsComponent implements OnInit, OnDestroy {
     markAllAsRead(): void {
         // Mark all as read
         this._notificationsService.markAllAsRead().subscribe();
+    }
+
+    /**
+     * Open notification detail modal and mark it as read
+     */
+    openDetail(notification: Notification): void {
+        this.selectedNotification = notification;
+        this.detailModalOpen = true;
+        this._changeDetectorRef.markForCheck();
+        if (!notification.read) {
+            notification.read = true;
+            this._notificationsService.update(notification.id, notification).subscribe();
+        }
+    }
+
+    /**
+     * Close detail modal
+     */
+    closeDetail(): void {
+        this.detailModalOpen = false;
+        this.selectedNotification = null;
+        this._changeDetectorRef.markForCheck();
     }
 
     /**

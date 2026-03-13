@@ -28,6 +28,7 @@ import { MatSelectModule } from '@angular/material/select';
 
 import { EventsService, Competition } from '@fuse/services/events/events.service';
 import { CompetitionUpsertDialogComponent } from './dialogs/competition-upsert-dialog.component';
+import { combineLatest } from 'rxjs';
 
 
 type SportOption = { id: number; name: string };
@@ -114,40 +115,44 @@ export class CompetitionsComponent implements OnInit, OnDestroy {
         this._sportById.clear();
         this.sports.forEach(s => this._sportById.set(s.id, s.name));
 
-        // Load competitions
+        // Load competitions initially (populates BehaviorSubject via tap)
         this._eventsService.getCompetitions()
             .pipe(takeUntil(this._unsubscribeAll))
             .subscribe({
-                next: (rows) => {
-                    const list = rows ?? [];
-
-                    this.loading = false;
-                    this.competitionsCount = list.length;
-
-                    this.dataSource = new MatTableDataSource<Competition>(list);
-                    this.dataSource.paginator = this.paginator;
-                    this.dataSource.sort = this.sort;
-
-                    if (this.paginator) this.paginator.pageSize = this.pageSize;
-
-                    this.dataSource.sortingDataAccessor = (item: any, property: string) => {
-                        switch (property) {
-                            case 'name': return (item?.name ?? '').toString().toLowerCase();
-                            case 'sport': return this.getSportName(item?.sportId).toLowerCase();
-                            case 'active': return String(!!item?.isActive);
-                            default: return (item[property] ?? '').toString().toLowerCase();
-                        }
-                    };
-
-                    this.setupFilterPredicate();
-                    this.applyCombinedFilter();
-
-                    this._cdr.markForCheck();
-                },
                 error: () => {
                     this.loading = false;
                     this._cdr.markForCheck();
                 }
+            });
+
+        // Reactively keep list in sync with BehaviorSubject
+        combineLatest([this._eventsService.competitions$])
+            .pipe(takeUntil(this._unsubscribeAll))
+            .subscribe(([rows]) => {
+                const list = rows ?? [];
+
+                this.loading = false;
+                this.competitionsCount = list.length;
+
+                this.dataSource = new MatTableDataSource<Competition>(list);
+                this.dataSource.paginator = this.paginator;
+                this.dataSource.sort = this.sort;
+
+                if (this.paginator) this.paginator.pageSize = this.pageSize;
+
+                this.dataSource.sortingDataAccessor = (item: any, property: string) => {
+                    switch (property) {
+                        case 'name': return (item?.name ?? '').toString().toLowerCase();
+                        case 'sport': return this.getSportName(item?.sportId).toLowerCase();
+                        case 'active': return String(!!item?.isActive);
+                        default: return (item[property] ?? '').toString().toLowerCase();
+                    }
+                };
+
+                this.setupFilterPredicate();
+                this.applyCombinedFilter();
+
+                this._cdr.markForCheck();
             });
 
         // listeners
@@ -255,25 +260,11 @@ export class CompetitionsComponent implements OnInit, OnDestroy {
         ref.afterClosed()
             .pipe(
                 takeUntil(this._unsubscribeAll),
-                filter((res) => !!res)
+                filter((res) => !!res?.ok)
             )
             .subscribe(() => {
-                // reload after save
-                this.loading = true;
-                this._eventsService.getCompetitions().subscribe({
-                    next: (rows) => {
-                        const list = rows ?? [];
-                        this.loading = false;
-                        this.competitionsCount = list.length;
-                        this.dataSource.data = list;
-                        this.applyCombinedFilter();
-                        this._cdr.markForCheck();
-                    },
-                    error: () => {
-                        this.loading = false;
-                        this._cdr.markForCheck();
-                    }
-                });
+                // List updates automatically via the _competitions BehaviorSubject
+                this._cdr.markForCheck();
             });
     }
 

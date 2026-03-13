@@ -10,6 +10,9 @@ import {
 } from '@fuse/components/navigation';
 import { FuseMediaWatcherService } from '@fuse/services/media-watcher';
 import { User } from '@fuse/services/users/users.service';
+import { AuthService } from 'app/core/auth/auth.service';
+import { BOHubService } from 'app/core/signalr/bo-hub.service';
+import { BOToastComponent } from 'app/layout/common/bo-toast/bo-toast.component';
 import { NavigationService } from 'app/core/navigation/navigation.service';
 import { Navigation } from 'app/core/navigation/navigation.types';
 import { UserService } from 'app/core/user/user.service';
@@ -42,6 +45,7 @@ import { Subject, takeUntil } from 'rxjs';
         MessagesComponent,
         RouterOutlet,
         QuickChatComponent,
+        BOToastComponent,
     ],
 })
 export class ClassyLayoutComponent implements OnInit, OnDestroy {
@@ -59,7 +63,9 @@ export class ClassyLayoutComponent implements OnInit, OnDestroy {
         private _navigationService: NavigationService,
         private _userService: UserService,
         private _fuseMediaWatcherService: FuseMediaWatcherService,
-        private _fuseNavigationService: FuseNavigationService
+        private _fuseNavigationService: FuseNavigationService,
+        private _authService: AuthService,
+        private _boHub: BOHubService
     ) { }
 
     // -----------------------------------------------------------------------------------------------------
@@ -133,5 +139,12 @@ export class ClassyLayoutComponent implements OnInit, OnDestroy {
             // Toggle the opened status
             navigation.toggle();
         }
+    }
+
+    signOut(): void {
+        this._boHub.disconnect();
+        this._authService.signOut().subscribe(() => {
+            this._router.navigate(['/sign-in']);
+        });
     }
 }

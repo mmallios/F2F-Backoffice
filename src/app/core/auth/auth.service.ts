@@ -13,6 +13,7 @@ export interface BOCurrentUser {
     lastname?: string | null;
     email?: string | null;
     image?: string | null;
+    role?: string | null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -30,8 +31,21 @@ export class AuthService {
                     if (res?.access_token) {
                         localStorage.setItem('bo_access_token', res.access_token);
                     }
+                    if (res?.refresh_token) {
+                        localStorage.setItem('bo_refresh_token', res.refresh_token);
+                    }
                     if (res?.boUserId || res?.user) {
-                        const userData = { ...(res.user ?? {}), boUserId: res.boUserId };
+                        const u = res.user ?? {};
+                        const userData: BOCurrentUser = {
+                            id: u.id ?? u.Id ?? 0,
+                            boUserId: res.boUserId ?? u.boUserId,
+                            username: u.username ?? u.Username ?? null,
+                            firstname: u.firstname ?? u.Firstname ?? null,
+                            lastname: u.lastname ?? u.Lastname ?? null,
+                            email: u.email ?? u.Email ?? null,
+                            image: u.image ?? u.Image ?? null,
+                            role: res.role ?? null,
+                        };
                         localStorage.setItem('bo_current_user', JSON.stringify(userData));
                     }
                 })
@@ -50,9 +64,15 @@ export class AuthService {
         try { return JSON.parse(raw) as BOCurrentUser; } catch { return null; }
     }
 
+    // ✅ Quick access to the logged-in user's DB id
+    get currentUserId(): number | null {
+        return this.currentUser?.id ?? null;
+    }
+
     // ✅ Backoffice logout
     signOut(): Observable<boolean> {
         localStorage.removeItem('bo_access_token');
+        localStorage.removeItem('bo_refresh_token');
         localStorage.removeItem('bo_current_user');
         return of(true);
     }

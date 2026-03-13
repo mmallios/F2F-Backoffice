@@ -1,15 +1,11 @@
-import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { environment } from '@fuse/environments/environment';
 import { User } from '@fuse/services/users/users.service';
-
-import { Observable, ReplaySubject, tap } from 'rxjs';
-
-
+import { AuthService } from 'app/core/auth/auth.service';
+import { Observable, of, ReplaySubject, tap } from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
 export class UserService {
-    private _httpClient = inject(HttpClient);
+    private _auth = inject(AuthService);
     private _user: ReplaySubject<User> = new ReplaySubject<User>(1);
 
     set user(value: User) {
@@ -21,32 +17,30 @@ export class UserService {
     }
 
     /**
-     * Get the current signed-in user data (BACKOFFICE)
+     * Populate the user$ stream from the data stored in localStorage at login.
+     * No API call required — the full profile was saved by AuthService.backofficeLogin().
      */
     get(): Observable<User> {
-        return this._httpClient
-            .get<any>(`${environment.apiUrl}/auth/me`)
-            .pipe(
-                tap((res) => {
-                    // Your /auth/me currently returns { Name, Claims }
-                    // So we map to something usable for the UI
-                    const claims: Array<{ type: string; value: string }> =
-                        res?.claims ?? res?.Claims ?? [];
+        const stored = this._auth.currentUser;
+        const mapped: Partial<User> = stored
+            ? {
+                id: stored.id,
+                firstname: stored.firstname ?? '',
+                lastname: stored.lastname ?? '',
+                email: stored.email ?? '',
+                username: stored.username ?? null,
+                image: stored.image ?? null,
+                points: 0,
+                status: 1,
+                isActive: true,
+                countryId: 0,
+                createdOn: '',
+                socialMediaPlatform: null,
+            }
+            : {};
 
-                    const email =
-                        claims.find((c) => c.type === 'email')?.value ??
-                        claims.find((c) => c.type === 'preferred_username')?.value ??
-                        res?.name ??
-                        res?.Name ??
-                        '';
-
-                    const firstname =
-                        claims.find((c) => c.type === 'given_name')?.value ?? '';
-                    const lastname =
-                        claims.find((c) => c.type === 'family_name')?.value ?? '';
-
-                    this._user.next(res);
-                })
-            );
+        return of(mapped as User).pipe(
+            tap((user) => this._user.next(user))
+        );
     }
 }

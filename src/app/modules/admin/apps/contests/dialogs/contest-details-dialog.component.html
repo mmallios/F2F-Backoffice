@@ -1,0 +1,232 @@
+<!-- Contest Details Dialog -->
+<div class="flex flex-col h-full max-h-[90vh]">
+
+    <!-- ── Dialog Header ───────────────────────────────────────────── -->
+    <div class="flex items-center justify-between border-b px-6 py-4 shrink-0">
+        <h2 class="text-lg font-bold leading-none">
+            @if (loading()) { Φόρτωση… }
+            @else { {{ contest()?.title ?? 'Διαγωνισμός' }} }
+        </h2>
+        <div class="flex items-center gap-2 ml-4">
+            @if (!loading() && contest()) {
+            <!-- Edit toggle -->
+            @if (!editMode()) {
+            <button mat-icon-button matTooltip="Επεξεργασία" (click)="toggleEdit()">
+                <mat-icon class="icon-size-5">edit</mat-icon>
+            </button>
+            } @else {
+            <button mat-icon-button matTooltip="Ακύρωση επεξεργασίας" (click)="toggleEdit()" color="warn">
+                <mat-icon class="icon-size-5">edit_off</mat-icon>
+            </button>
+            }
+            }
+            <button mat-icon-button matTooltip="Κλείσιμο" (click)="close()">
+                <mat-icon class="icon-size-5">close</mat-icon>
+            </button>
+        </div>
+    </div>
+
+    <!-- ── Body ────────────────────────────────────────────────────── -->
+    <div class="flex-auto overflow-y-auto px-6 py-5">
+
+        <!-- Loading skeleton -->
+        @if (loading()) {
+        <div class="space-y-4 animate-pulse">
+            <div class="h-5 w-3/4 rounded bg-gray-200 dark:bg-gray-700"></div>
+            <div class="h-4 w-1/2 rounded bg-gray-200 dark:bg-gray-700"></div>
+            <div class="h-4 w-full rounded bg-gray-200 dark:bg-gray-700"></div>
+            <div class="grid grid-cols-2 gap-3">
+                <div class="h-16 rounded-xl bg-gray-200 dark:bg-gray-700"></div>
+                <div class="h-16 rounded-xl bg-gray-200 dark:bg-gray-700"></div>
+                <div class="h-16 rounded-xl bg-gray-200 dark:bg-gray-700"></div>
+                <div class="h-16 rounded-xl bg-gray-200 dark:bg-gray-700"></div>
+            </div>
+        </div>
+        }
+
+        <!-- Load error -->
+        @if (error()) {
+        <div
+            class="flex items-center gap-3 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-300">
+            <mat-icon class="shrink-0 text-red-500">error_outline</mat-icon>
+            <span>{{ error() }}</span>
+        </div>
+        }
+
+        <!-- ── VIEW MODE ──────────────────────────────────────────── -->
+        @if (!loading() && !editMode() && contest(); as c) {
+
+        <!-- Image -->
+        @if (c.image) {
+        <div class="mb-5 overflow-hidden rounded-2xl border">
+            <img [src]="c.image" alt="" class="h-40 w-full object-cover" />
+        </div>
+        }
+
+        <!-- Description / Context -->
+        @if (c.description) {
+        <p class="mb-4 text-sm text-secondary leading-relaxed">{{ c.description }}</p>
+        }
+
+        <!-- Stats grid -->
+        <div class="mb-5 grid grid-cols-2 gap-3">
+
+            <div class="flex flex-col gap-1 rounded-xl border bg-gray-50/80 dark:bg-white/5 p-3">
+                <span class="text-xs text-secondary">Έναρξη</span>
+                <span class="font-semibold text-sm">{{ c.startDate | date:'dd/MM/yyyy HH:mm' }}</span>
+            </div>
+
+            <div class="flex flex-col gap-1 rounded-xl border bg-gray-50/80 dark:bg-white/5 p-3">
+                <span class="text-xs text-secondary">Λήξη</span>
+                <span class="font-semibold text-sm">{{ c.endDate | date:'dd/MM/yyyy HH:mm' }}</span>
+            </div>
+
+            <div class="flex flex-col gap-1 rounded-xl border bg-gray-50/80 dark:bg-white/5 p-3">
+                <span class="text-xs text-secondary">Συμμετοχές</span>
+                <span class="font-semibold text-sm">{{ c.entriesCount }}</span>
+            </div>
+
+            <div class="flex flex-col gap-1 rounded-xl border bg-gray-50/80 dark:bg-white/5 p-3">
+                <span class="text-xs text-secondary">Νικητές</span>
+                <span class="font-semibold text-sm">{{ winnersCount }} / {{ c.totalWinners ?? '—' }}</span>
+            </div>
+
+            <div class="flex flex-col gap-1 rounded-xl border bg-gray-50/80 dark:bg-white/5 p-3">
+                <span class="text-xs text-secondary">Μέγ. ανά χρήστη</span>
+                <span class="font-semibold text-sm">{{ c.maxEntriesPerUser }}</span>
+            </div>
+
+            <div class="flex flex-col gap-1 rounded-xl border bg-gray-50/80 dark:bg-white/5 p-3">
+                <span class="text-xs text-secondary">Μέγ. συνολικά</span>
+                <span class="font-semibold text-sm">{{ c.maxTotalEntries }}</span>
+            </div>
+        </div>
+
+        <!-- Flags row -->
+        <div class="flex items-center gap-3 flex-wrap">
+            <span
+                [class]="c.isActive
+                ? 'inline-flex items-center gap-1 rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                : 'inline-flex items-center gap-1 rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600 dark:bg-gray-800 dark:text-gray-400'">
+                <mat-icon class="icon-size-3.5">{{ c.isActive ? 'check_circle' : 'cancel' }}</mat-icon>
+                {{ c.isActive ? 'Ενεργός' : 'Ανενεργός' }}
+            </span>
+            @if (c.sendNotificationsToWinners) {
+            <span
+                class="inline-flex items-center gap-1 rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                <mat-icon class="icon-size-3.5">notifications</mat-icon>
+                Ειδοποιήσεις νικητών
+            </span>
+            }
+        </div>
+
+        }
+
+        <!-- ── EDIT MODE ──────────────────────────────────────────── -->
+        @if (!loading() && editMode()) {
+        <form [formGroup]="form" class="space-y-4">
+
+            <!-- Save error -->
+            @if (saveError()) {
+            <div
+                class="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-300">
+                <mat-icon class="shrink-0 text-red-500 icon-size-4">error_outline</mat-icon>
+                {{ saveError() }}
+            </div>
+            }
+
+            <mat-form-field class="w-full fuse-mat-dense">
+                <mat-label>Τίτλος</mat-label>
+                <input matInput formControlName="title" />
+            </mat-form-field>
+
+            <mat-form-field class="w-full fuse-mat-dense">
+                <mat-label>Περιγραφή</mat-label>
+                <textarea matInput rows="3" formControlName="description"></textarea>
+            </mat-form-field>
+
+            <mat-form-field class="w-full fuse-mat-dense">
+                <mat-label>URL Εικόνας</mat-label>
+                <input matInput formControlName="image" />
+            </mat-form-field>
+
+            <div class="grid grid-cols-2 gap-3">
+
+                <mat-form-field class="w-full fuse-mat-dense">
+                    <mat-label>Ημ/νία δημοσίευσης</mat-label>
+                    <input matInput type="datetime-local" formControlName="publishDate" />
+                </mat-form-field>
+
+                <mat-form-field class="w-full fuse-mat-dense">
+                    <mat-label>Έναρξη</mat-label>
+                    <input matInput type="datetime-local" formControlName="startDate" />
+                </mat-form-field>
+
+                <mat-form-field class="w-full fuse-mat-dense">
+                    <mat-label>Λήξη</mat-label>
+                    <input matInput type="datetime-local" formControlName="endDate" />
+                </mat-form-field>
+
+                <mat-form-field class="w-full fuse-mat-dense">
+                    <mat-label>Νικητές</mat-label>
+                    <input matInput type="number" min="1" formControlName="totalWinners" />
+                </mat-form-field>
+
+                <mat-form-field class="w-full fuse-mat-dense">
+                    <mat-label>Μέγ. ανά χρήστη</mat-label>
+                    <input matInput type="number" min="1" formControlName="maxEntriesPerUser" />
+                </mat-form-field>
+
+                <mat-form-field class="w-full fuse-mat-dense">
+                    <mat-label>Μέγ. συνολικά</mat-label>
+                    <input matInput type="number" min="1" formControlName="maxTotalEntries" />
+                </mat-form-field>
+
+            </div>
+
+            <div
+                class="flex items-center justify-between gap-4 rounded-xl border bg-gray-50/80 dark:bg-white/5 px-4 py-3">
+                <span class="text-sm font-medium">Ενεργός διαγωνισμός</span>
+                <mat-slide-toggle formControlName="isActive" color="primary"></mat-slide-toggle>
+            </div>
+
+            <div
+                class="flex items-center justify-between gap-4 rounded-xl border bg-gray-50/80 dark:bg-white/5 px-4 py-3">
+                <span class="text-sm font-medium">Ειδοποίηση νικητών</span>
+                <mat-slide-toggle formControlName="sendNotificationsToWinners" color="primary"></mat-slide-toggle>
+            </div>
+
+        </form>
+        }
+
+    </div>
+
+    <!-- ── Footer ─────────────────────────────────────────────────── -->
+    <div class="border-t px-6 py-4 flex items-center justify-between gap-3 shrink-0">
+
+        <!-- Winner picker button (view mode only, when entries exist) -->
+        <div>
+            @if (!loading() && !editMode() && entriesCount > 0) {
+            <button mat-flat-button color="primary" (click)="openWinnerPicker()"
+                class="!rounded-full !font-semibold !text-sm">
+                <mat-icon class="mr-1">emoji_events</mat-icon>
+                ΕΠΙΛΟΓΗ ΝΙΚΗΤΩΝ
+            </button>
+            }
+        </div>
+
+        <div class="flex items-center gap-2">
+            @if (editMode()) {
+            <button mat-button (click)="toggleEdit()" [disabled]="saving()">Ακύρωση</button>
+            <button mat-flat-button color="primary" (click)="save()" [disabled]="saving() || form.invalid"
+                class="!rounded-full !font-semibold">
+                @if (saving()) { <span class="inline-block animate-spin mr-1">⟳</span> }
+                Αποθήκευση
+            </button>
+            } @else {
+            <button mat-button (click)="close()">Κλείσιμο</button>
+            }
+        </div>
+    </div>
+
+</div>

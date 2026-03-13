@@ -15,6 +15,7 @@ export interface Team {
 export interface Competition {
     id: number;
     name: string;
+    code?: string;
     sportId: number;
     seasonId: number;
     isActive: boolean;
@@ -120,6 +121,16 @@ export interface UpdateCompetitionDto {
     code?: string;
     image?: string;
     sportId?: number;
+    seasonId?: number | null;
+}
+
+export interface UpdateTVChannelDto {
+    id: number;
+    name: string;
+    code?: string;
+    streamUrl?: string | null;
+    image?: string | null;
+    isPublished?: boolean;
 }
 
 
@@ -146,6 +157,12 @@ export class EventsService {
 
     private _teams = new BehaviorSubject<Team[]>([]);
     teams$ = this._teams.asObservable();
+
+    private _competitions = new BehaviorSubject<Competition[]>([]);
+    competitions$ = this._competitions.asObservable();
+
+    private _tvChannels = new BehaviorSubject<TvChannel[]>([]);
+    tvChannels$ = this._tvChannels.asObservable();
 
     constructor(private http: HttpClient) { }
 
@@ -201,21 +218,30 @@ export class EventsService {
     getTeams(): Observable<Team[]> {
         return this.http
             .get<any[]>(`${this.baseUrl}/dynamic/teams/all`)
-            .pipe(map((rows) => rows.map((t) => this.mapTeam(t))));
+            .pipe(
+                map((rows) => rows.map((t) => this.mapTeam(t))),
+                tap((teams) => this._teams.next(teams))
+            );
     }
 
     /** GET /DynamicCrud/competitions/all */
     getCompetitions(): Observable<Competition[]> {
         return this.http
             .get<any[]>(`${this.baseUrl}/dynamic/competitions/all`)
-            .pipe(map((rows) => rows.map((c) => this.mapCompetition(c))));
+            .pipe(
+                map((rows) => rows.map((c) => this.mapCompetition(c))),
+                tap((competitions) => this._competitions.next(competitions))
+            );
     }
 
     /** GET /DynamicCrud/tvchannels/all */
     getTVChannels(): Observable<TvChannel[]> {
         return this.http
             .get<any[]>(`${this.baseUrl}/dynamic/tvchannels/all`)
-            .pipe(map((rows) => rows.map((x) => this.mapTvChannel(x))));
+            .pipe(
+                map((rows) => rows.map((x) => this.mapTvChannel(x))),
+                tap((channels) => this._tvChannels.next(channels))
+            );
     }
 
 
@@ -271,6 +297,7 @@ export class EventsService {
         return {
             id: Number(c.id ?? c.Id ?? 0),
             name: String(c.name ?? c.Name ?? ''),
+            code: String(c.code ?? c.Code ?? ''),
             image: String(c.image ?? c.Image ?? ''),
             isActive: c.isActive,
             seasonId: c.seasonId,
@@ -282,9 +309,10 @@ export class EventsService {
         return {
             id: Number(x.id ?? x.Id ?? 0),
             name: String(x.name ?? x.Name ?? x.channelName ?? x.ChannelName ?? ''),
-            code: String(x.code ?? x.Code),
+            code: String(x.code ?? x.Code ?? ''),
+            streamUrl: x.streamUrl ?? x.StreamUrl ?? null,
             image: String(x.image ?? x.Image ?? x.logo ?? x.Logo ?? ''),
-            isPublished: x.isPublished
+            isPublished: !!x.isPublished
         };
     }
 
@@ -344,8 +372,7 @@ export class EventsService {
      * PUT /dynamic/teams/update
      * (If your backend expects different route/method, just change the URL)
      */
-    updateTeam(dto: UpdateTeamDto): Observable<any> {
-        // keep payload clean (remove undefined)
+    updateTeam(dto: UpdateTeamDto): Observable<Team> {
         const body: any = {
             id: dto.id,
             name: dto.name,
@@ -353,49 +380,115 @@ export class EventsService {
             image: dto.image ?? null,
             sportId: dto.sportId ?? null,
         };
-
-        return this.http.put(`${this.baseUrl}/dynamic/teams/update`, body);
+        return this.http.put<any>(`${this.baseUrl}/dynamic/teams/${dto.id}`, body).pipe(
+            map((res) => this.mapTeam(res)),
+            tap((updated) => {
+                const current = this._teams.getValue();
+                const idx = current.findIndex((t) => t.id === updated.id);
+                if (idx >= 0) {
+                    const next = [...current];
+                    next[idx] = updated;
+                    this._teams.next(next);
+                }
+            })
+        );
     }
 
-    createTeam(dto: UpdateTeamDto): Observable<any> {
-        // keep payload clean (remove undefined)
+    createTeam(dto: UpdateTeamDto): Observable<Team> {
         const body: any = {
-            id: dto.id,
             name: dto.name,
             code: dto.code ?? null,
             image: dto.image ?? null,
             sportId: dto.sportId ?? null,
         };
-
-        return this.http.put(`${this.baseUrl}/dynamic/teams/update`, body);
+        return this.http.post<any>(`${this.baseUrl}/dynamic/teams`, body).pipe(
+            map((res) => this.mapTeam(res)),
+            tap((created) => {
+                this._teams.next([...this._teams.getValue(), created]);
+            })
+        );
     }
 
     /**
      * PUT /dynamic/competitions/update
      * (If your backend expects different route/method, just change the URL)
      */
-    updateCompetition(competitionId: number, dto: UpdateCompetitionDto): Observable<any> {
+    updateCompetition(competitionId: number, dto: UpdateCompetitionDto): Observable<Competition> {
         const body: any = {
             id: dto.id,
             name: dto.name,
             code: dto.code ?? null,
             image: dto.image ?? null,
             sportId: dto.sportId ?? null,
+            seasonId: dto.seasonId ?? null,
         };
-
-        return this.http.put(`${this.baseUrl}/dynamic/competitions/${competitionId}`, body);
+        return this.http.put<any>(`${this.baseUrl}/dynamic/competitions/${competitionId}`, body).pipe(
+            map((res) => this.mapCompetition(res)),
+            tap((updated) => {
+                const current = this._competitions.getValue();
+                const idx = current.findIndex((c) => c.id === updated.id);
+                if (idx >= 0) {
+                    const next = [...current];
+                    next[idx] = updated;
+                    this._competitions.next(next);
+                }
+            })
+        );
     }
 
-    createCompetition(dto: UpdateCompetitionDto): Observable<any> {
+    createCompetition(dto: UpdateCompetitionDto): Observable<Competition> {
         const body: any = {
-            id: dto.id,
             name: dto.name,
             code: dto.code ?? null,
             image: dto.image ?? null,
             sportId: dto.sportId ?? null,
+            seasonId: dto.seasonId ?? null,
         };
+        return this.http.post<any>(`${this.baseUrl}/dynamic/competitions`, body).pipe(
+            map((res) => this.mapCompetition(res)),
+            tap((created) => {
+                this._competitions.next([...this._competitions.getValue(), created]);
+            })
+        );
+    }
 
-        return this.http.put(`${this.baseUrl}/dynamic/competitions/update`, body);
+    updateTVChannel(dto: UpdateTVChannelDto): Observable<TvChannel> {
+        const body: any = {
+            id: dto.id,
+            name: dto.name,
+            code: dto.code ?? null,
+            streamUrl: dto.streamUrl ?? null,
+            image: dto.image ?? null,
+            isPublished: dto.isPublished ?? false,
+        };
+        return this.http.put<any>(`${this.baseUrl}/dynamic/tvchannels/${dto.id}`, body).pipe(
+            map((res) => this.mapTvChannel(res)),
+            tap((updated) => {
+                const current = this._tvChannels.getValue();
+                const idx = current.findIndex((t) => t.id === updated.id);
+                if (idx >= 0) {
+                    const next = [...current];
+                    next[idx] = updated;
+                    this._tvChannels.next(next);
+                }
+            })
+        );
+    }
+
+    createTVChannel(dto: UpdateTVChannelDto): Observable<TvChannel> {
+        const body: any = {
+            name: dto.name,
+            code: dto.code ?? null,
+            streamUrl: dto.streamUrl ?? null,
+            image: dto.image ?? null,
+            isPublished: dto.isPublished ?? false,
+        };
+        return this.http.post<any>(`${this.baseUrl}/dynamic/tvchannels`, body).pipe(
+            map((res) => this.mapTvChannel(res)),
+            tap((created) => {
+                this._tvChannels.next([...this._tvChannels.getValue(), created]);
+            })
+        );
     }
 
 

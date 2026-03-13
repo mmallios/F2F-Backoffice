@@ -1,0 +1,232 @@
+<div class="absolute inset-0 flex min-w-0 flex-col overflow-hidden">
+    <div class="flex-auto overflow-y-auto">
+
+        <!-- ── Header ──────────────────────────────────────────────── -->
+        <div class="border-b px-6 py-7 md:px-8">
+            <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div class="min-w-0">
+                    <div class="text-3xl md:text-4xl font-extrabold leading-none tracking-tight">
+                        Διαγωνισμοί
+                    </div>
+                    <div class="text-secondary mt-2 font-medium">
+                        Διαχείριση διαγωνισμών και κλήρωση νικητών
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                    <button mat-flat-button color="primary" (click)="openNew()" class="!rounded-full !font-semibold">
+                        <mat-icon class="mr-1">add</mat-icon>
+                        Νέος Διαγωνισμός
+                    </button>
+                    <button mat-icon-button (click)="load()" [disabled]="loading()" matTooltip="Ανανέωση">
+                        <mat-icon>refresh</mat-icon>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Error ──────────────────────────────────────────────── -->
+        @if (error()) {
+        <div
+            class="mx-6 mt-5 md:mx-8 flex items-center gap-3 rounded-2xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/50 px-5 py-4 text-red-700 dark:text-red-300">
+            <mat-icon class="text-red-500 shrink-0">error_outline</mat-icon>
+            <span>{{ error() }}</span>
+        </div>
+        }
+
+        <!-- ── Stats strip ─────────────────────────────────────────── -->
+        <div class="px-6 md:px-8 pt-5 pb-1">
+            <div class="grid grid-cols-2 xl:grid-cols-3 gap-4">
+
+                <!-- Total -->
+                <div class="flex items-center gap-4 rounded-2xl border bg-card p-4 shadow-sm">
+                    <div class="flex items-center justify-center w-12 h-12 rounded-xl bg-indigo-500/10 shrink-0">
+                        <mat-icon class="text-indigo-500">emoji_events</mat-icon>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-extrabold leading-none">
+                            {{ loading() ? '—' : totalContests() }}
+                        </div>
+                        <div class="text-secondary text-xs mt-1">Σύνολο</div>
+                    </div>
+                </div>
+
+                <!-- Active -->
+                <div class="flex items-center gap-4 rounded-2xl border bg-card p-4 shadow-sm">
+                    <div class="flex items-center justify-center w-12 h-12 rounded-xl bg-green-500/10 shrink-0">
+                        <mat-icon class="text-green-500">play_circle</mat-icon>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-extrabold leading-none">
+                            {{ loading() ? '—' : activeContests() }}
+                        </div>
+                        <div class="text-secondary text-xs mt-1">Ενεργοί</div>
+                    </div>
+                </div>
+
+                <!-- Ended -->
+                <div class="flex items-center gap-4 rounded-2xl border bg-card p-4 shadow-sm">
+                    <div class="flex items-center justify-center w-12 h-12 rounded-xl bg-gray-500/10 shrink-0">
+                        <mat-icon class="text-gray-500">flag</mat-icon>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-extrabold leading-none">
+                            {{ loading() ? '—' : endedContests() }}
+                        </div>
+                        <div class="text-secondary text-xs mt-1">Ολοκληρωμένοι</div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ── Main card ───────────────────────────────────────────── -->
+        <div class="px-6 md:px-8 py-5">
+            <div class="rounded-2xl border bg-card shadow-sm overflow-hidden">
+
+                <!-- Filter bar -->
+                <div [formGroup]="filters"
+                    class="flex flex-col gap-3 border-b bg-gray-50/80 dark:bg-white/5 px-4 py-4 sm:flex-row sm:items-center">
+                    <mat-form-field class="flex-1 fuse-mat-dense fuse-mat-rounded fuse-mat-no-subscript">
+                        <mat-icon matPrefix svgIcon="heroicons_outline:magnifying-glass"></mat-icon>
+                        <input matInput formControlName="search" placeholder="Αναζήτηση τίτλου…" />
+                    </mat-form-field>
+                    <mat-form-field class="w-full sm:w-52 fuse-mat-dense fuse-mat-rounded fuse-mat-no-subscript">
+                        <mat-select formControlName="statusFilter">
+                            <mat-option value="all">Όλοι</mat-option>
+                            <mat-option value="active">Ενεργοί</mat-option>
+                            <mat-option value="upcoming">Προγραμματισμένοι</mat-option>
+                            <mat-option value="ended">Ολοκληρωμένοι</mat-option>
+                        </mat-select>
+                    </mat-form-field>
+                </div>
+
+                <!-- Table -->
+                <div class="overflow-x-auto">
+                    <table mat-table [dataSource]="dataSource" matSort class="w-full">
+
+                        <!-- Image column -->
+                        <ng-container matColumnDef="image">
+                            <th mat-header-cell *matHeaderCellDef class="w-20"></th>
+                            <td mat-cell *matCellDef="let c" class="w-20 pr-0">
+                                @if (c.image) {
+                                <img [src]="c.image" alt="" class="h-10 w-16 rounded-lg object-cover border" />
+                                } @else {
+                                <div
+                                    class="flex h-10 w-16 items-center justify-center rounded-lg border bg-gray-100 dark:bg-gray-800">
+                                    <mat-icon class="text-gray-400 icon-size-5">image</mat-icon>
+                                </div>
+                                }
+                            </td>
+                        </ng-container>
+
+                        <!-- Title -->
+                        <ng-container matColumnDef="title">
+                            <th mat-header-cell *matHeaderCellDef mat-sort-header class="whitespace-nowrap">Τίτλος</th>
+                            <td mat-cell *matCellDef="let c" class="max-w-xs">
+                                <span class="font-medium line-clamp-1">{{ c.title }}</span>
+                            </td>
+                        </ng-container>
+
+                        <!-- Start Date -->
+                        <ng-container matColumnDef="startDate">
+                            <th mat-header-cell *matHeaderCellDef mat-sort-header class="whitespace-nowrap">Έναρξη</th>
+                            <td mat-cell *matCellDef="let c" class="whitespace-nowrap text-sm">
+                                {{ c.startDate | date:'dd/MM/yyyy' }}
+                            </td>
+                        </ng-container>
+
+                        <!-- End Date -->
+                        <ng-container matColumnDef="endDate">
+                            <th mat-header-cell *matHeaderCellDef mat-sort-header class="whitespace-nowrap">Λήξη</th>
+                            <td mat-cell *matCellDef="let c" class="whitespace-nowrap text-sm">
+                                {{ c.endDate | date:'dd/MM/yyyy' }}
+                            </td>
+                        </ng-container>
+
+                        <!-- Participants -->
+                        <ng-container matColumnDef="participants">
+                            <th mat-header-cell *matHeaderCellDef mat-sort-header class="whitespace-nowrap">Συμμετοχές
+                            </th>
+                            <td mat-cell *matCellDef="let c" class="text-sm font-semibold">{{ c.entriesCount }}</td>
+                        </ng-container>
+
+                        <!-- Status -->
+                        <ng-container matColumnDef="status">
+                            <th mat-header-cell *matHeaderCellDef class="whitespace-nowrap">Κατάσταση</th>
+                            <td mat-cell *matCellDef="let c">
+                                @switch (getStatus(c)) {
+                                @case ('active') {
+                                <span
+                                    class="inline-flex rounded-full px-3 py-1 text-xs font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">Ενεργός</span>
+                                }
+                                @case ('upcoming') {
+                                <span
+                                    class="inline-flex rounded-full px-3 py-1 text-xs font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">Προγραμματισμένος</span>
+                                }
+                                @case ('ended') {
+                                <span
+                                    class="inline-flex rounded-full px-3 py-1 text-xs font-semibold bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">Ολοκληρωμένος</span>
+                                }
+                                }
+                            </td>
+                        </ng-container>
+
+                        <!-- Actions -->
+                        <ng-container matColumnDef="actions">
+                            <th mat-header-cell *matHeaderCellDef></th>
+                            <td mat-cell *matCellDef="let c" class="text-right whitespace-nowrap"
+                                (click)="$event.stopPropagation()">
+                                <div class="flex items-center justify-end gap-1">
+                                    <button mat-stroked-button (click)="goToDetails(c)"
+                                        class="!rounded-full !text-xs !font-semibold">
+                                        <mat-icon class="icon-size-4 mr-1">open_in_new</mat-icon>
+                                        Λεπτομέρειες
+                                    </button>
+                                    <button mat-icon-button color="warn" [disabled]="deletingId() === c.id"
+                                        (click)="deleteContest(c, $event)" matTooltip="Διαγραφή">
+                                        <mat-icon class="icon-size-5">delete_outline</mat-icon>
+                                    </button>
+                                </div>
+                            </td>
+                        </ng-container>
+
+                        <tr mat-header-row *matHeaderRowDef="displayedColumns" class="bg-gray-50/60 dark:bg-white/5">
+                        </tr>
+
+                        @if (loading()) {
+                        @for (_ of [1,2,3,4,5]; track $index) {
+                        <tr class="border-b">
+                            <td class="px-4 py-3" colspan="7">
+                                <div class="animate-pulse h-4 w-full rounded bg-gray-200 dark:bg-gray-700"></div>
+                            </td>
+                        </tr>
+                        }
+                        } @else {
+                        <tr mat-row *matRowDef="let row; columns: displayedColumns;"
+                            class="hover:bg-gray-50/60 dark:hover:bg-white/5 transition-colors cursor-pointer"
+                            (click)="goToDetails(row)">
+                        </tr>
+                        }
+
+                        @if (!loading() && dataSource.data.length === 0) {
+                        <tr class="mat-row">
+                            <td class="mat-cell py-12 text-center text-secondary" colspan="7">
+                                <mat-icon class="text-5xl w-12 h-12 opacity-30 mb-2">emoji_events</mat-icon>
+                                <div class="mt-2">Δεν βρέθηκαν διαγωνισμοί</div>
+                            </td>
+                        </tr>
+                        }
+
+                    </table>
+                </div>
+
+                <!-- Paginator -->
+                <div class="border-t px-4">
+                    <mat-paginator [pageSizeOptions]="[10, 25, 50]" [pageSize]="10" showFirstLastButtons>
+                    </mat-paginator>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>

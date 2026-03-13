@@ -1,4 +1,4 @@
-import { CurrencyPipe, NgClass } from '@angular/common';
+import { AsyncPipe, CurrencyPipe, NgClass } from '@angular/common';
 import {
     ChangeDetectionStrategy,
     Component,
@@ -15,6 +15,8 @@ import { MatTableModule } from '@angular/material/table';
 import { MatTabsModule } from '@angular/material/tabs';
 import { Router } from '@angular/router';
 import { TranslocoModule } from '@ngneat/transloco';
+import { UserService } from 'app/core/user/user.service';
+import { NotificationsService } from 'app/layout/common/notifications/notifications.service';
 import { ProjectService } from 'app/modules/admin/dashboards/project/project.service';
 import { ApexOptions, NgApexchartsModule } from 'ng-apexcharts';
 import { Subject, takeUntil } from 'rxjs';
@@ -37,6 +39,7 @@ import { Subject, takeUntil } from 'rxjs';
         MatTableModule,
         NgClass,
         CurrencyPipe,
+        AsyncPipe,
     ],
 })
 export class ProjectComponent implements OnInit, OnDestroy {
@@ -48,6 +51,7 @@ export class ProjectComponent implements OnInit, OnDestroy {
     chartYearlyExpenses: ApexOptions = {};
     data: any;
     selectedProject: string = 'ACME Corp. Backend App';
+    unreadCount: number = 0;
     private _unsubscribeAll: Subject<any> = new Subject<any>();
 
     /**
@@ -55,8 +59,10 @@ export class ProjectComponent implements OnInit, OnDestroy {
      */
     constructor(
         private _projectService: ProjectService,
-        private _router: Router
-    ) {}
+        private _router: Router,
+        public userService: UserService,
+        private _notificationsService: NotificationsService
+    ) { }
 
     // -----------------------------------------------------------------------------------------------------
     // @ Lifecycle hooks
@@ -75,6 +81,13 @@ export class ProjectComponent implements OnInit, OnDestroy {
 
                 // Prepare the chart data
                 this._prepareChartData();
+            });
+
+        // Track unread notification count
+        this._notificationsService.notifications$
+            .pipe(takeUntil(this._unsubscribeAll))
+            .subscribe((notifications) => {
+                this.unreadCount = notifications.filter((n) => !n.read).length;
             });
 
         // Attach SVG fill fixer to all ApexCharts

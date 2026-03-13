@@ -71,8 +71,8 @@ export const appRoutes: Route[] = [
     // Admin routes
     {
         path: '',
-        canActivate: [NoAuthGuard],
-        canActivateChild: [NoAuthGuard],
+        canActivate: [AuthGuard],
+        canActivateChild: [AuthGuard],
         component: LayoutComponent,
         resolve: {
             initialData: initialDataResolver
@@ -111,10 +111,12 @@ export const appRoutes: Route[] = [
                     { path: 'products', loadChildren: () => import('app/modules/admin/apps/products/products.routes') },
                     { path: 'announcements', loadChildren: () => import('app/modules/admin/apps/announcements/announcements.routes') },
                     { path: 'support/tickets', loadChildren: () => import('app/modules/admin/apps/support/support.routes') },
+                    { path: 'support/stats', loadChildren: () => import('app/modules/admin/apps/support-stats/support-stats.routes').then(m => m.SUPPORT_STATS_ROUTES) },
                     { path: 'settings/roles', loadChildren: () => import('app/modules/admin/apps/roles/roles.routes') },
                     { path: 'fan-cards', loadChildren: () => import('app/modules/admin/apps/fan-cards/fan-cards.routes') },
                     { path: 'registration-requests', loadChildren: () => import('app/modules/admin/apps/contacts/registration-requests/registration-requests.routes') },
-                    { path: 'news', loadChildren: () => import('app/modules/admin/apps/news/news.routes') }
+                    { path: 'news', loadChildren: () => import('app/modules/admin/apps/news/news.routes') },
+                    { path: 'contests', loadChildren: () => import('app/modules/admin/apps/contests/contests.routes').then(m => m.CONTESTS_ROUTES) }
                 ]
             },
 

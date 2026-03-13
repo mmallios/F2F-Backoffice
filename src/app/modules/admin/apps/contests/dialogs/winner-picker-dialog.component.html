@@ -1,0 +1,212 @@
+<!-- Winner Picker Dialog -->
+<div class="flex flex-col" style="max-height: 92vh;">
+
+    <!-- ── Header ─────────────────────────────────────────────────── -->
+    <div class="flex items-center justify-between border-b px-6 py-4 shrink-0">
+        <div class="flex items-center gap-3">
+            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10">
+                <mat-icon class="text-amber-500">emoji_events</mat-icon>
+            </div>
+            <div>
+                <h2 class="text-base font-bold leading-none">Κλήρωση Νικητών</h2>
+                <p class="text-secondary text-xs mt-0.5">{{ eligibleEntries.length }} επιλέξιμοι συμμετέχοντες</p>
+            </div>
+        </div>
+        <button mat-icon-button (click)="close()" matTooltip="Κλείσιμο">
+            <mat-icon class="icon-size-5">close</mat-icon>
+        </button>
+    </div>
+
+    <!-- ── Body ────────────────────────────────────────────────────── -->
+    <div class="flex-auto overflow-y-auto px-6 py-6">
+
+        <!-- ── IDLE STATE ─────────────────────────────────────────── -->
+        @if (state() === 'idle') {
+
+        <div class="flex flex-col items-center gap-6">
+
+            <!-- No eligible participants message -->
+            @if (eligibleEntries.length === 0) {
+            <div class="text-center py-8">
+                <mat-icon class="text-5xl w-14 h-14 opacity-30 mb-3">group_off</mat-icon>
+                <p class="text-secondary">Δεν υπάρχουν επιλέξιμοι συμμετέχοντες για κλήρωση.</p>
+            </div>
+            } @else {
+
+            <div class="text-center">
+                <p class="text-secondary text-sm">
+                    Επιλέξτε πόσους νικητές θέλετε να κληρώσετε από τους
+                    <strong>{{ eligibleEntries.length }}</strong> συμμετέχοντες.
+                </p>
+            </div>
+
+            <form [formGroup]="form" class="w-full max-w-xs">
+                <mat-form-field class="w-full fuse-mat-dense fuse-mat-rounded">
+                    <mat-label>Αριθμός Νικητών</mat-label>
+                    <input matInput type="number" formControlName="winnerCount" min="1"
+                        [max]="eligibleEntries.length" />
+                    <mat-icon matPrefix class="icon-size-5">exposure_plus_1</mat-icon>
+                </mat-form-field>
+            </form>
+
+            <button mat-flat-button color="primary" (click)="startDraw()" [disabled]="!winnerCountValid"
+                class="!rounded-full !font-bold !text-base !py-2 !px-8">
+                <mat-icon class="mr-2">shuffle</mat-icon>
+                ΚΛΗΡΩΣΗ
+            </button>
+
+            }
+        </div>
+
+        }
+
+        <!-- ── DRAWING STATE ────────────────────────────────────────── -->
+        @if (state() === 'drawing') {
+
+        <div class="flex flex-col items-center gap-6">
+
+            <!-- Current draw progress -->
+            <p class="text-secondary text-sm font-medium">
+                Κληρώνεται νικητής {{ currentDrawIndex() + 1 }} από {{ drawnWinners().length + 1 }}…
+            </p>
+
+            <!-- Slot drum -->
+            <div class="slot-drum w-full max-w-sm rounded-2xl border-2 border-amber-400 bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30 px-6 py-8 text-center shadow-lg"
+                [ngClass]="drumClass()">
+                <div
+                    class="text-xl md:text-2xl font-black tracking-tight text-amber-700 dark:text-amber-300 min-h-[2.5rem]">
+                    {{ drumDisplay() || '…' }}
+                </div>
+                <div class="mt-2 flex justify-center gap-1">
+                    <span
+                        class="inline-block h-1.5 w-1.5 rounded-full bg-amber-400 animate-bounce [animation-delay:0ms]"></span>
+                    <span
+                        class="inline-block h-1.5 w-1.5 rounded-full bg-amber-400 animate-bounce [animation-delay:150ms]"></span>
+                    <span
+                        class="inline-block h-1.5 w-1.5 rounded-full bg-amber-400 animate-bounce [animation-delay:300ms]"></span>
+                </div>
+            </div>
+
+            <!-- Settled winners so far (during drawing) -->
+            @if (drawnWinners().length > 0) {
+            <div class="w-full">
+                <p class="text-xs text-secondary font-semibold uppercase tracking-wider mb-2">
+                    Νικητές ως τώρα
+                </p>
+                <div class="space-y-2">
+                    @for (w of drawnWinners(); track w.id; let i = $index) {
+                    <div class="winner-card flex items-center gap-3 rounded-xl border bg-card px-4 py-3 shadow-sm">
+                        <div
+                            class="flex h-8 w-8 items-center justify-center rounded-full bg-amber-500/10 text-xs font-bold text-amber-600 shrink-0">
+                            {{ i + 1 }}
+                        </div>
+                        @if (entryAvatar(w)) {
+                        <img [src]="entryAvatar(w)!" alt="" class="h-8 w-8 rounded-full object-cover shrink-0" />
+                        } @else {
+                        <div
+                            class="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-500/10 text-xs font-bold text-indigo-600 shrink-0">
+                            {{ initials(entryName(w)) }}
+                        </div>
+                        }
+                        <span class="font-semibold text-sm truncate">{{ entryName(w) }}</span>
+                    </div>
+                    }
+                </div>
+            </div>
+            }
+
+        </div>
+
+        }
+
+        <!-- ── DONE STATE ───────────────────────────────────────────── -->
+        @if (state() === 'done') {
+
+        <div class="flex flex-col gap-5">
+
+            <!-- Success banner -->
+            <div
+                class="flex items-center gap-3 rounded-2xl border border-green-200 bg-green-50 px-5 py-4 dark:border-green-800 dark:bg-green-950/30">
+                <mat-icon class="text-green-500 shrink-0">celebration</mat-icon>
+                <span class="text-sm font-semibold text-green-700 dark:text-green-300">
+                    Κληρώθηκαν {{ drawnWinners().length }} νικητ{{ drawnWinners().length === 1 ? 'ής' : 'ές' }}!
+                </span>
+            </div>
+
+            <!-- Save error -->
+            @if (saveError()) {
+            <div
+                class="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-300">
+                <mat-icon class="shrink-0 text-red-500 icon-size-4">error_outline</mat-icon>
+                {{ saveError() }}
+            </div>
+            }
+
+            <!-- Winners list -->
+            <div class="space-y-2">
+                @for (w of drawnWinners(); track w.id; let i = $index) {
+                <div class="winner-card flex items-center gap-3 rounded-xl border bg-card px-4 py-3 shadow-sm">
+                    <div
+                        class="flex h-9 w-9 items-center justify-center rounded-full bg-amber-500/15 text-sm font-extrabold text-amber-600 shrink-0">
+                        {{ i + 1 }}
+                    </div>
+                    @if (entryAvatar(w)) {
+                    <img [src]="entryAvatar(w)!" alt="" class="h-9 w-9 rounded-full object-cover border shrink-0" />
+                    } @else {
+                    <div
+                        class="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-500/10 text-xs font-bold text-indigo-600 border shrink-0">
+                        {{ initials(entryName(w)) }}
+                    </div>
+                    }
+                    <div class="min-w-0 flex-1">
+                        <div class="font-semibold text-sm truncate">{{ entryName(w) }}</div>
+                        @if (w.user?.email) {
+                        <div class="text-secondary text-xs truncate">{{ w.user.email }}</div>
+                        }
+                    </div>
+                    <mat-icon class="text-amber-500 shrink-0 icon-size-5">star</mat-icon>
+                </div>
+                }
+            </div>
+
+        </div>
+
+        }
+
+    </div>
+
+    <!-- ── Footer ─────────────────────────────────────────────────── -->
+    <div class="border-t px-6 py-4 flex items-center justify-between gap-3 shrink-0">
+
+        <div>
+            @if (state() === 'done') {
+            <button mat-stroked-button (click)="resetDraw()" class="!rounded-full !font-semibold">
+                <mat-icon class="mr-1">refresh</mat-icon>
+                Νέα Κλήρωση
+            </button>
+            }
+        </div>
+
+        <div class="flex items-center gap-2">
+            @if (state() === 'done') {
+            <!-- REJECT: just close without saving -->
+            <button mat-stroked-button color="warn" (click)="close()" class="!rounded-full !font-semibold">
+                <mat-icon class="mr-1 icon-size-4">close</mat-icon>
+                ΑΠΟΡΡΙΨΗ
+            </button>
+            <!-- ACCEPT: save winners and close -->
+            <button mat-flat-button color="primary" (click)="confirmWinners()" [disabled]="saving()"
+                class="!rounded-full !font-bold">
+                @if (saving()) {
+                <span class="inline-block animate-spin mr-1">⟳</span>
+                }
+                <mat-icon class="mr-1 icon-size-4">check_circle</mat-icon>
+                ΑΠΟΔΟΧΗ
+            </button>
+            } @else {
+            <button mat-button (click)="close()">Κλείσιμο</button>
+            }
+        </div>
+    </div>
+
+</div>

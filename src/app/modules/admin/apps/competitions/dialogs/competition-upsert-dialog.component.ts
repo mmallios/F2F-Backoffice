@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Inject, OnDestroy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Inject, OnDestroy, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
@@ -8,7 +8,9 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatDividerModule } from '@angular/material/divider';
-import { finalize, Subject } from 'rxjs';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { finalize, Subject, takeUntil } from 'rxjs';
 
 import { Competition, EventsService } from '@fuse/services/events/events.service';
 import { ImageUploadService } from '@fuse/services/general/image-upload.service';
@@ -32,6 +34,8 @@ type DialogData =
     MatInputModule,
     MatSelectModule,
     MatDividerModule,
+    MatProgressBarModule,
+    MatSnackBarModule,
   ],
   template: `
     <div class="p-2 sm:p-4">
@@ -59,16 +63,20 @@ type DialogData =
           <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
 
             <div class="flex items-center gap-3">
-              <div class="h-14 w-14 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-800 flex items-center justify-center">
-              <img *ngIf="form.get('image')?.value" [src]="form.get('image')?.value" class="h-full w-full object-contain" alt="image" />
-<span *ngIf="!form.get('image')?.value" class="font-bold uppercase text-gray-700 dark:text-gray-200">
-  {{ (form.get('name')?.value?.charAt(0) || '?') }}
-</span>
+              <div class="h-14 w-14 rounded-xl overflow-hidden bg-gray-200 dark:bg-gray-800 flex items-center justify-center">
+                <img *ngIf="imagePreview" [src]="imagePreview" class="h-full w-full object-contain" alt="image" />
+                <span *ngIf="!imagePreview" class="font-bold uppercase text-gray-700 dark:text-gray-200">
+                  {{ (form.get('name')?.value?.charAt(0) || '?') }}
+                </span>
               </div>
 
               <div class="min-w-0">
                 <div class="font-semibold">Εικόνα διοργάνωσης</div>
-                <div class="text-secondary text-sm">PNG/JPG έως 3MB.</div>
+                <div class="text-secondary text-sm">
+                  <ng-container *ngIf="uploading">Μεταφόρτωση...</ng-container>
+                  <ng-container *ngIf="!uploading">PNG/JPG έως 3MB.</ng-container>
+                </div>
+                <mat-progress-bar *ngIf="uploading" mode="indeterminate" class="mt-1 w-32"></mat-progress-bar>
               </div>
             </div>
 
@@ -76,16 +84,16 @@ type DialogData =
               <input #fileInput type="file" accept="image/*" class="hidden" (change)="onFileSelected($event)" />
 
               <button mat-stroked-button class="!rounded-xl" type="button"
-                      (click)="triggerFileInput(fileInput)" [disabled]="saving">
+                      (click)="triggerFileInput(fileInput)" [disabled]="saving || uploading">
                 <mat-icon class="mr-2" [svgIcon]="'heroicons_outline:arrow-up-tray'"></mat-icon>
                 Μεταφόρτωση
               </button>
 
-           <button *ngIf="form.get('image')?.value" mat-button class="!rounded-xl" type="button"
-        (click)="removeImage()" [disabled]="saving">
-  <mat-icon class="mr-2" [svgIcon]="'heroicons_outline:trash'"></mat-icon>
-  Αφαίρεση
-</button>
+              <button *ngIf="imagePreview" mat-button class="!rounded-xl" type="button"
+                      (click)="removeImage()" [disabled]="saving || uploading">
+                <mat-icon class="mr-2" [svgIcon]="'heroicons_outline:trash'"></mat-icon>
+                Αφαίρεση
+              </button>
             </div>
 
           </div>
@@ -99,6 +107,12 @@ type DialogData =
             <mat-label>Όνομα</mat-label>
             <input matInput formControlName="name" placeholder="π.χ. Euroleague" />
             <mat-error *ngIf="form.get('name')?.hasError('required')">Απαιτείται</mat-error>
+          </mat-form-field>
+
+          <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full" subscriptSizing="dynamic">
+            <mat-icon matPrefix class="icon-size-5" [svgIcon]="'heroicons_outline:identification'"></mat-icon>
+            <mat-label>Code</mat-label>
+            <input matInput formControlName="code" placeholder="π.χ. EUROLEAGUE" />
           </mat-form-field>
 
           <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full" subscriptSizing="dynamic">
@@ -136,7 +150,7 @@ type DialogData =
         <button mat-stroked-button class="!rounded-xl" (click)="close()" [disabled]="saving">Άκυρο</button>
 
         <button mat-flat-button color="primary" class="!rounded-xl"
-                (click)="save()" [disabled]="saving || form.invalid">
+                (click)="save()" [disabled]="saving || uploading || form.invalid">
           <mat-icon class="mr-2" [svgIcon]="'heroicons_outline:check'"></mat-icon>
           {{ saving ? 'Αποθήκευση...' : (isEdit ? 'Αποθήκευση αλλαγών' : 'Δημιουργία διοργάνωσης') }}
         </button>
@@ -148,18 +162,19 @@ type DialogData =
 export class CompetitionUpsertDialogComponent implements OnDestroy {
 
   saving = false;
+  uploading = false;
+  imagePreview: string | null = null;
   private readonly _destroy$ = new Subject<void>();
+  private readonly _snack = inject(MatSnackBar);
 
   isEdit = this.data?.mode === 'edit';
   sports: SportOption[] = this.data?.sports ?? [];
-
-  uploadingImage = false;
-  uploadImageError: string | null = null;
 
 
   form = this._fb.group({
     id: [0],
     name: ['', Validators.required],
+    code: [''],
     sportId: [null as number | null, Validators.required],
     seasonId: [null as number | null, Validators.required],
     isActive: [true],
@@ -179,11 +194,13 @@ export class CompetitionUpsertDialogComponent implements OnDestroy {
       this.form.patchValue({
         id: c.id,
         name: c.name ?? '',
-        sportId: Number(c.sportId ?? null),
-        seasonId: Number(c.seasonId ?? null),
+        code: (c as any).code ?? '',
+        sportId: c.sportId ?? null,
+        seasonId: c.seasonId ?? null,
         isActive: !!c.isActive,
         image: c.image ?? '',
       });
+      this.imagePreview = c.image ?? null;
     }
   }
 
@@ -203,18 +220,9 @@ export class CompetitionUpsertDialogComponent implements OnDestroy {
 
 
   removeImage(): void {
-    this.form.patchValue({ image: '' }, { emitEvent: true });
+    this.form.patchValue({ image: '' });
+    this.imagePreview = null;
     this._cdr.markForCheck();
-  }
-
-  private readImageFile(file: File): void {
-    const maxMb = 3;
-    if (!file.type.startsWith('image/')) return;
-    if (file.size > maxMb * 1024 * 1024) return;
-
-    const reader = new FileReader();
-    reader.onload = () => this.form.patchValue({ image: String(reader.result || '') });
-    reader.readAsDataURL(file);
   }
 
   save(): void {
@@ -228,10 +236,23 @@ export class CompetitionUpsertDialogComponent implements OnDestroy {
       : this._eventsService.createCompetition(payload);
 
     req$
-      .pipe(finalize(() => (this.saving = false)))
+      .pipe(finalize(() => { this.saving = false; this._cdr.markForCheck(); }))
       .subscribe({
-        next: () => this._dialogRef.close({ ok: true }),
-        error: () => { },
+        next: (competition) => {
+          this._snack.open(
+            this.isEdit ? 'Η διοργάνωση ενημερώθηκε!' : 'Η διοργάνωση δημιουργήθηκε!',
+            'OK',
+            { duration: 3000, panelClass: ['snack-success'] }
+          );
+          this._dialogRef.close({ ok: true, competition });
+        },
+        error: () => {
+          this._snack.open(
+            'Σφάλμα κατά την αποθήκευση. Δοκιμάστε ξανά.',
+            'OK',
+            { duration: 4000, panelClass: ['snack-error'] }
+          );
+        },
       });
   }
 
@@ -241,42 +262,35 @@ export class CompetitionUpsertDialogComponent implements OnDestroy {
     input.value = '';
     if (!file) return;
 
-    // validation
-    const maxMb = 3;
-    if (!file.type.startsWith('image/')) {
-      this.uploadImageError = 'Επιτρέπονται μόνο εικόνες.';
-      return;
-    }
-    if (file.size > maxMb * 1024 * 1024) {
-      this.uploadImageError = `Μέγιστο μέγεθος ${maxMb}MB.`;
-      return;
-    }
+    if (!file.type.startsWith('image/')) return;
+    if (file.size > 3 * 1024 * 1024) return;
 
-    this.uploadingImage = true;
-    this.uploadImageError = null;
+    // Instant preview via FileReader
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.imagePreview = reader.result as string;
+      this._cdr.markForCheck();
+    };
+    reader.readAsDataURL(file);
 
-    const folder = 'competitions';
+    // Upload to server: folder = competitions/{competitionId} or competitions/new
+    const compId = this.form.get('id')?.value;
+    const subfolder = compId ? String(compId) : 'new';
+    this.uploading = true;
+    this._cdr.markForCheck();
 
-    // ✅ subfolder = competition code (ONLY on edit)
-    const subFolder =
-      this.data.mode === 'edit'
-        ? (this.data.competition as any).code // or this.data.competition.competitionCode
-        : null;
-
-
-
-    this._imageUpload.uploadImage(file, folder, subFolder ?? undefined)
-      .pipe(finalize(() => (this.uploadingImage = false)))
+    this._imageUpload.uploadImage(file, 'competitions', subfolder)
+      .pipe(takeUntil(this._destroy$), finalize(() => {
+        this.uploading = false;
+        this._cdr.markForCheck();
+      }))
       .subscribe({
         next: (res) => {
-          this.form.patchValue({ image: res.publicUrl }, { emitEvent: true });
-          this.form.get('image')?.markAsDirty();
-          this._cdr.markForCheck(); // ✅ important with OnPush
+          this.form.patchValue({ image: res.publicUrl });
+          this.imagePreview = res.publicUrl;
+          this._cdr.markForCheck();
         },
-        error: (err) => {
-          console.error('uploadImage failed', err);
-          this.uploadImageError = 'Αποτυχία μεταφόρτωσης εικόνας.';
-        },
+        error: () => { /* preview stays as base64 until retry */ },
       });
   }
 

@@ -22,21 +22,16 @@ import { MatSort, MatSortModule } from '@angular/material/sort';
 import { MatChipsModule } from '@angular/material/chips';
 import { ActivatedRoute, Router, RouterLink, RouterOutlet } from '@angular/router';
 import { FuseMediaWatcherService } from '@fuse/services/media-watcher';
-import { Subject, filter, fromEvent, takeUntil } from 'rxjs';
+import { Subject, combineLatest, filter, fromEvent, takeUntil } from 'rxjs';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSelectModule } from '@angular/material/select';
 
-import { EventsService } from '@fuse/services/events/events.service';
+import { TvChannel as TvChannelModel, EventsService } from '@fuse/services/events/events.service';
 import { TVChannelUpsertDialogComponent } from './dialogs/tv-channel-upsert-dialog.component';
 
 
 // Adjust if you already have interface in EventsService
-export type TVChannel = {
-    id: number;
-    name: string;
-    image?: string | null;
-    isPublished: boolean;
-};
+export type TVChannel = TvChannelModel;
 
 @Component({
     selector: 'tv-channels',
@@ -105,11 +100,15 @@ export class TVChannelsComponent implements OnInit, OnDestroy {
     ngOnInit(): void {
         this.loading = true;
 
-        // Load TV channels
+        // Initial load + subscribe to live updates via BehaviorSubject
         this._eventsService.getTVChannels()
             .pipe(takeUntil(this._unsubscribeAll))
+            .subscribe();
+
+        combineLatest([this._eventsService.tvChannels$])
+            .pipe(takeUntil(this._unsubscribeAll))
             .subscribe({
-                next: (rows: any) => {
+                next: ([rows]) => {
                     const list: TVChannel[] = rows ?? [];
 
                     this.loading = false;
@@ -184,15 +183,16 @@ export class TVChannelsComponent implements OnInit, OnDestroy {
             const q = (f.q || '').trim().toLowerCase();
             const isActive = f.isActive;
 
-            const passActive = isActive == null || Boolean(ch?.isActive) === Boolean(isActive);
+            const passActive = isActive == null || Boolean(ch?.isPublished) === Boolean(isActive);
             if (!passActive) return false;
 
             if (!q) return true;
 
             const bag = [
                 ch?.name,
+                ch?.code,
                 String(ch?.id ?? ''),
-                ch?.isActive ? 'active' : 'inactive',
+                ch?.isPublished ? 'published' : 'unpublished',
             ].filter(Boolean).join(' ').toLowerCase();
 
             return bag.includes(q);
@@ -238,27 +238,9 @@ export class TVChannelsComponent implements OnInit, OnDestroy {
         ref.afterClosed()
             .pipe(
                 takeUntil(this._unsubscribeAll),
-                filter((res) => !!res)
+                filter((res) => !!res?.ok)
             )
-            .subscribe(() => this.reload());
+            .subscribe();
     }
 
-    private reload(): void {
-        this.loading = true;
-
-        this._eventsService.getTVChannels().subscribe({
-            next: (rows: any) => {
-                const list: TVChannel[] = rows ?? [];
-                this.loading = false;
-                this.channelsCount = list.length;
-                this.dataSource.data = list;
-                this.applyCombinedFilter();
-                this._cdr.markForCheck();
-            },
-            error: () => {
-                this.loading = false;
-                this._cdr.markForCheck();
-            }
-        });
-    }
 }

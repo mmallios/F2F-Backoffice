@@ -1,0 +1,264 @@
+<div class="absolute inset-0 flex min-w-0 flex-col overflow-hidden">
+    <div class="flex-auto overflow-y-auto">
+
+        <!-- ── Header ──────────────────────────────────────────────── -->
+        <div class="border-b px-6 py-7 md:px-8">
+            <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div class="min-w-0">
+                    <div class="text-3xl md:text-4xl font-extrabold leading-none tracking-tight">
+                        Στατιστικά Υποστήριξης
+                    </div>
+                    <div class="text-secondary mt-2 font-medium">
+                        Συνολικά στατιστικά tickets και ανά διαχειριστή
+                    </div>
+                </div>
+                <button mat-icon-button (click)="load()" [disabled]="loading()" matTooltip="Ανανέωση">
+                    <mat-icon>refresh</mat-icon>
+                </button>
+            </div>
+        </div>
+
+        <!-- ── Error ──────────────────────────────────────────────── -->
+        @if (error()) {
+        <div
+            class="mx-6 mt-5 md:mx-8 flex items-center gap-3 rounded-2xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/50 px-5 py-4 text-red-700 dark:text-red-300">
+            <mat-icon class="text-red-500 shrink-0">error_outline</mat-icon>
+            <span>{{ error() }}</span>
+        </div>
+        }
+
+        <!-- ── Stats strip ─────────────────────────────────────────── -->
+        <div class="px-6 md:px-8 pt-5 pb-1">
+            <div class="grid grid-cols-2 xl:grid-cols-5 gap-4">
+
+                <!-- Total -->
+                <div class="flex items-center gap-4 rounded-2xl border bg-card p-4 shadow-sm">
+                    <div class="flex items-center justify-center w-12 h-12 rounded-xl bg-indigo-500/10 shrink-0">
+                        <mat-icon class="text-indigo-500">confirmation_number</mat-icon>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-extrabold leading-none">
+                            {{ loading() ? '—' : (overall()?.totalTickets ?? '—') }}
+                        </div>
+                        <div class="text-secondary text-xs mt-1">Σύνολο Tickets</div>
+                    </div>
+                </div>
+
+                <!-- Open -->
+                <div class="flex items-center gap-4 rounded-2xl border bg-card p-4 shadow-sm">
+                    <div class="flex items-center justify-center w-12 h-12 rounded-xl bg-yellow-500/10 shrink-0">
+                        <mat-icon class="text-yellow-500">pending</mat-icon>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-extrabold leading-none">
+                            {{ loading() ? '—' : (overall()?.openTickets ?? '—') }}
+                        </div>
+                        <div class="text-secondary text-xs mt-1">Ανοιχτά</div>
+                    </div>
+                </div>
+
+                <!-- Completed -->
+                <div class="flex items-center gap-4 rounded-2xl border bg-card p-4 shadow-sm">
+                    <div class="flex items-center justify-center w-12 h-12 rounded-xl bg-green-500/10 shrink-0">
+                        <mat-icon class="text-green-500">check_circle</mat-icon>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-extrabold leading-none">
+                            {{ loading() ? '—' : (overall()?.completedTickets ?? '—') }}
+                        </div>
+                        <div class="text-secondary text-xs mt-1">Ολοκληρωμένα</div>
+                    </div>
+                </div>
+
+                <!-- Avg first response -->
+                <div class="flex items-center gap-4 rounded-2xl border bg-card p-4 shadow-sm">
+                    <div class="flex items-center justify-center w-12 h-12 rounded-xl bg-blue-500/10 shrink-0">
+                        <mat-icon class="text-blue-500">reply</mat-icon>
+                    </div>
+                    <div>
+                        <div class="text-lg font-extrabold leading-none">
+                            {{ loading() ? '—' : formatMinutes(overall()?.avgMinutesToFirstAdminResponse) }}
+                        </div>
+                        <div class="text-secondary text-xs mt-1">Μ.Ο. 1ης Απάντησης</div>
+                    </div>
+                </div>
+
+                <!-- Avg general response -->
+                <div class="flex items-center gap-4 rounded-2xl border bg-card p-4 shadow-sm">
+                    <div class="flex items-center justify-center w-12 h-12 rounded-xl bg-violet-500/10 shrink-0">
+                        <mat-icon class="text-violet-500">timer</mat-icon>
+                    </div>
+                    <div>
+                        <div class="text-lg font-extrabold leading-none">
+                            {{ loading() ? '—' : formatMinutes(overall()?.avgMinutesBetweenResponses) }}
+                        </div>
+                        <div class="text-secondary text-xs mt-1">Μ.Ο. Γενικής Απάντησης</div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ── Filter bar ───────────────────────────────────────────── -->
+        <div class="px-6 md:px-8 pt-5" [formGroup]="filters">
+            <div class="bg-gray-50/80 dark:bg-white/5 border rounded-2xl shadow-sm px-4 py-4 md:px-6 md:py-5">
+                <div class="grid grid-cols-2 gap-4 items-center">
+
+                    <!-- Admin filter -->
+                    <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full" subscriptSizing="dynamic">
+                        <mat-icon matPrefix class="icon-size-5" svgIcon="heroicons_outline:user"></mat-icon>
+                        <mat-label>Φίλτρο Διαχειριστή</mat-label>
+                        <mat-select formControlName="adminId">
+                            <mat-option [value]="null">Όλοι οι Διαχειριστές</mat-option>
+                            @for (adm of allAdmins; track adm.boUserId) {
+                            <mat-option [value]="adm.boUserId">{{ adm.fullName }}</mat-option>
+                            }
+                        </mat-select>
+                    </mat-form-field>
+
+                    <!-- Sort -->
+                    <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full" subscriptSizing="dynamic">
+                        <mat-icon matPrefix class="icon-size-5" svgIcon="heroicons_outline:bars-arrow-down"></mat-icon>
+                        <mat-label>Ταξινόμηση</mat-label>
+                        <mat-select formControlName="sort">
+                            @for (opt of sortOptions; track opt.value) {
+                            <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
+                            }
+                        </mat-select>
+                    </mat-form-field>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Table card ──────────────────────────────────────────── -->
+        <div class="px-6 py-6 md:px-8">
+            <div class="bg-card rounded-2xl border shadow-sm overflow-hidden">
+
+                <!-- Loading skeleton -->
+                @if (loading()) {
+                <div class="p-8">
+                    <div class="animate-pulse space-y-3">
+                        <div class="h-4 w-1/3 rounded bg-gray-200 dark:bg-gray-700"></div>
+                        <div class="h-4 w-2/3 rounded bg-gray-200 dark:bg-gray-700"></div>
+                        <div class="h-4 w-1/2 rounded bg-gray-200 dark:bg-gray-700"></div>
+                    </div>
+                </div>
+                } @else {
+
+                @if (!dataSource.data.length) {
+                <div class="p-10 text-center">
+                    <div class="text-2xl font-semibold tracking-tight">Δεν βρέθηκαν διαχειριστές</div>
+                    <div class="text-secondary mt-2">Δεν υπάρχουν διαχειριστές με ανατεθειμένα tickets.</div>
+                </div>
+                } @else {
+
+                <div class="overflow-x-auto">
+                    <table mat-table [dataSource]="dataSource" class="min-w-[900px] w-full">
+
+                        <!-- Admin col -->
+                        <ng-container matColumnDef="admin">
+                            <th mat-header-cell *matHeaderCellDef class="px-6">Διαχειριστής</th>
+                            <td mat-cell *matCellDef="let row" class="px-6 py-3">
+                                <div class="flex items-center gap-3">
+                                    <div
+                                        class="h-10 w-10 rounded-full overflow-hidden flex items-center justify-center bg-gray-100 dark:bg-gray-800 shrink-0">
+                                        @if (row.image) {
+                                        <img [src]="row.image" [alt]="row.fullName"
+                                            class="h-full w-full object-cover" />
+                                        } @else {
+                                        <span class="text-sm font-bold text-gray-700 dark:text-gray-200 uppercase">
+                                            {{ row.fullName?.charAt(0) || '?' }}
+                                        </span>
+                                        }
+                                    </div>
+                                    <div class="min-w-0">
+                                        <div class="font-semibold truncate">{{ row.fullName }}</div>
+                                        @if (row.email) {
+                                        <div class="text-secondary text-sm truncate">{{ row.email }}</div>
+                                        }
+                                    </div>
+                                </div>
+                            </td>
+                        </ng-container>
+
+                        <!-- Total -->
+                        <ng-container matColumnDef="totalTickets">
+                            <th mat-header-cell *matHeaderCellDef class="!text-center">Σύνολο</th>
+                            <td mat-cell *matCellDef="let row" class="!text-center py-3">
+                                <span
+                                    class="inline-flex items-center justify-center w-10 h-8 rounded-lg bg-gray-100 dark:bg-gray-700 font-bold text-sm">
+                                    {{ row.totalTickets }}
+                                </span>
+                            </td>
+                        </ng-container>
+
+                        <!-- Open -->
+                        <ng-container matColumnDef="openTickets">
+                            <th mat-header-cell *matHeaderCellDef class="!text-center">Ανοιχτά</th>
+                            <td mat-cell *matCellDef="let row" class="!text-center py-3">
+                                <mat-chip class="!rounded-full !px-3 !text-xs !font-semibold"
+                                    [ngClass]="row.openTickets > 0 ? '!bg-yellow-100 !text-yellow-800 dark:!bg-yellow-900/60 dark:!text-yellow-200' : '!bg-gray-100 !text-gray-500 dark:!bg-gray-700 dark:!text-gray-400'">
+                                    {{ row.openTickets }}
+                                </mat-chip>
+                            </td>
+                        </ng-container>
+
+                        <!-- Completed -->
+                        <ng-container matColumnDef="completedTickets">
+                            <th mat-header-cell *matHeaderCellDef class="!text-center">Ολοκληρωμένα</th>
+                            <td mat-cell *matCellDef="let row" class="!text-center py-3">
+                                <mat-chip class="!rounded-full !px-3 !text-xs !font-semibold"
+                                    [ngClass]="row.completedTickets > 0 ? '!bg-green-100 !text-green-800 dark:!bg-green-900/60 dark:!text-green-200' : '!bg-gray-100 !text-gray-500 dark:!bg-gray-700 dark:!text-gray-400'">
+                                    {{ row.completedTickets }}
+                                </mat-chip>
+                            </td>
+                        </ng-container>
+
+                        <!-- Avg first response -->
+                        <ng-container matColumnDef="avgFirstResponse">
+                            <th mat-header-cell *matHeaderCellDef class="!text-center">Μ.Ο. 1ης Απάντησης</th>
+                            <td mat-cell *matCellDef="let row"
+                                class="!text-center py-3 text-sm font-medium text-blue-600 dark:text-blue-400">
+                                {{ formatMinutes(row.avgMinutesToFirstAdminResponse) }}
+                            </td>
+                        </ng-container>
+
+                        <!-- Avg response -->
+                        <ng-container matColumnDef="avgResponse">
+                            <th mat-header-cell *matHeaderCellDef class="!text-center">Μ.Ο. Απάντησης</th>
+                            <td mat-cell *matCellDef="let row"
+                                class="!text-center py-3 text-sm font-medium text-violet-600 dark:text-violet-400">
+                                {{ formatMinutes(row.avgMinutesBetweenResponses) }}
+                            </td>
+                        </ng-container>
+
+                        <!-- Actions -->
+                        <ng-container matColumnDef="actions">
+                            <th mat-header-cell *matHeaderCellDef class="!text-right pr-6"></th>
+                            <td mat-cell *matCellDef="let row" class="!text-right pr-4 py-3">
+                                <button mat-stroked-button class="!rounded-xl !text-sm" (click)="openAdminTickets(row)">
+                                    <mat-icon class="icon-size-4 mr-1">visibility</mat-icon>
+                                    Προβολή Tickets
+                                </button>
+                            </td>
+                        </ng-container>
+
+                        <tr mat-header-row *matHeaderRowDef="columns"></tr>
+                        <tr mat-row *matRowDef="let row; columns: columns;"
+                            class="hover:bg-hover transition-colors duration-100"></tr>
+                    </table>
+                </div>
+
+                <mat-paginator [length]="total()" [pageSize]="pageSize()" [pageSizeOptions]="[5, 10, 20, 50]"
+                    (page)="onPage($event)" class="border-t">
+                </mat-paginator>
+
+                }
+                }
+
+            </div>
+        </div>
+
+    </div>
+</div>

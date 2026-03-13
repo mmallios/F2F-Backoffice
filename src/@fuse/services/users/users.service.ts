@@ -30,6 +30,9 @@ export interface User {
     linkedUser?: User;
     socialMediaPlatform: number | null,
     socialMediaAccount?: string;
+    reviewedAt?: string | null;
+    reviewedByAdminId?: number | null;
+    reviewComment?: string | null;
 }
 
 /** Matches CommonEntity fields you likely have */
@@ -189,9 +192,10 @@ export class UsersService {
         });
     }
 
-    rejectRegistrationRequest(userId: number, adminUserId: number | null): Observable<any> {
+    rejectRegistrationRequest(userId: number, adminUserId: number | null, reviewComment?: string | null): Observable<any> {
         return this.http.post(`${environment.apiUrl}/BORegistrationRequests/${userId}/reject`, {
             adminUserId,
+            reviewComment: reviewComment || null,
         });
     }
 
@@ -199,6 +203,51 @@ export class UsersService {
         return this.http.get<RegistrationRequest[]>(`${environment.apiUrl}/BORegistrationRequests/completed`);
     }
 
+    getRegistrationRequestById(id: number): Observable<RegistrationRequest> {
+        return this.http.get<RegistrationRequest>(`${environment.apiUrl}/BORegistrationRequests/${id}`);
+    }
+
+    // ── Ban ────────────────────────────────────────────────────────
+
+    banUser(userId: number, adminUserId: number | null, banReason: string | null): Observable<any> {
+        return this.http.post(`${environment.apiUrl}/BOUsers/${userId}/ban`, {
+            adminUserId,
+            banReason: banReason || null,
+        });
+    }
+
+    getBanInfo(userId: number): Observable<BanInfo> {
+        return this.http.get<BanInfo>(`${environment.apiUrl}/BOUsers/${userId}/ban-info`);
+    }
+
+    // ── Audit Logs ─────────────────────────────────────────────────
+
+    getUserAuditLogs(userId: number, page: number = 1, pageSize: number = 20): Observable<AuditLogListResult> {
+        const params = new HttpParams()
+            .set('page', String(page))
+            .set('pageSize', String(pageSize));
+        return this.http.get<AuditLogListResult>(`${environment.apiUrl}/audit-logs/user/${userId}`, { params });
+    }
+
+}
+
+export interface BanInfo {
+    bannedAt?: string | null;
+    bannedByAdminName?: string | null;
+    banReason?: string | null;
+}
+
+export interface AuditLogDto {
+    id: number;
+    type: number;
+    description: string;
+    date: string;
+    tableData?: string | null;
+}
+
+export interface AuditLogListResult {
+    items: AuditLogDto[];
+    total: number;
 }
 
 export interface RegistrationStats {
@@ -217,6 +266,10 @@ export interface RegistrationRequest {
     mobileCountryCode?: string;
     linkedUserInput?: string;
     linkedUserId?: number;
+    linkedUserFirstname?: string | null;
+    linkedUserLastname?: string | null;
+    linkedUserCode?: string | null;
+    linkedUserImage?: string | null;
     socialMediaPlatform?: number;
     socialMediaAccount?: string;
     status: number;
@@ -226,4 +279,5 @@ export interface RegistrationRequest {
     reviewedByAdminId?: number;
     reviewedAt?: string;
     reviewedByAdminName?: string;
+    reviewComment?: string | null;
 }

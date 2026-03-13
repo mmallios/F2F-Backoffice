@@ -10,6 +10,15 @@ export const defaultNavigation: FuseNavigationItem[] = [
         icon: 'heroicons_outline:home',
         children: [
 
+            // ── Dashboard ────────────────────────────────────────
+            {
+                id: 'dashboards.project',
+                title: 'Αρχική Σελίδα',
+                type: 'basic',
+                icon: 'heroicons_outline:home',
+                link: '/dashboards/project',
+            },
+
             // ── Κοινότητα ────────────────────────────────────────
             {
                 id: 'community',
@@ -111,6 +120,13 @@ export const defaultNavigation: FuseNavigationItem[] = [
                         icon: 'heroicons_outline:newspaper',
                         link: '/apps/news',
                     },
+                    {
+                        id: 'apps.contests',
+                        title: 'Διαγωνισμοί',
+                        type: 'basic',
+                        icon: 'heroicons_outline:gift',
+                        link: '/apps/contests',
+                    },
                 ],
             },
 
@@ -149,9 +165,24 @@ export const defaultNavigation: FuseNavigationItem[] = [
             {
                 id: 'apps.support',
                 title: 'Υποστήριξη',
-                type: 'basic',
+                type: 'collapsable',
                 icon: 'heroicons_outline:lifebuoy',
-                link: '/apps/support/tickets',
+                children: [
+                    {
+                        id: 'apps.support.tickets',
+                        title: 'Αιτήματα Υποστήριξης',
+                        type: 'basic',
+                        icon: 'heroicons_outline:ticket',
+                        link: '/apps/support/tickets',
+                    },
+                    {
+                        id: 'apps.support.stats',
+                        title: 'Στατιστικά Υποστήριξης',
+                        type: 'basic',
+                        icon: 'heroicons_outline:chart-bar',
+                        link: '/apps/support/stats',
+                    },
+                ],
             },
 
             // ── Ρυθμίσεις ────────────────────────────────────────

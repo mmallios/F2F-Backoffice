@@ -291,17 +291,12 @@ export class TeamsComponent implements OnInit, OnDestroy {
         ref.afterClosed()
             .pipe(
                 takeUntil(this._unsubscribeAll),
-                filter((res) => !!res)
+                filter((res) => !!res?.ok)
             )
             .subscribe(() => {
-                this.loading = true;
-                this._eventsService.getTeams().subscribe({
-                    error: () => (this.loading = false),
-                    complete: () => {
-                        this.loading = false;
-                        this._changeDetectorRef.markForCheck();
-                    },
-                });
+                // List updates automatically via the _teams BehaviorSubject
+                // (EventsService.updateTeam/createTeam patches it in tap())
+                this._changeDetectorRef.markForCheck();
             });
     }
 

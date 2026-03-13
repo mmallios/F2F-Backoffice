@@ -19,9 +19,10 @@ import { MatPaginatorModule, MatPaginator } from '@angular/material/paginator';
 import { MatSortModule, MatSort } from '@angular/material/sort';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatTabsModule } from '@angular/material/tabs';
+import { MatTabsModule, MatTabGroup } from '@angular/material/tabs';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
+import { TextFieldModule } from '@angular/cdk/text-field';
 
 import { Subject, combineLatest, debounceTime, startWith, takeUntil } from 'rxjs';
 import {
@@ -30,11 +31,32 @@ import {
     UsersService,
     User,
 } from '@fuse/services/users/users.service';
+import { AuthService } from 'app/core/auth/auth.service';
 
 @Component({
     selector: 'registration-requests',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
+    styles: [`
+        ::ng-deep registration-requests .mat-mdc-tab-header {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border-radius: 12px 12px 0 0;
+            padding: 0 8px;
+        }
+        ::ng-deep registration-requests .mat-mdc-tab .mdc-tab__text-label {
+            color: rgba(255,255,255,0.6);
+            font-weight: 600;
+        }
+        ::ng-deep registration-requests .mat-mdc-tab.mdc-tab--active .mdc-tab__text-label {
+            color: #fff;
+        }
+        ::ng-deep registration-requests .mat-mdc-tab-indicator .mdc-tab-indicator__content--underline {
+            border-color: #e11d48;
+        }
+        ::ng-deep registration-requests .mat-mdc-tab:not(.mdc-tab--active):hover .mdc-tab__text-label {
+            color: rgba(255,255,255,0.85);
+        }
+    `],
     imports: [
         CommonModule,
         ReactiveFormsModule,
@@ -51,6 +73,7 @@ import {
         MatTabsModule,
         MatDatepickerModule,
         MatNativeDateModule,
+        TextFieldModule,
     ],
     templateUrl: './registration-requests.component.html',
 })
@@ -59,6 +82,7 @@ export class RegistrationRequestsComponent implements OnInit, AfterViewInit, OnD
     @ViewChild('pendingSort') sort!: MatSort;
     @ViewChild('completedPaginator') completedPaginator!: MatPaginator;
     @ViewChild('completedSort') completedSort!: MatSort;
+    @ViewChild('tabGroup') tabGroup!: MatTabGroup;
 
     loading = true;
     loadingCompleted = false;
@@ -108,10 +132,15 @@ export class RegistrationRequestsComponent implements OnInit, AfterViewInit, OnD
     private _pendingRaw: RegistrationRequest[] = [];
     private _completedRaw: RegistrationRequest[] = [];
     private _completedLoaded = false;
+    private _pendingOpenId: number | null = null;
 
     // Modal state
     modalOpen = false;
     modalRequest: RegistrationRequest | null = null;
+    rejectCommentCtrl = new FormControl('', { nonNullable: true });
+
+    // Reject confirmation modal
+    rejectModalOpen = false;
 
     // Success modal state
     successModalOpen = false;
@@ -123,19 +152,33 @@ export class RegistrationRequestsComponent implements OnInit, AfterViewInit, OnD
     filteredUsers: User[] = [];
     selectedLinkedUser: User | null = null;
 
-    // Simulated admin id (replace with auth service if available)
-    readonly adminUserId: number | null = null;
+    // Admin id from auth service
+    get adminUserId(): number | null {
+        return this._authService.currentUserId;
+    }
 
     private _unsubscribeAll = new Subject<void>();
 
     constructor(
         private _usersService: UsersService,
-        private _cdr: ChangeDetectorRef
+        private _cdr: ChangeDetectorRef,
+        private _authService: AuthService
     ) { }
 
     ngOnInit(): void {
+        // Check if we were navigated here to open a specific completed request
+        const navState = (typeof history !== 'undefined' && history.state) || {};
+        if (navState['openRequestId']) {
+            this._pendingOpenId = Number(navState['openRequestId']);
+        }
+
         this.loadStats();
         this.loadRequests();
+
+        // If we need to open a specific completed request, pre-load the completed tab
+        if (this._pendingOpenId) {
+            this.loadCompleted();
+        }
 
         // Load all users for linking
         this._usersService.loadUsers().subscribe({
@@ -239,6 +282,19 @@ export class RegistrationRequestsComponent implements OnInit, AfterViewInit, OnD
                 this._completedLoaded = true;
                 this.loadingCompleted = false;
                 this._cdr.markForCheck();
+
+                // If navigated here to open a specific request, find and open it
+                if (this._pendingOpenId) {
+                    const target = this._completedRaw.find(r => r.id === this._pendingOpenId);
+                    this._pendingOpenId = null;
+                    if (target) {
+                        setTimeout(() => {
+                            if (this.tabGroup) this.tabGroup.selectedIndex = 1;
+                            this.openModal(target);
+                            this._cdr.markForCheck();
+                        }, 50);
+                    }
+                }
             },
             error: () => { this.loadingCompleted = false; this._cdr.markForCheck(); },
         });
@@ -302,15 +358,19 @@ export class RegistrationRequestsComponent implements OnInit, AfterViewInit, OnD
         this.modalRequest = req;
         this.selectedLinkedUser = null;
         this.userSearchCtrl.setValue('');
+        this.rejectCommentCtrl.setValue('');
         this.filteredUsers = [];
+        this.rejectModalOpen = false;
         this.modalOpen = true;
         this._cdr.markForCheck();
     }
 
     closeModal(): void {
         this.modalOpen = false;
+        this.rejectModalOpen = false;
         this.modalRequest = null;
         this.selectedLinkedUser = null;
+        this.rejectCommentCtrl.setValue('');
         this._cdr.markForCheck();
     }
 
@@ -357,15 +417,27 @@ export class RegistrationRequestsComponent implements OnInit, AfterViewInit, OnD
     reject(): void {
         if (!this.modalRequest) return;
         this._usersService
-            .rejectRegistrationRequest(this.modalRequest.id, this.adminUserId)
+            .rejectRegistrationRequest(this.modalRequest.id, this.adminUserId, this.rejectCommentCtrl.value || null)
             .subscribe({
                 next: () => {
+                    this.rejectModalOpen = false;
                     this.closeModal();
                     this.loadStats();
                     this._completedLoaded = false;
                     this.loadRequests();
                 },
             });
+    }
+
+    openRejectModal(): void {
+        this.rejectCommentCtrl.setValue('');
+        this.rejectModalOpen = true;
+        this._cdr.markForCheck();
+    }
+
+    closeRejectModal(): void {
+        this.rejectModalOpen = false;
+        this._cdr.markForCheck();
     }
 
     socialUrl(req: RegistrationRequest): string | null {
