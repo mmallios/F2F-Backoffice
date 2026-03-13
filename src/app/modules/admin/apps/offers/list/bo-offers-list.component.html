@@ -1,0 +1,402 @@
+<div class="absolute inset-0 flex min-w-0 flex-col overflow-hidden">
+    <div class="flex-auto overflow-y-auto">
+
+        <!-- Header -->
+        <div class="border-b px-6 py-7 md:px-8">
+            <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div class="min-w-0">
+                    <div class="text-3xl md:text-4xl font-extrabold leading-none tracking-tight">
+                        Προσφορές
+                    </div>
+                    <div class="text-secondary mt-2 font-medium">
+                        Διαχείριση όλων των προσφορών της εφαρμογής
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                    <button mat-flat-button color="primary" (click)="openNew()" class="!rounded-full !font-semibold">
+                        <mat-icon class="mr-1">add</mat-icon>
+                        Νέα Προσφορά
+                    </button>
+                    <button mat-icon-button (click)="_load()" [disabled]="loading()" matTooltip="Ανανέωση">
+                        <mat-icon>refresh</mat-icon>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats strip -->
+        <div class="px-6 md:px-8 pt-5 pb-1">
+            <div class="grid grid-cols-3 gap-4">
+                <div class="flex items-center gap-4 rounded-2xl border bg-card p-4 shadow-sm">
+                    <div class="flex items-center justify-center w-12 h-12 rounded-xl bg-blue-500/10 shrink-0">
+                        <mat-icon class="text-blue-500">local_offer</mat-icon>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-extrabold leading-none">{{ loading() ? '—' : totalOffers() }}</div>
+                        <div class="text-secondary text-xs mt-1">Σύνολο</div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4 rounded-2xl border bg-card p-4 shadow-sm">
+                    <div class="flex items-center justify-center w-12 h-12 rounded-xl bg-green-500/10 shrink-0">
+                        <mat-icon class="text-green-500">check_circle</mat-icon>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-extrabold leading-none">{{ loading() ? '—' : activeOffers() }}</div>
+                        <div class="text-secondary text-xs mt-1">Ενεργές</div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4 rounded-2xl border bg-card p-4 shadow-sm">
+                    <div class="flex items-center justify-center w-12 h-12 rounded-xl bg-gray-500/10 shrink-0">
+                        <mat-icon class="text-gray-500">pause_circle</mat-icon>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-extrabold leading-none">
+                            {{ loading() ? '—' : inactiveOffers() }}</div>
+                        <div class="text-secondary text-xs mt-1">Ανενεργές</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters bar -->
+        <div class="px-6 md:px-8 py-4">
+            <div class="flex flex-col sm:flex-row gap-3 rounded-2xl border bg-card px-4 py-3 shadow-sm items-center"
+                [formGroup]="filters">
+
+                <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full sm:w-72 shrink-0">
+                    <mat-icon matPrefix>search</mat-icon>
+                    <input matInput formControlName="search" placeholder="Αναζήτηση τίτλου..." />
+                </mat-form-field>
+
+                <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full sm:w-56 shrink-0">
+                    <mat-label>Κατηγορία</mat-label>
+                    <mat-select formControlName="categoryFilter">
+                        <mat-option [value]="0">Όλες</mat-option>
+                        @for (cat of categories; track cat.id) {
+                        <mat-option [value]="cat.id">{{ cat.label }}</mat-option>
+                        }
+                    </mat-select>
+                </mat-form-field>
+
+                <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full sm:w-48 shrink-0">
+                    <mat-label>Κατάσταση</mat-label>
+                    <mat-select formControlName="statusFilter">
+                        <mat-option value="all">Όλες</mat-option>
+                        <mat-option value="active">Ενεργές</mat-option>
+                        <mat-option value="inactive">Ανενεργές</mat-option>
+                    </mat-select>
+                </mat-form-field>
+
+                <button mat-stroked-button (click)="resetFilters()" class="shrink-0 !rounded-full"
+                    matTooltip="Καθαρισμός φίλτρων">
+                    <mat-icon class="mr-1">filter_alt_off</mat-icon>
+                    Καθαρισμός
+                </button>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="px-6 md:px-8 pb-6">
+            <div class="rounded-2xl border bg-card shadow-sm overflow-hidden">
+
+                @if (loading()) {
+                <div class="flex items-center justify-center py-20">
+                    <mat-icon class="animate-spin text-4xl w-10 h-10 opacity-40">refresh</mat-icon>
+                </div>
+                } @else if (dataSource.data.length === 0) {
+                <div class="flex flex-col items-center justify-center py-20 gap-4">
+                    <mat-icon class="text-5xl w-16 h-16 opacity-30">local_offer</mat-icon>
+                    <div class="text-secondary text-xl font-medium">Δεν βρέθηκαν προσφορές</div>
+                    <button mat-stroked-button (click)="resetFilters()">Καθαρισμός φίλτρων</button>
+                </div>
+                } @else {
+
+                <div class="overflow-x-auto">
+                    <table mat-table [dataSource]="dataSource" matSort class="w-full min-w-max">
+
+                        <!-- Image column -->
+                        <ng-container matColumnDef="image">
+                            <th mat-header-cell *matHeaderCellDef class="w-32">Εικόνα</th>
+                            <td mat-cell *matCellDef="let row" class="w-32 py-2">
+                                @if (row.imageUrl) {
+                                <img [src]="row.imageUrl" alt="" class="w-24 h-16 rounded-xl object-cover border" />
+                                } @else {
+                                <div
+                                    class="w-24 h-16 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                                    <mat-icon class="icon-size-8 opacity-40">image</mat-icon>
+                                </div>
+                                }
+                            </td>
+                        </ng-container>
+
+                        <!-- Title column -->
+                        <ng-container matColumnDef="title">
+                            <th mat-header-cell *matHeaderCellDef mat-sort-header>Τίτλος</th>
+                            <td mat-cell *matCellDef="let row">
+                                <div class="font-bold text-base">{{ row.title }}</div>
+                                <div class="text-sm text-secondary line-clamp-2 max-w-sm mt-0.5">{{ row.description }}
+                                </div>
+                            </td>
+                        </ng-container>
+
+                        <!-- Category column -->
+                        <ng-container matColumnDef="category">
+                            <th mat-header-cell *matHeaderCellDef mat-sort-header>Κατηγορία</th>
+                            <td mat-cell *matCellDef="let row">
+                                <span
+                                    class="rounded-full bg-violet-500/10 text-violet-600 dark:text-violet-400 px-3 py-1 text-sm font-semibold">
+                                    {{ row.categoryLabel || getCategoryLabel(row.categoryId) }}
+                                </span>
+                            </td>
+                        </ng-container>
+
+                        <!-- Discount column -->
+                        <ng-container matColumnDef="discountLabel">
+                            <th mat-header-cell *matHeaderCellDef>Έκπτωση</th>
+                            <td mat-cell *matCellDef="let row">
+                                @if (row.discountLabel) {
+                                <span
+                                    class="rounded-full bg-orange-500/10 text-orange-600 dark:text-orange-400 px-3 py-1 text-sm font-bold">
+                                    {{ row.discountLabel }}
+                                </span>
+                                } @else {
+                                <span class="text-secondary text-sm">—</span>
+                                }
+                            </td>
+                        </ng-container>
+
+                        <!-- Valid until column -->
+                        <ng-container matColumnDef="validUntil">
+                            <th mat-header-cell *matHeaderCellDef mat-sort-header>Λήξη</th>
+                            <td mat-cell *matCellDef="let row" class="text-base text-secondary font-medium">
+                                {{ formatDate(row.validUntil) }}
+                            </td>
+                        </ng-container>
+
+                        <!-- Status column -->
+                        <ng-container matColumnDef="isActive">
+                            <th mat-header-cell *matHeaderCellDef>Κατάσταση</th>
+                            <td mat-cell *matCellDef="let row">
+                                @if (row.isActive) {
+                                <span
+                                    class="rounded-full bg-green-500/10 text-green-600 dark:text-green-400 px-3 py-1 text-sm font-semibold">
+                                    Ενεργή
+                                </span>
+                                } @else {
+                                <span class="rounded-full bg-gray-500/10 text-gray-500 px-3 py-1 text-sm font-semibold">
+                                    Ανενεργή
+                                </span>
+                                }
+                            </td>
+                        </ng-container>
+
+                        <!-- Actions column -->
+                        <ng-container matColumnDef="actions">
+                            <th mat-header-cell *matHeaderCellDef class="text-right">Ενέργειες</th>
+                            <td mat-cell *matCellDef="let row" class="text-right">
+                                <button mat-icon-button (click)="openEdit(row)" matTooltip="Επεξεργασία">
+                                    <mat-icon class="icon-size-5">edit</mat-icon>
+                                </button>
+                                <button mat-icon-button color="warn" (click)="deleteOffer(row)" matTooltip="Διαγραφή">
+                                    <mat-icon class="icon-size-5">delete_outline</mat-icon>
+                                </button>
+                            </td>
+                        </ng-container>
+
+                        <tr mat-header-row *matHeaderRowDef="displayedColumns" class="bg-gray-50/80 dark:bg-white/5">
+                        </tr>
+                        <tr mat-row *matRowDef="let row; columns: displayedColumns;"
+                            class="hover:bg-gray-50/60 dark:hover:bg-white/5 transition-colors"
+                            [class.opacity-60]="!row.isActive"></tr>
+
+                    </table>
+                </div>
+
+                <mat-paginator [pageSizeOptions]="[10, 25, 50]" pageSize="25" showFirstLastButtons
+                    class="border-t"></mat-paginator>
+
+                }
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ─── Add / Edit Modal ─────────────────────────────────────────────────────── -->
+@if (modalOpen) {
+<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+    <div class="bg-card w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+
+        <!-- Modal header -->
+        <div class="flex items-center justify-between px-6 py-4 border-b shrink-0">
+            <h2 class="text-lg font-bold">
+                {{ editingId == null ? 'Νέα Προσφορά' : 'Επεξεργασία Προσφοράς' }}
+            </h2>
+            <button mat-icon-button (click)="closeModal()">
+                <mat-icon>close</mat-icon>
+            </button>
+        </div>
+
+        <!-- Modal body (scrollable) -->
+        <div class="overflow-y-auto flex-1">
+            <form [formGroup]="form" class="grid grid-cols-1 sm:grid-cols-2 gap-4 px-6 py-5">
+
+                <!-- Category -->
+                <mat-form-field class="sm:col-span-2 fuse-mat-dense fuse-mat-rounded">
+                    <mat-label>Κατηγορία *</mat-label>
+                    <mat-select formControlName="categoryId">
+                        <mat-option [value]="0" disabled>Επιλέξτε κατηγορία</mat-option>
+                        @for (cat of categories; track cat.id) {
+                        <mat-option [value]="cat.id">{{ cat.label }}</mat-option>
+                        }
+                    </mat-select>
+                    @if (form.get('categoryId')?.hasError('min') && form.get('categoryId')?.touched) {
+                    <mat-error>Επιλέξτε κατηγορία</mat-error>
+                    }
+                </mat-form-field>
+
+                <!-- Title -->
+                <mat-form-field class="sm:col-span-2 fuse-mat-dense fuse-mat-rounded">
+                    <mat-label>Τίτλος *</mat-label>
+                    <input matInput formControlName="title" />
+                    @if (form.get('title')?.hasError('required') && form.get('title')?.touched) {
+                    <mat-error>Απαιτείται τίτλος</mat-error>
+                    }
+                </mat-form-field>
+
+                <!-- Description -->
+                <mat-form-field class="sm:col-span-2 fuse-mat-dense fuse-mat-rounded">
+                    <mat-label>Περιγραφή *</mat-label>
+                    <textarea matInput formControlName="description" rows="3"></textarea>
+                    @if (form.get('description')?.hasError('required') && form.get('description')?.touched) {
+                    <mat-error>Απαιτείται περιγραφή</mat-error>
+                    }
+                </mat-form-field>
+
+                <!-- Image uploader -->
+                <div class="sm:col-span-2 rounded-2xl border p-4 bg-gray-50/80 dark:bg-white/5">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div class="flex items-center gap-3">
+                            <div
+                                class="h-20 w-32 rounded-xl overflow-hidden border bg-gray-200 dark:bg-gray-800 flex items-center justify-center shrink-0">
+                                @if (imagePreview) {
+                                <img [src]="imagePreview" class="h-full w-full object-cover" alt="preview" />
+                                } @else {
+                                <mat-icon class="text-gray-400 icon-size-10">image</mat-icon>
+                                }
+                            </div>
+                            <div>
+                                <div class="font-semibold text-sm">Εικόνα Προσφοράς</div>
+                                <div class="text-secondary text-xs mt-0.5">
+                                    @if (uploading()) { Μεταφόρτωση… } @else { PNG/JPG έως 3MB }
+                                </div>
+                                @if (uploading()) {
+                                <mat-progress-bar mode="indeterminate" class="mt-2 w-28"></mat-progress-bar>
+                                }
+                            </div>
+                        </div>
+                        <div class="flex gap-2 justify-end shrink-0">
+                            <input #fileInput type="file" accept="image/*" class="hidden"
+                                (change)="onFileSelected($event)" />
+                            <button mat-stroked-button type="button" class="!rounded-xl"
+                                (click)="triggerFileInput(fileInput)" [disabled]="uploading()">
+                                <mat-icon class="icon-size-4 mr-1">upload</mat-icon> Μεταφόρτωση
+                            </button>
+                            @if (imagePreview) {
+                            <button mat-button type="button" class="!rounded-xl text-red-500" (click)="removeImage()"
+                                [disabled]="uploading()">
+                                <mat-icon class="icon-size-4 mr-1">delete_outline</mat-icon> Αφαίρεση
+                            </button>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Discount label -->
+                <mat-form-field class="fuse-mat-dense fuse-mat-rounded">
+                    <mat-label>Ετικέτα Έκπτωσης</mat-label>
+                    <input matInput formControlName="discountLabel" placeholder="π.χ. -20%" />
+                </mat-form-field>
+
+                <!-- Coupon code -->
+                <mat-form-field class="fuse-mat-dense fuse-mat-rounded">
+                    <mat-label>Κουπόνι</mat-label>
+                    <input matInput formControlName="couponCode" placeholder="π.χ. FAN20" />
+                </mat-form-field>
+
+                <!-- Valid until -->
+                <mat-form-field class="fuse-mat-dense fuse-mat-rounded">
+                    <mat-label>Ισχύει έως</mat-label>
+                    <input matInput type="date" formControlName="validUntil" />
+                </mat-form-field>
+
+                <!-- CTA label -->
+                <mat-form-field class="fuse-mat-dense fuse-mat-rounded">
+                    <mat-label>Κείμενο κουμπιού (CTA)</mat-label>
+                    <input matInput formControlName="ctaLabel" placeholder="π.χ. Δες την προσφορά" />
+                </mat-form-field>
+
+                <!-- CTA URL -->
+                <mat-form-field class="sm:col-span-2 fuse-mat-dense fuse-mat-rounded">
+                    <mat-label>URL κουμπιού (CTA)</mat-label>
+                    <input matInput formControlName="ctaUrl" placeholder="https://..." />
+                </mat-form-field>
+
+                <!-- Address -->
+                <mat-form-field class="sm:col-span-2 fuse-mat-dense fuse-mat-rounded">
+                    <mat-label>Διεύθυνση</mat-label>
+                    <input matInput formControlName="address" />
+                </mat-form-field>
+
+                <!-- Lat / Lng -->
+                <mat-form-field class="fuse-mat-dense fuse-mat-rounded">
+                    <mat-label>Γεωγρ. Πλάτος (lat)</mat-label>
+                    <input matInput type="number" step="any" formControlName="lat" />
+                </mat-form-field>
+
+                <mat-form-field class="fuse-mat-dense fuse-mat-rounded">
+                    <mat-label>Γεωγρ. Μήκος (lng)</mat-label>
+                    <input matInput type="number" step="any" formControlName="lng" />
+                </mat-form-field>
+
+                <!-- Terms -->
+                <mat-form-field class="sm:col-span-2 fuse-mat-dense fuse-mat-rounded">
+                    <mat-label>Όροι</mat-label>
+                    <textarea matInput formControlName="terms" rows="2"></textarea>
+                </mat-form-field>
+
+                <!-- Details HTML -->
+                <mat-form-field class="sm:col-span-2 fuse-mat-dense fuse-mat-rounded">
+                    <mat-label>Πλήρης Περιγραφή (HTML)</mat-label>
+                    <textarea matInput formControlName="detailsHtml" rows="3"></textarea>
+                </mat-form-field>
+
+                <!-- IsActive (edit only) -->
+                @if (editingId != null) {
+                <div class="sm:col-span-2 flex items-center gap-3">
+                    <mat-slide-toggle formControlName="isActive" color="primary">
+                        Ενεργή προσφορά
+                    </mat-slide-toggle>
+                </div>
+                }
+
+            </form>
+        </div>
+
+        <!-- Modal footer -->
+        <div class="flex items-center justify-end gap-3 px-6 py-4 border-t bg-gray-50/50 dark:bg-white/5 shrink-0">
+            <button mat-stroked-button (click)="closeModal()" [disabled]="saving()">
+                Ακύρωση
+            </button>
+            <button mat-flat-button color="primary" (click)="save()" [disabled]="saving() || form.invalid"
+                class="!rounded-full !font-semibold">
+                @if (saving()) {
+                <mat-icon class="animate-spin mr-1">refresh</mat-icon>
+                }
+                {{ editingId == null ? 'Δημιουργία' : 'Αποθήκευση' }}
+            </button>
+        </div>
+
+    </div>
+</div>
+}

@@ -1,203 +1,267 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Chat, Contact, Profile } from 'app/modules/admin/apps/chat/chat.types';
+import {
+    BOAdminContact,
+    BOChatDetail,
+    BOChatSummary,
+    BOGroupChatDetail,
+    BOGroupChatSummary,
+    ChatListItem,
+} from 'app/modules/admin/apps/chat/chat.types';
 import {
     BehaviorSubject,
     Observable,
-    filter,
+    forkJoin,
     map,
-    of,
-    switchMap,
-    take,
     tap,
-    throwError,
 } from 'rxjs';
+import { environment } from '@fuse/environments/environment';
+import { AuthService } from 'app/core/auth/auth.service';
 
 @Injectable({ providedIn: 'root' })
 export class ChatService {
-    private _chat: BehaviorSubject<Chat> = new BehaviorSubject(null);
-    private _chats: BehaviorSubject<Chat[]> = new BehaviorSubject(null);
-    private _contact: BehaviorSubject<Contact> = new BehaviorSubject(null);
-    private _contacts: BehaviorSubject<Contact[]> = new BehaviorSubject(null);
-    private _profile: BehaviorSubject<Profile> = new BehaviorSubject(null);
+    private readonly _api = environment.apiUrl;
 
-    /**
-     * Constructor
-     */
-    constructor(private _httpClient: HttpClient) {}
+    private _chats = new BehaviorSubject<ChatListItem[]>([]);
+    private _activeChat = new BehaviorSubject<BOChatDetail | null>(null);
+    private _activeGroupChat = new BehaviorSubject<BOGroupChatDetail | null>(null);
+    private _adminContacts = new BehaviorSubject<BOAdminContact[]>([]);
 
-    // -----------------------------------------------------------------------------------------------------
-    // @ Accessors
-    // -----------------------------------------------------------------------------------------------------
+    constructor(
+        private _http: HttpClient,
+        private _auth: AuthService,
+    ) { }
 
-    /**
-     * Getter for chat
-     */
-    get chat$(): Observable<Chat> {
-        return this._chat.asObservable();
+    //  Getters 
+
+    get chats$(): Observable<ChatListItem[]> { return this._chats.asObservable(); }
+    get activeChat$(): Observable<BOChatDetail | null> { return this._activeChat.asObservable(); }
+    get activeGroupChat$(): Observable<BOGroupChatDetail | null> { return this._activeGroupChat.asObservable(); }
+    get adminContacts$(): Observable<BOAdminContact[]> { return this._adminContacts.asObservable(); }
+
+    get myBoUserId(): number {
+        return this._auth.currentUser?.boUserId ?? 0;
     }
 
-    /**
-     * Getter for chats
-     */
-    get chats$(): Observable<Chat[]> {
-        return this._chats.asObservable();
-    }
+    //  Load all chats 
 
-    /**
-     * Getter for contact
-     */
-    get contact$(): Observable<Contact> {
-        return this._contact.asObservable();
-    }
-
-    /**
-     * Getter for contacts
-     */
-    get contacts$(): Observable<Contact[]> {
-        return this._contacts.asObservable();
-    }
-
-    /**
-     * Getter for profile
-     */
-    get profile$(): Observable<Profile> {
-        return this._profile.asObservable();
-    }
-
-    // -----------------------------------------------------------------------------------------------------
-    // @ Public methods
-    // -----------------------------------------------------------------------------------------------------
-
-    /**
-     * Get chats
-     */
-    getChats(): Observable<any> {
-        return this._httpClient.get<Chat[]>('api/apps/chat/chats').pipe(
-            tap((response: Chat[]) => {
-                this._chats.next(response);
+    loadAll(): Observable<ChatListItem[]> {
+        const uid = this.myBoUserId;
+        return forkJoin([
+            this._http.get<BOChatSummary[]>(`${this._api}/BOChats?boUserId=${uid}`),
+            this._http.get<BOGroupChatSummary[]>(`${this._api}/BOGroupChats?boUserId=${uid}`),
+        ]).pipe(
+            map(([privates, groups]) => {
+                const grouped = groups.map(g => ({ ...g, isGroupChat: true as const }));
+                const all: ChatListItem[] = [
+                    ...privates,
+                    ...grouped,
+                ].sort((a, b) => {
+                    const da = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : new Date(a.createdOn).getTime();
+                    const db = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : new Date(b.createdOn).getTime();
+                    return db - da;
+                });
+                this._chats.next(all);
+                return all;
             })
         );
     }
 
-    /**
-     * Get contact
-     *
-     * @param id
-     */
-    getContact(id: string): Observable<any> {
-        return this._httpClient
-            .get<Contact>('api/apps/chat/contacts', { params: { id } })
-            .pipe(
-                tap((response: Contact) => {
-                    this._contact.next(response);
-                })
-            );
+    //  Private chat 
+
+    loadChatById(id: number): Observable<BOChatDetail> {
+        return this._http
+            .get<BOChatDetail>(`${this._api}/BOChats/${id}?boUserId=${this.myBoUserId}`)
+            .pipe(tap(chat => this._activeChat.next(chat)));
     }
 
-    /**
-     * Get contacts
-     */
-    getContacts(): Observable<any> {
-        return this._httpClient.get<Contact[]>('api/apps/chat/contacts').pipe(
-            tap((response: Contact[]) => {
-                this._contacts.next(response);
+    openOrCreateChat(otherBoUserId: number): Observable<{ id: number }> {
+        return this._http.post<{ id: number }>(`${this._api}/BOChats/open`, {
+            myBoUserId: this.myBoUserId,
+            otherBoUserId,
+        });
+    }
+
+    sendMessage(chatId: number, body: string): Observable<any> {
+        return this._http.post(`${this._api}/BOChats/${chatId}/messages`, {
+            senderBoUserId: this.myBoUserId,
+            body,
+        }).pipe(
+            tap((msg: any) => {
+                const current = this._activeChat.getValue();
+                if (current && current.id === chatId) {
+                    this._activeChat.next({
+                        ...current,
+                        messages: [...current.messages, msg],
+                        lastMessage: msg.body,
+                        lastMessageAt: msg.createdOn,
+                    });
+                }
+                this._refreshChatInList(chatId, false, msg);
             })
         );
     }
 
-    /**
-     * Get profile
-     */
-    getProfile(): Observable<any> {
-        return this._httpClient.get<Profile>('api/apps/chat/profile').pipe(
-            tap((response: Profile) => {
-                this._profile.next(response);
+    updateChatSettings(chatId: number, settings: { muted?: boolean; pinned?: boolean; archived?: boolean }): Observable<void> {
+        return this._http.patch<void>(`${this._api}/BOChats/${chatId}/settings`, {
+            boUserId: this.myBoUserId,
+            ...settings,
+        }).pipe(
+            tap(() => {
+                const chats = this._chats.getValue();
+                this._chats.next(chats.map(c =>
+                    c.id === chatId && !c.isGroupChat ? { ...c, ...settings } : c
+                ));
+                const active = this._activeChat.getValue();
+                if (active?.id === chatId) {
+                    this._activeChat.next({ ...active, ...settings });
+                }
             })
         );
     }
 
-    /**
-     * Get chat
-     *
-     * @param id
-     */
-    getChatById(id: string): Observable<any> {
-        return this._httpClient
-            .get<Chat>('api/apps/chat/chat', { params: { id } })
-            .pipe(
-                map((chat) => {
-                    // Update the chat
-                    this._chat.next(chat);
-
-                    // Return the chat
-                    return chat;
-                }),
-                switchMap((chat) => {
-                    if (!chat) {
-                        return throwError(
-                            'Could not found chat with id of ' + id + '!'
-                        );
-                    }
-
-                    return of(chat);
-                })
-            );
+    markChatRead(chatId: number): Observable<void> {
+        // Optimistically clear badge immediately
+        this._chats.next(this._chats.getValue().map(c =>
+            c.id === chatId && !c.isGroupChat ? { ...c, unreadCount: 0 } : c
+        ));
+        return this._http.post<void>(`${this._api}/BOChats/${chatId}/mark-read?boUserId=${this.myBoUserId}`, {});
     }
 
-    /**
-     * Update chat
-     *
-     * @param id
-     * @param chat
-     */
-    updateChat(id: string, chat: Chat): Observable<Chat> {
-        return this.chats$.pipe(
-            take(1),
-            switchMap((chats) =>
-                this._httpClient
-                    .patch<Chat>('api/apps/chat/chat', {
-                        id,
-                        chat,
-                    })
-                    .pipe(
-                        map((updatedChat) => {
-                            // Find the index of the updated chat
-                            const index = chats.findIndex(
-                                (item) => item.id === id
-                            );
+    //  Group chat 
 
-                            // Update the chat
-                            chats[index] = updatedChat;
+    loadGroupChatById(id: number): Observable<BOGroupChatDetail> {
+        return this._http
+            .get<BOGroupChatDetail>(`${this._api}/BOGroupChats/${id}?boUserId=${this.myBoUserId}`)
+            .pipe(tap(chat => this._activeGroupChat.next(chat)));
+    }
 
-                            // Update the chats
-                            this._chats.next(chats);
+    createGroupChat(name: string, description: string | null, memberBoUserIds: number[], imageUrl?: string | null): Observable<{ id: number }> {
+        return this._http.post<{ id: number }>(`${this._api}/BOGroupChats`, {
+            name,
+            description,
+            createdByBoUserId: this.myBoUserId,
+            memberBoUserIds,
+            ...(imageUrl ? { imageUrl } : {}),
+        });
+    }
 
-                            // Return the updated contact
-                            return updatedChat;
-                        }),
-                        switchMap((updatedChat) =>
-                            this.chat$.pipe(
-                                take(1),
-                                filter((item) => item && item.id === id),
-                                tap(() => {
-                                    // Update the chat if it's selected
-                                    this._chat.next(updatedChat);
-
-                                    // Return the updated chat
-                                    return updatedChat;
-                                })
-                            )
-                        )
-                    )
-            )
+    sendGroupMessage(groupId: number, body: string): Observable<any> {
+        return this._http.post(`${this._api}/BOGroupChats/${groupId}/messages`, {
+            senderBoUserId: this.myBoUserId,
+            body,
+        }).pipe(
+            tap((msg: any) => {
+                const current = this._activeGroupChat.getValue();
+                if (current && current.id === groupId) {
+                    this._activeGroupChat.next({
+                        ...current,
+                        messages: [...current.messages, msg],
+                        lastMessage: `${msg.senderName}: ${msg.body}`,
+                        lastMessageAt: msg.createdOn,
+                    });
+                }
+                this._refreshChatInList(groupId, true, msg);
+            })
         );
     }
 
-    /**
-     * Reset the selected chat
-     */
-    resetChat(): void {
-        this._chat.next(null);
+    updateGroupSettings(groupId: number, settings: { muted?: boolean; pinned?: boolean; archived?: boolean }): Observable<void> {
+        return this._http.patch<void>(`${this._api}/BOGroupChats/${groupId}/settings`, {
+            boUserId: this.myBoUserId,
+            ...settings,
+        }).pipe(
+            tap(() => {
+                const chats = this._chats.getValue();
+                this._chats.next(chats.map(c =>
+                    c.id === groupId && c.isGroupChat ? { ...c, ...settings } : c
+                ));
+                const active = this._activeGroupChat.getValue();
+                if (active?.id === groupId) {
+                    this._activeGroupChat.next({ ...active, ...settings });
+                }
+            })
+        );
+    }
+
+    markGroupRead(groupId: number): Observable<void> {
+        // Optimistically clear badge immediately
+        this._chats.next(this._chats.getValue().map(c =>
+            c.id === groupId && c.isGroupChat ? { ...c, unreadCount: 0 } : c
+        ));
+        return this._http.post<void>(`${this._api}/BOGroupChats/${groupId}/mark-read?boUserId=${this.myBoUserId}`, {});
+    }
+
+    //  Admin contacts 
+
+    loadAdminContacts(): Observable<BOAdminContact[]> {
+        return this._http
+            .get<BOAdminContact[]>(`${this._api}/BOGroupChats/admins?boUserId=${this.myBoUserId}`)
+            .pipe(tap(contacts => this._adminContacts.next(contacts)));
+    }
+
+    //  Realtime helpers 
+
+    onNewPrivateMessage(chatId: number, msg: any): void {
+        const enriched = { ...msg, isMine: msg.senderBoUserId === this.myBoUserId };
+        const current = this._activeChat.getValue();
+        if (current && current.id === chatId) {
+            this._activeChat.next({ ...current, messages: [...current.messages, enriched] });
+            // Conversation is open — auto mark as read
+            this.markChatRead(chatId).subscribe();
+        }
+        this._refreshChatInList(chatId, false, enriched);
+    }
+
+    onNewGroupMessage(groupId: number, msg: any): void {
+        const enriched = { ...msg, isMine: msg.senderBoUserId === this.myBoUserId };
+        const current = this._activeGroupChat.getValue();
+        if (current && current.id === groupId) {
+            this._activeGroupChat.next({ ...current, messages: [...current.messages, enriched] });
+            // Conversation is open — auto mark as read
+            this.markGroupRead(groupId).subscribe();
+        }
+        this._refreshChatInList(groupId, true, enriched);
+    }
+
+    onNewGroupChatInvite(): void {
+        this.loadAll().subscribe();
+    }
+
+    resetActiveChat(): void {
+        this._activeChat.next(null);
+        this._activeGroupChat.next(null);
+    }
+
+    private _refreshChatInList(id: number, isGroup: boolean, msg: any): void {
+        const chats = this._chats.getValue();
+        const idx = chats.findIndex(c => c.id === id && !!c.isGroupChat === isGroup);
+        if (idx === -1) {
+            this.loadAll().subscribe();
+            return;
+        }
+        // Increment unread only for incoming messages (not mine) when conversation is not open
+        const isConversationActive = isGroup
+            ? this._activeGroupChat.getValue()?.id === id
+            : this._activeChat.getValue()?.id === id;
+        const shouldIncrementUnread = msg.isMine === false && !isConversationActive;
+        const updated = {
+            ...chats[idx],
+            lastMessage: isGroup ? `${msg.senderName}: ${msg.body}` : msg.body,
+            lastMessageAt: msg.createdOn,
+            unreadCount: shouldIncrementUnread
+                ? (chats[idx].unreadCount ?? 0) + 1
+                : chats[idx].unreadCount,
+        };
+        const copy = [...chats];
+        copy.splice(idx, 1);
+        copy.unshift(updated);
+        this._chats.next(copy);
+    }
+
+    get totalUnread$(): Observable<number> {
+        return this._chats.pipe(
+            map(list => list.reduce((sum, c) => sum + (c.unreadCount ?? 0), 0))
+        );
     }
 }

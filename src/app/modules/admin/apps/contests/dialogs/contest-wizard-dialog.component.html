@@ -1,0 +1,323 @@
+<div class="flex flex-col" style="max-height: 90vh; min-width: 680px;">
+
+    <!-- ── Header ─────────────────────────────────────────────── -->
+    <div class="flex items-center justify-between border-b px-6 py-4 shrink-0">
+        <div class="flex items-center gap-3">
+            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
+                <mat-icon class="text-primary icon-size-5">emoji_events</mat-icon>
+            </div>
+            <div>
+                <h2 class="text-base font-bold leading-none">Νέος Διαγωνισμός</h2>
+                <p class="text-secondary text-xs mt-0.5">Ακολουθήστε τα βήματα για τη δημιουργία</p>
+            </div>
+        </div>
+        <button mat-icon-button (click)="cancel()">
+            <mat-icon class="icon-size-5">close</mat-icon>
+        </button>
+    </div>
+
+    <!-- ── Stepper ─────────────────────────────────────────────── -->
+    <div class="flex-auto overflow-y-auto">
+        <mat-stepper #stepper linear class="!bg-transparent">
+
+            <!-- ══ STEP 1 : Περιεχόμενο ════════════════════════ -->
+            <mat-step [stepControl]="step1" label="Περιεχόμενο">
+
+                <div class="px-6 py-5 space-y-4">
+
+                    <!-- Image uploader -->
+                    <div class="rounded-2xl border p-4 bg-gray-50/80 dark:bg-white/5">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                            <div class="flex items-center gap-3">
+                                <div
+                                    class="h-24 w-36 rounded-xl overflow-hidden border bg-gray-200 dark:bg-gray-800 flex items-center justify-center shrink-0">
+                                    @if (imagePreview) {
+                                    <img [src]="imagePreview" class="h-full w-full object-cover" alt="preview" />
+                                    } @else {
+                                    <mat-icon class="text-gray-400 icon-size-10">image</mat-icon>
+                                    }
+                                </div>
+                                <div>
+                                    <div class="font-semibold text-sm">Εικόνα Διαγωνισμού</div>
+                                    <div class="text-secondary text-xs mt-0.5">
+                                        @if (uploading()) { Μεταφόρτωση… } @else { PNG/JPG έως 3MB }
+                                    </div>
+                                    @if (uploading()) {
+                                    <mat-progress-bar mode="indeterminate" class="mt-2 w-28"></mat-progress-bar>
+                                    }
+                                </div>
+                            </div>
+                            <div class="flex gap-2 justify-end shrink-0">
+                                <input #fileInput1 type="file" accept="image/*" class="hidden"
+                                    (change)="onFileSelected($event)" />
+                                <button mat-stroked-button type="button" class="!rounded-xl"
+                                    (click)="triggerFileInput(fileInput1)" [disabled]="uploading()">
+                                    <mat-icon class="icon-size-4 mr-1">upload</mat-icon> Μεταφόρτωση
+                                </button>
+                                @if (imagePreview) {
+                                <button mat-button type="button" class="!rounded-xl text-red-500"
+                                    (click)="removeImage()" [disabled]="uploading()">
+                                    <mat-icon class="icon-size-4 mr-1">delete_outline</mat-icon> Αφαίρεση
+                                </button>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Title -->
+                    <mat-form-field [formGroup]="step1" class="w-full fuse-mat-dense">
+                        <mat-label>Τίτλος *</mat-label>
+                        <mat-icon matPrefix class="icon-size-4 mr-1.5 text-secondary">title</mat-icon>
+                        <input matInput formControlName="title" placeholder="π.χ. Μεγάλος Διαγωνισμός Καλοκαιριού" />
+                        <mat-error>Απαιτείται τίτλος</mat-error>
+                    </mat-form-field>
+
+                    <!-- Description -->
+                    <mat-form-field [formGroup]="step1" class="w-full fuse-mat-dense">
+                        <mat-label>Περιγραφή</mat-label>
+                        <mat-icon matPrefix class="icon-size-4 mr-1.5 text-secondary">description</mat-icon>
+                        <textarea matInput rows="4" formControlName="description"
+                            placeholder="Σύντομη περιγραφή του διαγωνισμού…"></textarea>
+                    </mat-form-field>
+
+                </div>
+
+                <div class="px-6 pb-5 flex justify-end border-t pt-4">
+                    <button mat-flat-button color="primary" matStepperNext class="!rounded-full !font-semibold"
+                        [disabled]="step1.invalid || uploading()">
+                        Επόμενο <mat-icon class="ml-1 icon-size-4">arrow_forward</mat-icon>
+                    </button>
+                </div>
+
+            </mat-step>
+
+            <!-- ══ STEP 2 : Ρυθμίσεις ══════════════════════════ -->
+            <mat-step [stepControl]="step2" label="Ρυθμίσεις">
+
+                <div class="px-6 py-5 space-y-4" [formGroup]="step2">
+
+                    <!-- Δημοσίευση -->
+                    <div>
+                        <div
+                            class="text-xs font-bold uppercase tracking-wider text-secondary mb-2 flex items-center gap-1.5">
+                            <mat-icon class="icon-size-3.5 text-gray-500">campaign</mat-icon> Δημοσίευση
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <mat-form-field class="w-full fuse-mat-dense">
+                                <mat-label>Ημερομηνία *</mat-label>
+                                <input matInput [matDatepicker]="pubPicker" formControlName="publishDate" />
+                                <mat-datepicker-toggle matSuffix [for]="pubPicker"></mat-datepicker-toggle>
+                                <mat-datepicker #pubPicker></mat-datepicker>
+                            </mat-form-field>
+                            <mat-form-field class="w-full fuse-mat-dense">
+                                <mat-label>Ώρα</mat-label>
+                                <input matInput type="text" placeholder="HH:mm" formControlName="publishTime" />
+                                <mat-icon matSuffix class="icon-size-4 text-secondary">schedule</mat-icon>
+                            </mat-form-field>
+                        </div>
+                    </div>
+
+                    <!-- Έναρξη -->
+                    <div>
+                        <div
+                            class="text-xs font-bold uppercase tracking-wider text-secondary mb-2 flex items-center gap-1.5">
+                            <mat-icon class="icon-size-3.5 text-green-500">play_circle</mat-icon> Έναρξη
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <mat-form-field class="w-full fuse-mat-dense">
+                                <mat-label>Ημερομηνία *</mat-label>
+                                <input matInput [matDatepicker]="startPicker" formControlName="startDate" />
+                                <mat-datepicker-toggle matSuffix [for]="startPicker"></mat-datepicker-toggle>
+                                <mat-datepicker #startPicker></mat-datepicker>
+                            </mat-form-field>
+                            <mat-form-field class="w-full fuse-mat-dense">
+                                <mat-label>Ώρα</mat-label>
+                                <input matInput type="text" placeholder="HH:mm" formControlName="startTime" />
+                                <mat-icon matSuffix class="icon-size-4 text-secondary">schedule</mat-icon>
+                            </mat-form-field>
+                        </div>
+                    </div>
+
+                    <!-- Λήξη -->
+                    <div>
+                        <div
+                            class="text-xs font-bold uppercase tracking-wider text-secondary mb-2 flex items-center gap-1.5">
+                            <mat-icon class="icon-size-3.5 text-red-500">flag</mat-icon> Λήξη
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <mat-form-field class="w-full fuse-mat-dense">
+                                <mat-label>Ημερομηνία *</mat-label>
+                                <input matInput [matDatepicker]="endPicker" formControlName="endDate" />
+                                <mat-datepicker-toggle matSuffix [for]="endPicker"></mat-datepicker-toggle>
+                                <mat-datepicker #endPicker></mat-datepicker>
+                            </mat-form-field>
+                            <mat-form-field class="w-full fuse-mat-dense">
+                                <mat-label>Ώρα</mat-label>
+                                <input matInput type="text" placeholder="HH:mm" formControlName="endTime" />
+                                <mat-icon matSuffix class="icon-size-4 text-secondary">schedule</mat-icon>
+                            </mat-form-field>
+                        </div>
+                    </div>
+
+                    <!-- Numbers -->
+                    <div class="grid grid-cols-3 gap-3">
+                        <mat-form-field class="w-full fuse-mat-dense">
+                            <mat-label>Αριθμός νικητών</mat-label>
+                            <mat-icon matPrefix class="icon-size-4 mr-1 text-amber-500">emoji_events</mat-icon>
+                            <input matInput type="number" min="1" formControlName="totalWinners" />
+                        </mat-form-field>
+                        <mat-form-field class="w-full fuse-mat-dense">
+                            <mat-label>Μέγ. ανά χρήστη *</mat-label>
+                            <mat-icon matPrefix class="icon-size-4 mr-1 text-indigo-500">person</mat-icon>
+                            <input matInput type="number" min="1" formControlName="maxEntriesPerUser" />
+                        </mat-form-field>
+                        <mat-form-field class="w-full fuse-mat-dense">
+                            <mat-label>Μέγ. συνολικές *</mat-label>
+                            <mat-icon matPrefix class="icon-size-4 mr-1 text-purple-500">group</mat-icon>
+                            <input matInput type="number" min="1" formControlName="maxTotalEntries" />
+                        </mat-form-field>
+                    </div>
+
+                    <!-- Toggles -->
+                    <div
+                        class="flex items-center justify-between gap-4 rounded-xl border bg-gray-50/80 dark:bg-white/5 px-4 py-3">
+                        <div class="flex items-center gap-2">
+                            <mat-icon class="icon-size-4 text-secondary">toggle_on</mat-icon>
+                            <span class="text-sm font-medium">Ενεργός από την αρχή</span>
+                        </div>
+                        <mat-slide-toggle formControlName="isActive" color="primary"></mat-slide-toggle>
+                    </div>
+
+                    <div
+                        class="flex items-center justify-between gap-4 rounded-xl border bg-gray-50/80 dark:bg-white/5 px-4 py-3">
+                        <div class="flex items-center gap-2">
+                            <mat-icon class="icon-size-4 text-secondary">notifications</mat-icon>
+                            <span class="text-sm font-medium">Ειδοποίηση νικητών</span>
+                        </div>
+                        <mat-slide-toggle formControlName="sendNotificationsToWinners"
+                            color="primary"></mat-slide-toggle>
+                    </div>
+
+                </div>
+
+                <div class="px-6 pb-5 flex justify-between border-t pt-4">
+                    <button mat-button matStepperPrevious class="!rounded-full">
+                        <mat-icon class="mr-1 icon-size-4">arrow_back</mat-icon> Πίσω
+                    </button>
+                    <button mat-flat-button color="primary" matStepperNext class="!rounded-full !font-semibold"
+                        [disabled]="step2.invalid">
+                        Επόμενο <mat-icon class="ml-1 icon-size-4">arrow_forward</mat-icon>
+                    </button>
+                </div>
+
+            </mat-step>
+
+            <!-- ══ STEP 3 : Επιβεβαίωση ════════════════════════ -->
+            <mat-step label="Επιβεβαίωση">
+
+                <div class="px-6 py-5 space-y-4">
+
+                    @if (error()) {
+                    <div
+                        class="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-300">
+                        <mat-icon class="shrink-0 text-red-500 icon-size-4">error_outline</mat-icon>
+                        {{ error() }}
+                    </div>
+                    }
+
+                    <!-- Summary card -->
+                    <div class="rounded-2xl border bg-card p-5 space-y-4">
+
+                        <!-- Banner preview -->
+                        @if (imagePreview) {
+                        <div class="h-36 w-full rounded-xl overflow-hidden border">
+                            <img [src]="imagePreview" class="h-full w-full object-cover" alt="banner" />
+                        </div>
+                        }
+
+                        <!-- Title + description -->
+                        <div>
+                            <div class="text-lg font-bold">{{ summaryTitle }}</div>
+                            @if (step1.value.description) {
+                            <p class="text-secondary text-sm mt-1">{{ step1.value.description }}</p>
+                            }
+                        </div>
+
+                        <mat-divider></mat-divider>
+
+                        <!-- Dates + numbers grid -->
+                        <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                            <div class="flex items-center gap-2">
+                                <mat-icon class="text-gray-500 icon-size-4 shrink-0">campaign</mat-icon>
+                                <span class="text-secondary">Δημοσίευση:</span>
+                                <span class="font-medium">{{ summaryPublishDate }}</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <mat-icon class="text-green-500 icon-size-4 shrink-0">play_circle</mat-icon>
+                                <span class="text-secondary">Έναρξη:</span>
+                                <span class="font-medium">{{ summaryStartDate }}</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <mat-icon class="text-red-500 icon-size-4 shrink-0">flag</mat-icon>
+                                <span class="text-secondary">Λήξη:</span>
+                                <span class="font-medium">{{ summaryEndDate }}</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <mat-icon class="text-amber-500 icon-size-4 shrink-0">emoji_events</mat-icon>
+                                <span class="text-secondary">Νικητές:</span>
+                                <span class="font-medium">{{ step2.value.totalWinners ?? '—' }}</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <mat-icon class="text-indigo-500 icon-size-4 shrink-0">person</mat-icon>
+                                <span class="text-secondary">Μέγ. ανά χρήστη:</span>
+                                <span class="font-medium">{{ step2.value.maxEntriesPerUser }}</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <mat-icon class="text-purple-500 icon-size-4 shrink-0">group</mat-icon>
+                                <span class="text-secondary">Μέγ. συνολικές:</span>
+                                <span class="font-medium">{{ step2.value.maxTotalEntries }}</span>
+                            </div>
+                        </div>
+
+                        <mat-divider></mat-divider>
+
+                        <!-- Status badges -->
+                        <div class="flex items-center gap-3 flex-wrap">
+                            <span class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold"
+                                [class]="step2.value.isActive
+                                    ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                    : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'">
+                                <mat-icon class="icon-size-3.5">{{ step2.value.isActive ? 'play_circle' : 'pause_circle'
+                                    }}</mat-icon>
+                                {{ step2.value.isActive ? 'Ενεργός' : 'Ανενεργός' }}
+                            </span>
+                            @if (step2.value.sendNotificationsToWinners) {
+                            <span
+                                class="inline-flex items-center gap-1.5 rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
+                                <mat-icon class="icon-size-3.5">notifications</mat-icon> Ειδοποιήσεις νικητών
+                            </span>
+                            }
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="px-6 pb-5 flex justify-between border-t pt-4">
+                    <button mat-button matStepperPrevious class="!rounded-full" [disabled]="saving()">
+                        <mat-icon class="mr-1 icon-size-4">arrow_back</mat-icon> Πίσω
+                    </button>
+                    <button mat-flat-button color="primary" (click)="save()" class="!rounded-full !font-bold"
+                        [disabled]="saving() || uploading()">
+                        @if (saving()) { <span class="inline-block animate-spin mr-1">⟳</span> }
+                        <mat-icon class="mr-1 icon-size-4">add</mat-icon>
+                        Δημιουργία Διαγωνισμού
+                    </button>
+                </div>
+
+            </mat-step>
+
+        </mat-stepper>
+    </div>
+
+</div>

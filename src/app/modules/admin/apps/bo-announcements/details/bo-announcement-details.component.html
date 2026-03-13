@@ -1,0 +1,176 @@
+<div class="flex min-w-0 flex-auto flex-col">
+
+    <!-- Header toolbar -->
+    <div class="bg-card flex flex-0 items-center border-b px-6 py-4 gap-3">
+        <button mat-icon-button (click)="back()" matTooltip="Πίσω στη λίστα">
+            <mat-icon [svgIcon]="'heroicons_outline:arrow-left'"></mat-icon>
+        </button>
+        <h2 class="truncate text-xl font-bold flex-1">{{ item?.title ?? 'Ανακοίνωση' }}</h2>
+        @if (canDelete) {
+        <button mat-stroked-button color="warn" [disabled]="deleting" (click)="delete()">
+            <mat-icon [svgIcon]="deleting ? 'heroicons_outline:arrow-path' : 'heroicons_outline:trash'"
+                [class.animate-spin]="deleting"></mat-icon>
+            <span class="ml-1">{{ deleting ? 'Διαγραφή...' : 'Διαγραφή' }}</span>
+        </button>
+        }
+    </div>
+
+    <!-- Loading -->
+    @if (loading) {
+    <div class="flex flex-auto items-center justify-center py-24">
+        <mat-progress-bar mode="indeterminate" class="w-64"></mat-progress-bar>
+    </div>
+    } @else if (!item) {
+    <div class="flex flex-auto flex-col items-center justify-center py-24 gap-4">
+        <mat-icon class="icon-size-20 text-hint" [svgIcon]="'heroicons_outline:exclamation-circle'"></mat-icon>
+        <span class="text-secondary text-xl">Η ανακοίνωση δεν βρέθηκε.</span>
+    </div>
+    } @else {
+
+    <!-- Soft-deleted warning banner (creator-only view) -->
+    @if (item.isDeleted) {
+    <div
+        class="mx-6 mt-4 flex items-center gap-3 rounded-xl border border-red-400 bg-red-50 dark:bg-red-500/10 px-5 py-3">
+        <mat-icon class="icon-size-5 text-red-500 shrink-0" [svgIcon]="'heroicons_outline:trash'"></mat-icon>
+        <div class="flex-1 min-w-0">
+            <span class="font-semibold text-red-600">ΔΙΑΓΡΑΜΜΕΝΟ</span>
+            @if (item.isDeletedOn) {
+            <span class="ml-2 text-sm text-red-500">— {{ item.isDeletedOn | date:'dd/MM/yyyy HH:mm' }}</span>
+            }
+        </div>
+    </div>
+    }
+
+    <div class="flex flex-auto gap-6 p-6 md:p-8 w-full">
+
+        <!-- LEFT: announcement content (65%) -->
+        <div class="flex flex-col gap-6 min-w-0" style="flex: 0 0 65%">
+
+            <!-- Banner image -->
+            @if (item.imageUrl) {
+            <div class="w-full max-h-64 overflow-hidden rounded-2xl">
+                <img class="h-full w-full object-cover" [src]="item.imageUrl" [alt]="item.title" />
+            </div>
+            }
+
+            <!-- Meta row -->
+            <div class="flex flex-wrap items-center gap-4 text-sm text-secondary">
+                <div class="flex items-center gap-2">
+                    @if (item.createdByImage) {
+                    <img class="h-8 w-8 rounded-full object-cover" [src]="item.createdByImage" />
+                    } @else {
+                    <div class="flex h-8 w-8 items-center justify-center rounded-full bg-default">
+                        <mat-icon class="icon-size-5 text-hint" [svgIcon]="'heroicons_outline:user'"></mat-icon>
+                    </div>
+                    }
+                    <span class="font-medium text-on-surface">{{ item.createdByFullName }}</span>
+                </div>
+                <span>·</span>
+                @if (item.publishDate) {
+                <span>{{ item.publishDate | date:'dd/MM/yyyy' }}</span>
+                } @else {
+                <span>{{ item.createdOn | date:'dd/MM/yyyy HH:mm' }}</span>
+                }
+                @if (item.autoDeleteAt) {
+                <span class="flex items-center gap-1 text-orange-500">
+                    <mat-icon class="icon-size-4" [svgIcon]="'heroicons_outline:clock'"></mat-icon>
+                    Διαγράφεται {{ item.autoDeleteAt | date:'dd/MM/yyyy HH:mm' }}
+                </span>
+                @if (countdownLabel) {
+                <span
+                    class="rounded-full border border-orange-400 bg-orange-50 dark:bg-orange-500/10 px-2.5 py-0.5 text-xs font-mono font-semibold text-orange-500">
+                    {{ countdownLabel }}
+                </span>
+                }
+                }
+            </div>
+
+            <!-- Title & content -->
+            <div>
+                <h1 class="text-2xl font-extrabold mb-3">{{ item.title }}</h1>
+                @if (item.content) {
+                <p class="text-on-surface whitespace-pre-wrap leading-relaxed">{{ item.content }}</p>
+                }
+            </div>
+
+        </div>
+
+        <!-- RIGHT: tabs (35%) -->
+        <div class="flex flex-col min-w-0 border-l pl-6" style="flex: 0 0 35%">
+
+            <mat-tab-group animationDuration="150ms" class="h-full">
+
+                <!-- Recipients -->
+                <mat-tab>
+                    <ng-template mat-tab-label>
+                        <mat-icon class="icon-size-4 mr-1" [svgIcon]="'heroicons_outline:users'"></mat-icon>
+                        Παραλήπτες ({{ item.recipients.length }})
+                    </ng-template>
+                    <div class="mt-4 divide-y rounded-2xl border overflow-hidden">
+                        @for (r of item.recipients; track r.boUserId) {
+                        <div class="flex items-center gap-3 px-4 py-3">
+                            @if (r.image) {
+                            <img class="h-8 w-8 rounded-full object-cover shrink-0" [src]="r.image" />
+                            } @else {
+                            <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-default">
+                                <mat-icon class="icon-size-4 text-hint" [svgIcon]="'heroicons_outline:user'"></mat-icon>
+                            </div>
+                            }
+                            <div class="flex-1 min-w-0">
+                                <div class="font-medium truncate">{{ r.fullName }}</div>
+                                @if (r.email) {
+                                <div class="text-xs text-secondary truncate">{{ r.email }}</div>
+                                }
+                            </div>
+                            @if (r.hasRead) {
+                            <span class="flex items-center gap-1 text-xs text-green-500 shrink-0">
+                                <mat-icon class="icon-size-4" [svgIcon]="'heroicons_outline:check-circle'"></mat-icon>
+                                Διάβασε
+                            </span>
+                            } @else {
+                            <span class="text-xs text-hint shrink-0">Αδιάβαστο</span>
+                            }
+                        </div>
+                        } @empty {
+                        <div class="p-6 text-center text-secondary text-sm">Δεν υπάρχουν παραλήπτες.</div>
+                        }
+                    </div>
+                </mat-tab>
+
+                <!-- Reads -->
+                <mat-tab>
+                    <ng-template mat-tab-label>
+                        <mat-icon class="icon-size-4 mr-1" [svgIcon]="'heroicons_outline:eye'"></mat-icon>
+                        Αναγνώσεις ({{ item.reads.length }})
+                    </ng-template>
+                    <div class="mt-4 divide-y rounded-2xl border overflow-hidden">
+                        @for (rd of item.reads; track rd.boUserId) {
+                        <div class="flex items-center gap-3 px-4 py-3">
+                            @if (rd.image) {
+                            <img class="h-8 w-8 rounded-full object-cover shrink-0" [src]="rd.image" />
+                            } @else {
+                            <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-default">
+                                <mat-icon class="icon-size-4 text-hint" [svgIcon]="'heroicons_outline:user'"></mat-icon>
+                            </div>
+                            }
+                            <div class="flex-1 min-w-0">
+                                <div class="font-medium truncate">{{ rd.fullName }}</div>
+                            </div>
+                            <span class="text-xs text-secondary shrink-0">{{ rd.readAt | date:'dd/MM/yyyy HH:mm'
+                                }}</span>
+                        </div>
+                        } @empty {
+                        <div class="p-6 text-center text-secondary text-sm">Κανείς δεν έχει διαβάσει ακόμα.</div>
+                        }
+                    </div>
+                </mat-tab>
+
+            </mat-tab-group>
+
+        </div>
+
+    </div>
+
+    }
+
+</div>

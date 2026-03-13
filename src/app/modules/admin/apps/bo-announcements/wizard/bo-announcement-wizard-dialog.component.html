@@ -1,0 +1,258 @@
+<h2 mat-dialog-title class="!text-xl !font-bold">Νέα Ανακοίνωση</h2>
+
+<mat-dialog-content class="!p-0 !overflow-y-auto">
+    <mat-stepper #stepper linear orientation="horizontal" class="rounded-2xl">
+
+        <!-- ===== STEP 1: DETAILS ===== -->
+        <mat-step [stepControl]="step1" label="Στοιχεία">
+            <div class="p-6 space-y-5">
+
+                <!-- Image upload -->
+                <div>
+                    <div class="text-sm font-semibold mb-2">Εικόνα</div>
+                    @if (imagePreview) {
+                    <div class="relative w-full h-40 rounded-xl overflow-hidden mb-2">
+                        <img [src]="imagePreview" class="w-full h-full object-cover" />
+                        <button mat-mini-fab color="warn" class="!absolute !top-2 !right-2 !w-7 !h-7 !min-w-0"
+                            (click)="removeImage()">
+                            <mat-icon class="icon-size-4" [svgIcon]="'heroicons_outline:x-mark'"></mat-icon>
+                        </button>
+                    </div>
+                    }
+                    <div class="flex items-center gap-3">
+                        <label class="cursor-pointer">
+                            <input type="file" class="hidden" accept="image/*" (change)="onFileSelected($event)" />
+                            <button mat-stroked-button type="button" class="!rounded-xl pointer-events-none"
+                                [disabled]="uploading()">
+                                <mat-icon
+                                    [svgIcon]="uploading() ? 'heroicons_outline:arrow-path' : 'heroicons_outline:photo'"></mat-icon>
+                                <span class="ml-2">{{ uploading() ? 'Ανέβασμα...' : 'Επιλογή εικόνας' }}</span>
+                            </button>
+                        </label>
+                        @if (uploading()) {
+                        <mat-progress-bar mode="indeterminate" class="flex-1 rounded-full"></mat-progress-bar>
+                        }
+                    </div>
+                    <div class="text-xs text-secondary mt-1">ή επικόλλησε απευθείας URL παρακάτω</div>
+                    <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full mt-2" subscriptSizing="dynamic">
+                        <mat-label>URL εικόνας</mat-label>
+                        <input matInput [formControl]="step1.controls['imageUrl']" placeholder="https://..." />
+                    </mat-form-field>
+                </div>
+
+                <mat-divider></mat-divider>
+
+                <!-- Title -->
+                <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full" subscriptSizing="dynamic">
+                    <mat-label>Τίτλος *</mat-label>
+                    <input matInput [formControl]="step1.controls['title']" placeholder="π.χ. Σημαντική Ανακοίνωση" />
+                    @if (step1.controls['title'].hasError('required') && step1.controls['title'].touched) {
+                    <mat-error>Ο τίτλος είναι υποχρεωτικός.</mat-error>
+                    }
+                </mat-form-field>
+
+                <!-- Content -->
+                <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full" subscriptSizing="dynamic">
+                    <mat-label>Περιεχόμενο</mat-label>
+                    <textarea matInput [formControl]="step1.controls['content']" rows="4"
+                        placeholder="Γράψε το κείμενο της ανακοίνωσης..."></textarea>
+                </mat-form-field>
+
+                <!-- Publish date -->
+                <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full" subscriptSizing="dynamic">
+                    <mat-icon matPrefix class="icon-size-5" [svgIcon]="'heroicons_outline:calendar-days'"></mat-icon>
+                    <mat-label>Ημερομηνία δημοσίευσης</mat-label>
+                    <input matInput [matDatepicker]="pubPicker" [formControl]="step1.controls['publishDate']" />
+                    <mat-datepicker-toggle matSuffix [for]="pubPicker"></mat-datepicker-toggle>
+                    <mat-datepicker #pubPicker></mat-datepicker>
+                </mat-form-field>
+
+                <!-- Auto-delete -->
+                <div>
+                    <div class="text-sm font-semibold mb-2 flex items-center gap-2">
+                        <mat-icon class="icon-size-4 text-orange-500" [svgIcon]="'heroicons_outline:clock'"></mat-icon>
+                        Αυτόματη διαγραφή μετά από
+                    </div>
+                    <div class="flex gap-3">
+                        <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-28" subscriptSizing="dynamic">
+                            <input matInput type="number" min="1" [formControl]="step1.controls['autoDeleteValue']"
+                                placeholder="π.χ. 24" />
+                        </mat-form-field>
+                        <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-32" subscriptSizing="dynamic">
+                            <mat-select [formControl]="step1.controls['autoDeleteUnit']">
+                                <mat-option value="hours">Ώρες</mat-option>
+                                <mat-option value="days">Μέρες</mat-option>
+                            </mat-select>
+                        </mat-form-field>
+                    </div>
+                    <div class="text-xs text-secondary mt-1">Άφησε κενό για να μην διαγραφεί αυτόματα.</div>
+                </div>
+
+                <!-- Email notification -->
+                <mat-checkbox [formControl]="step1.controls['sendEmailNotification']" color="primary">
+                    Αποστολή email ειδοποίησης στους παραλήπτες
+                </mat-checkbox>
+
+                <mat-divider></mat-divider>
+
+                <!-- Admin recipient list -->
+                <div>
+                    <div class="text-sm font-semibold mb-2">Παραλήπτες</div>
+
+                    @if (loadingAdmins()) {
+                    <div class="text-secondary text-sm">Φόρτωση διαχειριστών...</div>
+                    } @else {
+
+                    <!-- Search + Select all -->
+                    <div class="flex gap-2 mb-3">
+                        <mat-form-field class="fuse-mat-dense fuse-mat-rounded flex-1" subscriptSizing="dynamic">
+                            <mat-icon matPrefix class="icon-size-4"
+                                [svgIcon]="'heroicons_solid:magnifying-glass'"></mat-icon>
+                            <mat-label>Αναζήτηση</mat-label>
+                            <input matInput [formControl]="adminSearch" placeholder="Όνομα ή email..." />
+                        </mat-form-field>
+                        <button mat-stroked-button class="!rounded-xl shrink-0" type="button"
+                            (click)="toggleSelectAll()">
+                            {{ allSelected ? 'Αποεπιλογή όλων' : 'Επιλογή όλων' }}
+                        </button>
+                    </div>
+
+                    <!-- Admin checkboxes -->
+                    <div class="max-h-52 overflow-y-auto border rounded-xl divide-y">
+                        @for (admin of filteredAdmins; track admin.boUserId) {
+                        <label
+                            class="flex items-center gap-3 px-4 py-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5">
+                            <mat-checkbox color="primary" [checked]="isSelected(admin.boUserId)"
+                                (change)="toggleAdmin(admin.boUserId)">
+                            </mat-checkbox>
+                            <div
+                                class="w-8 h-8 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 shrink-0 flex items-center justify-center">
+                                @if (admin.image) {
+                                <img [src]="admin.image" class="w-full h-full object-cover" />
+                                } @else {
+                                <mat-icon class="icon-size-4 text-hint" [svgIcon]="'heroicons_outline:user'"></mat-icon>
+                                }
+                            </div>
+                            <div class="min-w-0">
+                                <div class="text-sm font-medium truncate">{{ admin.fullName }}</div>
+                                @if (admin.email) {
+                                <div class="text-xs text-secondary truncate">{{ admin.email }}</div>
+                                }
+                            </div>
+                        </label>
+                        } @empty {
+                        <div class="p-4 text-center text-secondary text-sm">Δεν βρέθηκαν διαχειριστές.</div>
+                        }
+                    </div>
+
+                    <div class="text-xs text-secondary mt-2">
+                        {{ selectedAdminIds.size }} επιλεγμένοι από {{ allAdmins.length }}
+                    </div>
+
+                    }
+                </div>
+
+            </div>
+
+        </mat-step>
+
+        <!-- ===== STEP 2: CONFIRMATION ===== -->
+        <mat-step label="Επιβεβαίωση">
+            <div class="p-6 space-y-4">
+
+                <div class="text-sm text-secondary mb-2">Επαλήθευσε τα στοιχεία πριν τη δημιουργία.</div>
+
+                <!-- Summary image -->
+                @if (imagePreview) {
+                <div class="w-full h-32 rounded-xl overflow-hidden">
+                    <img [src]="imagePreview" class="w-full h-full object-cover" />
+                </div>
+                }
+
+                <!-- Summary table -->
+                <div class="bg-gray-50 dark:bg-white/5 rounded-xl border divide-y text-sm">
+                    <div class="flex px-4 py-2.5 gap-4">
+                        <div class="w-40 font-medium text-secondary shrink-0">Τίτλος</div>
+                        <div class="font-semibold truncate">{{ summaryTitle }}</div>
+                    </div>
+                    <div class="flex px-4 py-2.5 gap-4">
+                        <div class="w-40 font-medium text-secondary shrink-0">Περιεχόμενο</div>
+                        <div class="line-clamp-3">{{ summaryContent }}</div>
+                    </div>
+                    <div class="flex px-4 py-2.5 gap-4">
+                        <div class="w-40 font-medium text-secondary shrink-0">Δημοσίευση</div>
+                        <div>{{ summaryPublishDate }}</div>
+                    </div>
+                    <div class="flex px-4 py-2.5 gap-4">
+                        <div class="w-40 font-medium text-secondary shrink-0">Αυτόματη διαγραφή</div>
+                        <div>{{ summaryAutoDelete }}</div>
+                    </div>
+                    <div class="flex px-4 py-2.5 gap-4">
+                        <div class="w-40 font-medium text-secondary shrink-0">Email ειδοποίηση</div>
+                        <div>{{ summaryEmail }}</div>
+                    </div>
+                    <div class="flex px-4 py-2.5 gap-4">
+                        <div class="w-40 font-medium text-secondary shrink-0">Παραλήπτες</div>
+                        <div>{{ selectedAdminIds.size }} διαχειριστές</div>
+                    </div>
+                </div>
+
+                <!-- Selected admins chips -->
+                @if (selectedAdmins.length > 0) {
+                <div class="flex flex-wrap gap-2">
+                    @for (a of selectedAdmins; track a.boUserId) {
+                    <span class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs">
+                        @if (a.image) {
+                        <img [src]="a.image" class="w-5 h-5 rounded-full object-cover" />
+                        } @else {
+                        <mat-icon class="icon-size-3.5 text-hint" [svgIcon]="'heroicons_outline:user'"></mat-icon>
+                        }
+                        {{ a.fullName }}
+                    </span>
+                    }
+                </div>
+                }
+
+                <!-- Error -->
+                @if (error()) {
+                <div
+                    class="rounded-xl border border-red-300 bg-red-50 dark:bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-300">
+                    {{ error() }}
+                </div>
+                }
+
+            </div>
+
+        </mat-step>
+
+    </mat-stepper>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end" class="!px-6 !py-4 gap-3 border-t">
+
+    <!-- Step 1 actions -->
+    @if (stepper.selectedIndex === 0) {
+    <button mat-stroked-button class="!rounded-xl" type="button" (click)="close()">Ακύρωση</button>
+    <button mat-flat-button color="primary" class="!rounded-xl !px-6" type="button" (click)="stepper.next()"
+        [disabled]="step1.invalid">
+        ΣΥΝΕΧΕΙΑ
+        <mat-icon class="ml-1" [svgIcon]="'heroicons_outline:arrow-right'"></mat-icon>
+    </button>
+    }
+
+    <!-- Step 2 actions -->
+    @if (stepper.selectedIndex === 1) {
+    <button mat-stroked-button class="!rounded-xl mr-auto" type="button" (click)="stepper.previous()"
+        [disabled]="saving()">
+        <mat-icon [svgIcon]="'heroicons_outline:arrow-left'"></mat-icon>
+        <span class="ml-1">Πίσω</span>
+    </button>
+    <button mat-flat-button color="primary" class="!rounded-xl !px-6" type="button" (click)="create()"
+        [disabled]="saving()">
+        <mat-icon [svgIcon]="saving() ? 'heroicons_outline:arrow-path' : 'heroicons_outline:megaphone'"
+            [class.animate-spin]="saving()"></mat-icon>
+        <span class="ml-1">{{ saving() ? 'Αποθήκευση...' : 'ΟΛΟΚΛΗΡΩΣΗ ΔΗΜΙΟΥΡΓΙΑΣ' }}</span>
+    </button>
+    }
+
+</mat-dialog-actions>

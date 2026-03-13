@@ -3,6 +3,8 @@ import { TextFieldModule } from '@angular/cdk/text-field';
 import { DOCUMENT, DatePipe, NgClass, NgTemplateOutlet } from '@angular/common';
 import {
     AfterViewInit,
+    ChangeDetectionStrategy,
+    ChangeDetectorRef,
     Component,
     ElementRef,
     HostBinding,
@@ -15,13 +17,20 @@ import {
     ViewChild,
     ViewEncapsulation,
 } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { FuseScrollbarDirective } from '@fuse/directives/scrollbar';
-import { QuickChatService } from 'app/layout/common/quick-chat/quick-chat.service';
-import { Chat } from 'app/layout/common/quick-chat/quick-chat.types';
+import { ChatService } from 'app/modules/admin/apps/chat/chat.service';
+import {
+    BOChatDetail,
+    BOChatSummary,
+    BOGroupChatDetail,
+    BOGroupChatSummary,
+    ChatListItem,
+} from 'app/modules/admin/apps/chat/chat.types';
 import { Subject, takeUntil } from 'rxjs';
 
 @Component({
@@ -29,138 +38,101 @@ import { Subject, takeUntil } from 'rxjs';
     templateUrl: './quick-chat.component.html',
     styleUrls: ['./quick-chat.component.scss'],
     encapsulation: ViewEncapsulation.None,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     exportAs: 'quickChat',
     standalone: true,
     imports: [
         NgClass,
+        NgTemplateOutlet,
         MatIconModule,
         MatButtonModule,
         FuseScrollbarDirective,
-        NgTemplateOutlet,
         MatFormFieldModule,
         MatInputModule,
         TextFieldModule,
+        FormsModule,
         DatePipe,
     ],
 })
 export class QuickChatComponent implements OnInit, AfterViewInit, OnDestroy {
     @ViewChild('messageInput') messageInput: ElementRef;
-    chat: Chat;
-    chats: Chat[];
-    opened: boolean = false;
-    selectedChat: Chat;
-    private _mutationObserver: MutationObserver;
-    private _scrollStrategy: ScrollStrategy =
-        this._scrollStrategyOptions.block();
-    private _overlay: HTMLElement;
-    private _unsubscribeAll: Subject<any> = new Subject<any>();
 
-    /**
-     * Constructor
-     */
+    chats: ChatListItem[] = [];
+    activeChat: BOChatDetail | null = null;
+    activeGroupChat: BOGroupChatDetail | null = null;
+    opened = false;
+    conversationVisible = false;
+    messageText = '';
+    sending = false;
+
+    private _mutationObserver: MutationObserver;
+    private _scrollStrategy: ScrollStrategy;
+    private _overlay: HTMLElement;
+    private _unsubscribeAll = new Subject<void>();
+
     constructor(
         @Inject(DOCUMENT) private _document: Document,
         private _elementRef: ElementRef,
         private _renderer2: Renderer2,
         private _ngZone: NgZone,
-        private _quickChatService: QuickChatService,
-        private _scrollStrategyOptions: ScrollStrategyOptions
-    ) {}
-
-    // -----------------------------------------------------------------------------------------------------
-    // @ Decorated methods
-    // -----------------------------------------------------------------------------------------------------
-
-    /**
-     * Host binding for component classes
-     */
-    @HostBinding('class') get classList(): any {
-        return {
-            'quick-chat-opened': this.opened,
-        };
+        private _chatService: ChatService,
+        private _changeDetectorRef: ChangeDetectorRef,
+        private _scrollStrategyOptions: ScrollStrategyOptions,
+    ) {
+        this._scrollStrategy = this._scrollStrategyOptions.block();
     }
 
-    /**
-     * Resize on 'input' and 'ngModelChange' events
-     *
-     * @private
-     */
+    @HostBinding('class') get classList(): any {
+        return { 'quick-chat-opened': this.opened };
+    }
+
     @HostListener('input')
     @HostListener('ngModelChange')
-    private _resizeMessageInput(): void {
-        // This doesn't need to trigger Angular's change detection by itself
+    _resizeMessageInput(): void {
         this._ngZone.runOutsideAngular(() => {
             setTimeout(() => {
-                // Set the height to 'auto' so we can correctly read the scrollHeight
+                if (!this.messageInput) return;
                 this.messageInput.nativeElement.style.height = 'auto';
-
-                // Get the scrollHeight and subtract the vertical padding
                 this.messageInput.nativeElement.style.height = `${this.messageInput.nativeElement.scrollHeight}px`;
             });
         });
     }
 
-    // -----------------------------------------------------------------------------------------------------
-    // @ Lifecycle hooks
-    // -----------------------------------------------------------------------------------------------------
-
-    /**
-     * On init
-     */
     ngOnInit(): void {
-        // Chat
-        this._quickChatService.chat$
+        this._chatService.chats$
             .pipe(takeUntil(this._unsubscribeAll))
-            .subscribe((chat: Chat) => {
-                this.chat = chat;
-            });
-
-        // Chats
-        this._quickChatService.chats$
-            .pipe(takeUntil(this._unsubscribeAll))
-            .subscribe((chats: Chat[]) => {
+            .subscribe(chats => {
                 this.chats = chats;
+                this._changeDetectorRef.markForCheck();
             });
 
-        // Selected chat
-        this._quickChatService.chat$
+        this._chatService.activeChat$
             .pipe(takeUntil(this._unsubscribeAll))
-            .subscribe((chat: Chat) => {
-                this.selectedChat = chat;
+            .subscribe(chat => {
+                this.activeChat = chat;
+                if (chat) this.activeGroupChat = null;
+                this._changeDetectorRef.markForCheck();
+            });
+
+        this._chatService.activeGroupChat$
+            .pipe(takeUntil(this._unsubscribeAll))
+            .subscribe(chat => {
+                this.activeGroupChat = chat;
+                if (chat) this.activeChat = null;
+                this._changeDetectorRef.markForCheck();
             });
     }
 
-    /**
-     * After view init
-     */
     ngAfterViewInit(): void {
-        // Fix for Firefox.
-        //
-        // Because 'position: sticky' doesn't work correctly inside a 'position: fixed' parent,
-        // adding the '.cdk-global-scrollblock' to the html element breaks the navigation's position.
-        // This fixes the problem by reading the 'top' value from the html element and adding it as a
-        // 'marginTop' to the navigation itself.
         this._mutationObserver = new MutationObserver((mutations) => {
             mutations.forEach((mutation) => {
                 const mutationTarget = mutation.target as HTMLElement;
                 if (mutation.attributeName === 'class') {
-                    if (
-                        mutationTarget.classList.contains(
-                            'cdk-global-scrollblock'
-                        )
-                    ) {
+                    if (mutationTarget.classList.contains('cdk-global-scrollblock')) {
                         const top = parseInt(mutationTarget.style.top, 10);
-                        this._renderer2.setStyle(
-                            this._elementRef.nativeElement,
-                            'margin-top',
-                            `${Math.abs(top)}px`
-                        );
+                        this._renderer2.setStyle(this._elementRef.nativeElement, 'margin-top', `${Math.abs(top)}px`);
                     } else {
-                        this._renderer2.setStyle(
-                            this._elementRef.nativeElement,
-                            'margin-top',
-                            null
-                        );
+                        this._renderer2.setStyle(this._elementRef.nativeElement, 'margin-top', null);
                     }
                 }
             });
@@ -171,159 +143,155 @@ export class QuickChatComponent implements OnInit, AfterViewInit, OnDestroy {
         });
     }
 
-    /**
-     * On destroy
-     */
     ngOnDestroy(): void {
-        // Disconnect the mutation observer
         this._mutationObserver.disconnect();
-
-        // Unsubscribe from all subscriptions
-        this._unsubscribeAll.next(null);
+        this._unsubscribeAll.next();
         this._unsubscribeAll.complete();
     }
 
-    // -----------------------------------------------------------------------------------------------------
-    // @ Public methods
-    // -----------------------------------------------------------------------------------------------------
-
-    /**
-     * Open the panel
-     */
     open(): void {
-        // Return if the panel has already opened
-        if (this.opened) {
-            return;
-        }
-
-        // Open the panel
+        if (this.opened) return;
         this._toggleOpened(true);
     }
 
-    /**
-     * Close the panel
-     */
     close(): void {
-        // Return if the panel has already closed
-        if (!this.opened) {
-            return;
-        }
-
-        // Close the panel
+        if (!this.opened) return;
+        this.conversationVisible = false;
         this._toggleOpened(false);
     }
 
-    /**
-     * Toggle the panel
-     */
     toggle(): void {
-        if (this.opened) {
-            this.close();
+        if (this.opened) this.close();
+        else this.open();
+    }
+
+    selectChat(item: ChatListItem): void {
+        this.conversationVisible = true;
+        this._toggleOpened(true);
+        // Optimistically clear badge immediately (markChatRead/markGroupRead update _chats synchronously)
+        if (item.unreadCount > 0) {
+            if (item.isGroupChat) {
+                this._chatService.markGroupRead(item.id).subscribe();
+            } else {
+                this._chatService.markChatRead(item.id).subscribe();
+            }
+        }
+        if (item.isGroupChat) {
+            this._chatService.loadGroupChatById(item.id).subscribe({
+                next: () => { },
+            });
         } else {
-            this.open();
+            this._chatService.loadChatById(item.id).subscribe({
+                next: () => { },
+            });
         }
     }
 
-    /**
-     * Select the chat
-     *
-     * @param id
-     */
-    selectChat(id: string): void {
-        // Open the panel
-        this._toggleOpened(true);
-
-        // Get the chat data
-        this._quickChatService.getChatById(id).subscribe();
+    get selectedName(): string {
+        if (this.activeChat) return this.activeChat.contactName ?? '';
+        if (this.activeGroupChat) return this.activeGroupChat.name ?? '';
+        return '';
     }
 
-    /**
-     * Track by function for ngFor loops
-     *
-     * @param index
-     * @param item
-     */
+    get selectedAvatar(): string | null {
+        if (this.activeChat) return this.activeChat.contactAvatar ?? null;
+        if (this.activeGroupChat) return this.activeGroupChat.imageUrl ?? null;
+        return null;
+    }
+
+    get isGroupSelected(): boolean {
+        return !!this.activeGroupChat;
+    }
+
+    get messages(): any[] {
+        return this.activeChat?.messages ?? this.activeGroupChat?.messages ?? [];
+    }
+
+    get hasActiveConversation(): boolean {
+        return this.conversationVisible && !!(this.activeChat || this.activeGroupChat);
+    }
+
+    get totalPrivateUnread(): number {
+        return this.chats
+            .filter(c => !c.isGroupChat)
+            .reduce((sum, c) => sum + (c.unreadCount ?? 0), 0);
+    }
+
+    getChatName(c: ChatListItem): string {
+        return c.isGroupChat
+            ? (c as BOGroupChatSummary).name
+            : (c as BOChatSummary).contactName ?? '';
+    }
+
+    getChatAvatar(c: ChatListItem): string | null {
+        return c.isGroupChat
+            ? (c as BOGroupChatSummary).imageUrl ?? null
+            : (c as BOChatSummary).contactAvatar ?? null;
+    }
+
+    isSelected(c: ChatListItem): boolean {
+        if (!this.conversationVisible) return false;
+        if (this.activeChat) return !c.isGroupChat && c.id === this.activeChat.id;
+        if (this.activeGroupChat) return !!c.isGroupChat && c.id === this.activeGroupChat.id;
+        return false;
+    }
+
+    sendMessage(): void {
+        const text = this.messageText.trim();
+        if (!text || this.sending) return;
+        this.sending = true;
+        this.messageText = '';
+        if (this.activeChat) {
+            this._chatService.sendMessage(this.activeChat.id, text).subscribe({
+                next: () => { this.sending = false; this._changeDetectorRef.markForCheck(); },
+                error: () => { this.sending = false; this._changeDetectorRef.markForCheck(); },
+            });
+        } else if (this.activeGroupChat) {
+            this._chatService.sendGroupMessage(this.activeGroupChat.id, text).subscribe({
+                next: () => { this.sending = false; this._changeDetectorRef.markForCheck(); },
+                error: () => { this.sending = false; this._changeDetectorRef.markForCheck(); },
+            });
+        }
+    }
+
+    onEnterKey(event: KeyboardEvent): void {
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
+            this.sendMessage();
+        }
+    }
+
+    isSameDay(a: string, b: string): boolean {
+        return new Date(a).toDateString() === new Date(b).toDateString();
+    }
+
     trackByFn(index: number, item: any): any {
         return item.id || index;
     }
 
-    // -----------------------------------------------------------------------------------------------------
-    // @ Private methods
-    // -----------------------------------------------------------------------------------------------------
-
-    /**
-     * Show the backdrop
-     *
-     * @private
-     */
     private _showOverlay(): void {
-        // Try hiding the overlay in case there is one already opened
         this._hideOverlay();
-
-        // Create the backdrop element
         this._overlay = this._renderer2.createElement('div');
-
-        // Return if overlay couldn't be create for some reason
-        if (!this._overlay) {
-            return;
-        }
-
-        // Add a class to the backdrop element
+        if (!this._overlay) return;
         this._overlay.classList.add('quick-chat-overlay');
-
-        // Append the backdrop to the parent of the panel
-        this._renderer2.appendChild(
-            this._elementRef.nativeElement.parentElement,
-            this._overlay
-        );
-
-        // Enable block scroll strategy
+        this._renderer2.appendChild(this._elementRef.nativeElement.parentElement, this._overlay);
         this._scrollStrategy.enable();
-
-        // Add an event listener to the overlay
         this._overlay.addEventListener('click', () => {
-            this.close();
+            this._ngZone.run(() => this.close());
         });
     }
 
-    /**
-     * Hide the backdrop
-     *
-     * @private
-     */
     private _hideOverlay(): void {
-        if (!this._overlay) {
-            return;
-        }
-
-        // If the backdrop still exists...
-        if (this._overlay) {
-            // Remove the backdrop
-            this._overlay.parentNode.removeChild(this._overlay);
-            this._overlay = null;
-        }
-
-        // Disable block scroll strategy
+        if (!this._overlay) return;
+        this._overlay.parentNode.removeChild(this._overlay);
+        this._overlay = null;
         this._scrollStrategy.disable();
     }
 
-    /**
-     * Open/close the panel
-     *
-     * @param open
-     * @private
-     */
     private _toggleOpened(open: boolean): void {
-        // Set the opened
         this.opened = open;
-
-        // If the panel opens, show the overlay
-        if (open) {
-            this._showOverlay();
-        }
-        // Otherwise, hide the overlay
-        else {
-            this._hideOverlay();
-        }
+        this._changeDetectorRef.markForCheck();
+        if (open) this._showOverlay();
+        else this._hideOverlay();
     }
 }

@@ -87,6 +87,7 @@
                         <th class="px-4 py-3 text-left whitespace-nowrap">Αγων.</th>
                         <th class="px-4 py-3 text-left whitespace-nowrap">Κατάσταση</th>
                         <th class="px-4 py-3 text-left whitespace-nowrap">Σχόλιο Admin</th>
+                        <th class="px-4 py-3 text-left whitespace-nowrap">Ενέργειες</th>
                     </tr>
                 </thead>
 
@@ -200,6 +201,24 @@
                                         </button>
                                     </div>
                                 </div>
+                            </td>
+
+                            <!-- Actions -->
+                            <td class="px-4 py-3 whitespace-nowrap">
+                                <!-- Pending: resolve button -->
+                                <button *ngIf="r.status === 1" mat-stroked-button type="button"
+                                    class="text-xs !h-8 !min-w-0 !px-3 border-primary text-primary"
+                                    matTooltip="Επίλυση αναφοράς" (click)="openResolveDialog(r)">
+                                    <mat-icon class="text-[15px] mr-1">check_circle</mat-icon>
+                                    Επίλυση
+                                </button>
+                                <!-- Resolved: view investigation details -->
+                                <button *ngIf="r.status === 2" mat-stroked-button type="button"
+                                    class="text-xs !h-8 !min-w-0 !px-3" matTooltip="Λεπτομέρειες έρευνας"
+                                    (click)="openViewDialog(r)">
+                                    <mat-icon class="text-[15px] mr-1">info</mat-icon>
+                                    Λεπτομέρειες
+                                </button>
                             </td>
 
                         </tr>

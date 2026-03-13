@@ -1,0 +1,210 @@
+<div class="flex flex-col w-full">
+
+    <!-- ── HEADER ─────────────────────────────────────────────── -->
+    <div class="flex items-center justify-between px-6 pt-6 pb-4 border-b">
+        <div class="flex items-center gap-2">
+            <mat-icon class="text-primary" *ngIf="isResolveMode">check_circle</mat-icon>
+            <mat-icon class="text-secondary" *ngIf="!isResolveMode">info</mat-icon>
+            <span class="text-lg font-bold">
+                {{ isResolveMode ? 'Επίλυση αναφοράς' : 'Λεπτομέρειες έρευνας' }}
+            </span>
+        </div>
+        <button mat-icon-button type="button" (click)="close()" [matTooltip]="'Κλείσιμο'">
+            <mat-icon>close</mat-icon>
+        </button>
+    </div>
+
+    <!-- ── REPORT INFO ─────────────────────────────────────────── -->
+    <div class="px-6 pt-5 space-y-4">
+
+        <!-- Card + reporter row -->
+        <div class="grid grid-cols-2 gap-4">
+
+            <!-- Card code -->
+            <div class="bg-gray-50 dark:bg-white/5 rounded-xl p-3">
+                <div class="text-xs text-secondary font-medium uppercase tracking-wide mb-1">Αρ. Κάρτας</div>
+                <div class="font-semibold font-mono">{{ data.report.cardCode || '—' }}</div>
+            </div>
+
+            <!-- Reporter -->
+            <div class="bg-gray-50 dark:bg-white/5 rounded-xl p-3">
+                <div class="text-xs text-secondary font-medium uppercase tracking-wide mb-1">Αναφέρθηκε από</div>
+                <div class="flex items-center gap-2">
+                    <img [src]="data.report.reportedByImage || 'assets/images/avatars/male-01.jpg'"
+                        class="h-7 w-7 rounded-full object-cover border shrink-0" alt="" />
+                    <div class="min-w-0">
+                        <div class="font-medium text-sm truncate">{{ data.report.reportedByFullName || '—' }}</div>
+                        <div *ngIf="data.report.reportedByCode" class="text-xs text-secondary">#{{
+                            data.report.reportedByCode }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Event -->
+        <div *ngIf="data.report.homeTeamName || data.report.awayTeamName"
+            class="bg-gray-50 dark:bg-white/5 rounded-xl p-3">
+            <div class="text-xs text-secondary font-medium uppercase tracking-wide mb-2">Αγώνας</div>
+            <div class="flex items-center gap-2 flex-wrap">
+                <img *ngIf="data.report.homeTeamLogo" [src]="data.report.homeTeamLogo"
+                    class="h-5 w-5 object-contain shrink-0" alt="" />
+                <span class="text-sm font-medium">{{ data.report.homeTeamName }}</span>
+                <span class="text-secondary text-xs">vs</span>
+                <img *ngIf="data.report.awayTeamLogo" [src]="data.report.awayTeamLogo"
+                    class="h-5 w-5 object-contain shrink-0" alt="" />
+                <span class="text-sm font-medium">{{ data.report.awayTeamName }}</span>
+                <span *ngIf="data.report.competitionName" class="text-xs text-secondary ml-auto">
+                    {{ data.report.competitionName }}
+                    <span *ngIf="data.report.matchday"> · {{ data.report.matchday }}</span>
+                </span>
+            </div>
+        </div>
+
+        <!-- ── LAST 3 REQUESTS ──────────────────────────────── -->
+        <div>
+            <div class="flex items-center justify-between mb-2">
+                <div class="text-xs text-secondary font-medium uppercase tracking-wide">
+                    Τελευταία αιτήματα κάρτας
+                </div>
+                <button mat-button type="button" class="text-xs !h-7 !px-2" (click)="openAllRequests()"
+                    [disabled]="loadingRequests">
+                    <mat-icon class="text-[14px] mr-1">open_in_new</mat-icon>
+                    Προβολή όλων
+                </button>
+            </div>
+
+            <!-- Loading skeleton -->
+            <mat-progress-bar *ngIf="loadingRequests" mode="indeterminate" class="rounded-lg"></mat-progress-bar>
+
+            <!-- Empty -->
+            <div *ngIf="!loadingRequests && last3Requests.length === 0" class="text-xs text-secondary italic px-1">Δεν
+                υπάρχουν αιτήματα.</div>
+
+            <!-- Mini table -->
+            <div *ngIf="!loadingRequests && last3Requests.length > 0"
+                class="bg-gray-50 dark:bg-white/5 rounded-xl overflow-hidden border">
+                <table class="w-full text-xs">
+                    <thead>
+                        <tr
+                            class="border-b bg-gray-100/80 dark:bg-white/5 text-secondary font-semibold uppercase tracking-wide">
+                            <th class="px-3 py-2 text-left">Χρήστης</th>
+                            <th class="px-3 py-2 text-left">Ημερομηνία</th>
+                            <th class="px-3 py-2 text-left">Αγώνας</th>
+                            <th class="px-3 py-2 text-center">Κατάσταση</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200/70 dark:divide-white/10">
+                        <tr *ngFor="let r of last3Requests"
+                            class="hover:bg-gray-100/60 dark:hover:bg-white/5 transition">
+                            <!-- User -->
+                            <td class="px-3 py-2">
+                                <div class="flex items-center gap-1.5">
+                                    <img [src]="r.usedByImage || 'assets/images/avatars/male-01.jpg'"
+                                        class="h-6 w-6 rounded-full object-cover border shrink-0" alt="" />
+                                    <div>
+                                        <div class="font-medium truncate max-w-[100px]">{{ r.usedByFullName || '—' }}
+                                        </div>
+                                        <div *ngIf="r.usedByCode" class="text-secondary">#{{ r.usedByCode }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <!-- Date -->
+                            <td class="px-3 py-2 whitespace-nowrap text-secondary">
+                                {{ r.usedAt | date:'dd/MM/yy' }}<br />{{ r.usedAt | date:'HH:mm' }}
+                            </td>
+                            <!-- Event -->
+                            <td class="px-3 py-2">
+                                <div *ngIf="r.homeTeamName || r.awayTeamName; else noEvMini"
+                                    class="flex items-center gap-1 flex-wrap min-w-[110px]">
+                                    <img *ngIf="r.homeTeamLogo" [src]="r.homeTeamLogo"
+                                        class="h-4 w-4 object-contain shrink-0" alt="" />
+                                    <span>{{ r.homeTeamName }}</span>
+                                    <span class="text-secondary">vs</span>
+                                    <img *ngIf="r.awayTeamLogo" [src]="r.awayTeamLogo"
+                                        class="h-4 w-4 object-contain shrink-0" alt="" />
+                                    <span>{{ r.awayTeamName }}</span>
+                                </div>
+                                <ng-template #noEvMini><span class="text-secondary">—</span></ng-template>
+                            </td>
+                            <!-- Status -->
+                            <td class="px-3 py-2 text-center whitespace-nowrap">
+                                <span class="px-1.5 py-0.5 rounded-full font-semibold border"
+                                    [class.bg-green-50]="r.used" [class.text-green-700]="r.used"
+                                    [class.border-green-300]="r.used" [class.bg-amber-50]="!r.used"
+                                    [class.text-amber-700]="!r.used" [class.border-amber-300]="!r.used">
+                                    {{ r.used ? 'Χρησιμοποιήθηκε' : 'Εκκρεμεί' }}
+                                </span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ── RESOLVE MODE: comment textarea + current admin ─── -->
+        <ng-container *ngIf="isResolveMode">
+
+            <!-- Current admin (who resolves) -->
+            <div class="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-3 border border-blue-200 dark:border-blue-700">
+                <div class="text-xs text-secondary font-medium uppercase tracking-wide mb-2">Admin (εσείς)</div>
+                <div class="flex items-center gap-2">
+                    <img [src]="currentAdminImage || 'assets/images/avatars/male-01.jpg'"
+                        class="h-7 w-7 rounded-full object-cover border shrink-0" alt="" />
+                    <span class="font-medium text-sm">{{ currentAdminName }}</span>
+                </div>
+            </div>
+
+            <!-- Comment -->
+            <mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
+                <mat-label>Σχόλιο έρευνας (προαιρετικό)</mat-label>
+                <textarea matInput rows="4" placeholder="Γράψτε ένα σχόλιο για την έρευνα…" [(ngModel)]="comment">
+                </textarea>
+            </mat-form-field>
+
+        </ng-container>
+
+        <!-- ── VIEW MODE: resolved info ─────────────────────────── -->
+        <ng-container *ngIf="!isResolveMode">
+
+            <!-- Resolved by -->
+            <div class="bg-green-50 dark:bg-green-900/20 rounded-xl p-3 border border-green-200 dark:border-green-700">
+                <div class="text-xs text-secondary font-medium uppercase tracking-wide mb-2">Επιλύθηκε από</div>
+                <div class="flex items-center gap-2">
+                    <img [src]="data.report.resolvedByBoUserImage || 'assets/images/avatars/male-01.jpg'"
+                        class="h-7 w-7 rounded-full object-cover border shrink-0" alt="" />
+                    <div>
+                        <div class="font-medium text-sm">{{ data.report.resolvedByBoUserFullName || '—' }}</div>
+                        <div *ngIf="data.report.resolvedAt" class="text-xs text-secondary">
+                            {{ data.report.resolvedAt | date:'dd/MM/yyyy HH:mm' }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comment (read-only) -->
+            <div class="bg-gray-50 dark:bg-white/5 rounded-xl p-3">
+                <div class="text-xs text-secondary font-medium uppercase tracking-wide mb-1">Σχόλιο έρευνας</div>
+                <p *ngIf="data.report.adminComment" class="text-sm leading-relaxed whitespace-pre-wrap">
+                    {{ data.report.adminComment }}
+                </p>
+                <p *ngIf="!data.report.adminComment" class="text-sm text-secondary italic">Χωρίς σχόλιο</p>
+            </div>
+
+        </ng-container>
+
+    </div>
+
+    <!-- ── ACTIONS ─────────────────────────────────────────────── -->
+    <div class="flex justify-end gap-2 px-6 py-5 border-t mt-4">
+        <button mat-stroked-button type="button" (click)="close()" [disabled]="saving">
+            {{ isResolveMode ? 'Ακύρωση' : 'Κλείσιμο' }}
+        </button>
+        <button *ngIf="isResolveMode" mat-flat-button color="primary" type="button" [disabled]="saving"
+            (click)="resolve()">
+            <mat-spinner *ngIf="saving" diameter="16" class="mr-2"></mat-spinner>
+            <mat-icon *ngIf="!saving" class="mr-1">check_circle</mat-icon>
+            {{ saving ? 'Αποθήκευση…' : 'Ολοκλήρωση' }}
+        </button>
+    </div>
+
+</div>

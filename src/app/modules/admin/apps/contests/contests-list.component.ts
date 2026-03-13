@@ -28,7 +28,8 @@ import {
     ContestListItemDto,
     ContestsAdminService,
 } from '@fuse/services/contests/contests-admin.service';
-import { ContestNewDialogComponent } from './dialogs/contest-new-dialog.component';
+import { ContestWizardDialogComponent } from './dialogs/contest-wizard-dialog.component';
+import { FuseConfirmationService } from '@fuse/services/confirmation';
 
 @Component({
     selector: 'app-contests-list',
@@ -57,6 +58,7 @@ export class ContestsListComponent implements OnInit, OnDestroy {
     private router = inject(Router);
     private fb = inject(FormBuilder);
     private cdr = inject(ChangeDetectorRef);
+    private confirmation = inject(FuseConfirmationService);
     private destroy$ = new Subject<void>();
 
     loading = signal(false);
@@ -96,6 +98,7 @@ export class ContestsListComponent implements OnInit, OnDestroy {
                     this.all = data;
                     this.updateStats(data);
                     this.applyFilters();
+                    if (this.paginator) this.paginator.firstPage();
                     this.loading.set(false);
                     this.cdr.markForCheck();
                 },
@@ -109,16 +112,16 @@ export class ContestsListComponent implements OnInit, OnDestroy {
 
     openNew(): void {
         this.dialog
-            .open(ContestNewDialogComponent, {
-                width: '640px',
+            .open(ContestWizardDialogComponent, {
+                width: '750px',
                 maxWidth: '95vw',
                 maxHeight: '90vh',
                 disableClose: true,
             })
             .afterClosed()
             .pipe(takeUntil(this.destroy$))
-            .subscribe((created) => {
-                if (created) this.load();
+            .subscribe((newId) => {
+                if (newId) this.router.navigate(['/apps/contests', newId]);
             });
     }
 
@@ -128,20 +131,36 @@ export class ContestsListComponent implements OnInit, OnDestroy {
 
     deleteContest(c: ContestListItemDto, event: MouseEvent): void {
         event.stopPropagation();
-        if (!confirm(`Διαγραφή διαγωνισμού "${c.title}";`)) return;
-        this.deletingId.set(c.id);
-        this.api
-            .delete(c.id)
+        this.confirmation
+            .open({
+                title: 'Διαγραφή διαγωνισμού',
+                message: `Είστε σίγουροι ότι θέλετε να διαγράψετε τον διαγωνισμό <strong>${c.title}</strong>; Αυτή η ενέργεια δεν μπορεί να αναιρεθεί.`,
+                icon: { show: true, name: 'heroicons_outline:trash', color: 'warn' },
+                actions: {
+                    confirm: { label: 'Διαγραφή', color: 'warn' },
+                    cancel: { label: 'Ακύρωση' },
+                },
+            })
+            .afterClosed()
             .pipe(takeUntil(this.destroy$))
-            .subscribe({
-                next: () => {
-                    this.deletingId.set(null);
-                    this.load();
-                },
-                error: () => {
-                    this.deletingId.set(null);
-                    this.cdr.markForCheck();
-                },
+            .subscribe((result) => {
+                if (result !== 'confirmed') return;
+                this.deletingId.set(c.id);
+                this.api
+                    .delete(c.id)
+                    .pipe(takeUntil(this.destroy$))
+                    .subscribe({
+                        next: () => {
+                            this.all = this.all.filter((x) => x.id !== c.id);
+                            this.updateStats(this.all);
+                            this.applyFilters();
+                            this.deletingId.set(null);
+                        },
+                        error: () => {
+                            this.deletingId.set(null);
+                            this.cdr.markForCheck();
+                        },
+                    });
             });
     }
 

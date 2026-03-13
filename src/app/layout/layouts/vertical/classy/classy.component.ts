@@ -12,6 +12,7 @@ import { FuseMediaWatcherService } from '@fuse/services/media-watcher';
 import { User } from '@fuse/services/users/users.service';
 import { AuthService } from 'app/core/auth/auth.service';
 import { BOHubService } from 'app/core/signalr/bo-hub.service';
+import { ChatService } from 'app/modules/admin/apps/chat/chat.service';
 import { BOToastComponent } from 'app/layout/common/bo-toast/bo-toast.component';
 import { NavigationService } from 'app/core/navigation/navigation.service';
 import { Navigation } from 'app/core/navigation/navigation.types';
@@ -65,7 +66,8 @@ export class ClassyLayoutComponent implements OnInit, OnDestroy {
         private _fuseMediaWatcherService: FuseMediaWatcherService,
         private _fuseNavigationService: FuseNavigationService,
         private _authService: AuthService,
-        private _boHub: BOHubService
+        private _boHub: BOHubService,
+        private _chatService: ChatService,
     ) { }
 
     // -----------------------------------------------------------------------------------------------------
@@ -105,8 +107,36 @@ export class ClassyLayoutComponent implements OnInit, OnDestroy {
         this._fuseMediaWatcherService.onMediaChange$
             .pipe(takeUntil(this._unsubscribeAll))
             .subscribe(({ matchingAliases }) => {
-                // Check if the screen is small
                 this.isScreenSmall = !matchingAliases.includes('md');
+            });
+
+        // Wire SignalR chat events → ChatService
+        this._boHub.boChatMessage$
+            .pipe(takeUntil(this._unsubscribeAll))
+            .subscribe(dto => this._chatService.onNewPrivateMessage(dto.chatId, dto.message));
+
+        this._boHub.boGroupChatMessage$
+            .pipe(takeUntil(this._unsubscribeAll))
+            .subscribe(dto => this._chatService.onNewGroupMessage(dto.groupChatId, dto.message));
+
+        this._boHub.boNewGroupChat$
+            .pipe(takeUntil(this._unsubscribeAll))
+            .subscribe(() => this._chatService.onNewGroupChatInvite());
+
+        // Update chat nav badge with total unread count
+        this._chatService.totalUnread$
+            .pipe(takeUntil(this._unsubscribeAll))
+            .subscribe(count => {
+                const navComponent = this._fuseNavigationService.getComponent<FuseVerticalNavigationComponent>('mainNavigation');
+                if (!navComponent) return;
+                const item = this._fuseNavigationService.getItem('apps.chat', navComponent.navigation);
+                if (!item) return;
+                if (count > 0) {
+                    item.badge = { title: count.toString(), classes: 'bg-primary text-white text-xs font-medium rounded-full' };
+                } else {
+                    item.badge = null;
+                }
+                navComponent.refresh();
             });
     }
 

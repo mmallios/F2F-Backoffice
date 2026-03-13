@@ -1,0 +1,77 @@
+<div class="flex flex-col" style="max-height: 85vh; min-width: 560px;">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between px-6 py-4 border-b shrink-0">
+        <div class="flex items-center gap-2">
+            <mat-icon class="text-indigo-500">people</mat-icon>
+            <h2 class="text-base font-bold m-0">Συμμετοχές ({{ entries().length }})</h2>
+        </div>
+        <button mat-icon-button (click)="close()">
+            <mat-icon>close</mat-icon>
+        </button>
+    </div>
+
+    <!-- Search bar -->
+    <div class="px-4 pt-3 pb-2 shrink-0 border-b">
+        <mat-form-field class="w-full fuse-mat-dense" subscriptSizing="dynamic">
+            <mat-icon matPrefix class="icon-size-4 mr-1 text-secondary">search</mat-icon>
+            <input matInput [(ngModel)]="search" placeholder="Αναζήτηση ονόματος ή κωδικού…" />
+            @if (search) {
+            <button matSuffix mat-icon-button (click)="search = ''" class="!h-7 !w-7">
+                <mat-icon class="icon-size-4">close</mat-icon>
+            </button>
+            }
+        </mat-form-field>
+    </div>
+
+    <!-- List -->
+    <div class="overflow-y-auto flex-1 px-4 py-3">
+        @if (filteredEntries.length === 0) {
+        <div class="flex flex-col items-center justify-center py-10 text-secondary gap-2">
+            <mat-icon class="icon-size-10 opacity-40">search_off</mat-icon>
+            <span class="text-sm">Δεν βρέθηκαν αποτελέσματα</span>
+        </div>
+        } @else {
+        <div class="space-y-2">
+            @for (p of filteredEntries; track p.id; let i = $index) {
+            <div
+                class="flex items-center gap-3 rounded-xl border bg-card px-3 py-2.5 hover:bg-gray-50/60 dark:hover:bg-white/5 transition-colors">
+                <!-- Position -->
+                <div
+                    class="flex h-7 w-7 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 shrink-0 text-xs font-bold">
+                    {{ i + 1 }}
+                </div>
+                <!-- Avatar -->
+                @if (entryAvatar(p)) {
+                <img [src]="entryAvatar(p)!" alt="" class="h-9 w-9 rounded-full object-cover border shrink-0" />
+                } @else {
+                <div
+                    class="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-500/10 text-indigo-600 text-xs font-bold shrink-0">
+                    {{ initials(entryName(p)) }}
+                </div>
+                }
+                <!-- Info -->
+                <div class="min-w-0 flex-1">
+                    <div class="text-sm font-semibold truncate">{{ entryName(p) }}</div>
+                    <div class="text-xs text-secondary mt-0.5 flex items-center gap-2">
+                        <span class="font-mono">{{ entryCode(p) }}</span>
+                        <span>·</span>
+                        <span>{{ p.participatedAt | date:'dd/MM/yyyy HH:mm' }}</span>
+                    </div>
+                </div>
+                <!-- Remove -->
+                <button mat-icon-button class="!h-8 !w-8 text-red-400 hover:text-red-600 shrink-0"
+                    [disabled]="removing() !== null" (click)="removeEntry(p.id)" title="Αφαίρεση">
+                    @if (removing() === p.id) {
+                    <mat-spinner diameter="16"></mat-spinner>
+                    } @else {
+                    <mat-icon class="icon-size-4">delete_outline</mat-icon>
+                    }
+                </button>
+            </div>
+            }
+        </div>
+        }
+    </div>
+
+</div>

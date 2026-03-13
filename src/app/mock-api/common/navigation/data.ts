@@ -41,25 +41,11 @@ export const defaultNavigation: FuseNavigationItem[] = [
                         link: '/apps/registration-requests',
                     },
                     {
-                        id: 'apps.chat',
-                        title: 'Συνομιλίες',
-                        type: 'basic',
-                        icon: 'heroicons_outline:chat-bubble-bottom-center-text',
-                        link: '/apps/chat',
-                    },
-                    {
                         id: 'apps.groupchats',
                         title: 'Ομαδικές Συνομιλίες',
                         type: 'basic',
                         icon: 'heroicons_outline:chat-bubble-left-right',
                         link: '/apps/groupchats',
-                    },
-                    {
-                        id: 'apps.announcements',
-                        title: 'Ανακοινώσεις',
-                        type: 'basic',
-                        icon: 'heroicons_outline:megaphone',
-                        link: '/apps/announcements',
                     },
                 ],
             },
@@ -126,6 +112,20 @@ export const defaultNavigation: FuseNavigationItem[] = [
                         type: 'basic',
                         icon: 'heroicons_outline:gift',
                         link: '/apps/contests',
+                    },
+                    {
+                        id: 'apps.offers',
+                        title: 'Προσφορές',
+                        type: 'basic',
+                        icon: 'heroicons_outline:tag',
+                        link: '/apps/offers',
+                    },
+                    {
+                        id: 'apps.offers.categories',
+                        title: 'Κατηγορίες Προσφορών',
+                        type: 'basic',
+                        icon: 'heroicons_outline:squares-2x2',
+                        link: '/apps/offers/categories',
                     },
                 ],
             },
@@ -199,9 +199,39 @@ export const defaultNavigation: FuseNavigationItem[] = [
                         icon: 'heroicons_outline:shield-check',
                         link: '/apps/settings/roles',
                     },
+                    {
+                        id: 'apps.bo-announcements',
+                        title: 'Ανακοινώσεις Admins',
+                        type: 'basic',
+                        icon: 'heroicons_outline:megaphone',
+                        link: '/apps/bo-announcements',
+                    },
                 ],
             },
 
+        ],
+    },
+
+    // ── HEADQUARTERS F2F ─────────────────────────────────────────
+    {
+        id: 'headquarters',
+        title: 'HEADQUARTERS F2F',
+        type: 'group',
+        children: [
+            {
+                id: 'headquarters.chat',
+                title: 'Συνομηλια F2F',
+                type: 'basic',
+                icon: 'heroicons_outline:chat-bubble-left-right',
+                link: '/apps/chat',
+            },
+            {
+                id: 'headquarters.announcements',
+                title: 'Ανακοινωσεις F2F',
+                type: 'basic',
+                icon: 'heroicons_outline:megaphone',
+                link: '/apps/announcements',
+            },
         ],
     },
 ]

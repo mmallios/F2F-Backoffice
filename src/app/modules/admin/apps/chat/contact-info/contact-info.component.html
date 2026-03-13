@@ -1,95 +1,89 @@
 <div class="bg-card flex h-full flex-auto flex-col dark:bg-default">
     <!-- Header -->
-    <div
-        class="flex h-18 flex-0 items-center border-b bg-gray-50 px-4 dark:bg-transparent"
-    >
+    <div class="flex h-18 flex-0 items-center border-b bg-gray-50 px-4 dark:bg-transparent">
         <button mat-icon-button (click)="drawer.close()">
             <mat-icon [svgIcon]="'heroicons_outline:x-mark'"></mat-icon>
         </button>
-        <div class="ml-2 text-lg font-medium">Contact info</div>
+        <div class="ml-2 text-lg font-medium">{{ isGroup ? 'Group info' : 'Contact info' }}</div>
     </div>
 
     <div class="overflow-y-auto">
-        <!-- Contact avatar & info -->
-        <div class="mt-8 flex flex-col items-center">
-            <div class="h-40 w-40 rounded-full">
-                @if (chat.contact.avatar) {
-                    <img
-                        class="h-full w-full rounded-full object-cover"
-                        [src]="chat.contact.avatar"
-                        [alt]="'Contact avatar'"
-                    />
-                }
-                @if (!chat.contact.avatar) {
-                    <div
-                        class="flex h-full w-full items-center justify-center rounded-full bg-gray-200 text-8xl font-semibold uppercase text-gray-600 dark:bg-gray-700 dark:text-gray-200"
-                    >
-                        {{ chat.contact.name.charAt(0) }}
-                    </div>
+        <!--  Private chat info  -->
+        @if (!isGroup && chat) {
+            <div class="mt-8 flex flex-col items-center px-6">
+                <div class="h-32 w-32 rounded-full">
+                    @if (chat.contactAvatar) {
+                        <img class="h-full w-full rounded-full object-cover" [src]="chat.contactAvatar" alt="avatar" />
+                    }
+                    @if (!chat.contactAvatar) {
+                        <div class="flex h-full w-full items-center justify-center rounded-full bg-gray-200 text-6xl font-semibold uppercase text-gray-600 dark:bg-gray-700 dark:text-gray-200">
+                            {{ chat.contactName.charAt(0) }}
+                        </div>
+                    }
+                </div>
+                <div class="mt-4 text-xl font-semibold">{{ chat.contactName }}</div>
+                @if (chat.contactEmail) {
+                    <div class="text-secondary mt-1 text-sm">{{ chat.contactEmail }}</div>
                 }
             </div>
-            <div class="mt-4 text-lg font-medium">{{ chat.contact.name }}</div>
-            <div class="text-secondary mt-0.5 text-md">
-                {{ chat.contact.about }}
-            </div>
-        </div>
 
-        <div class="px-7 py-10">
-            <!-- Media -->
-            <div class="text-lg font-medium">Media</div>
-            <div class="mt-4 grid grid-cols-4 gap-1">
-                @for (media of chat.contact.attachments.media; track media) {
-                    <img class="h-20 rounded object-cover" [src]="media" />
+            <div class="mt-8 border-t px-6 py-6 space-y-4">
+                <div class="text-lg font-medium">Settings</div>
+                <div class="flex items-center justify-between">
+                    <div>Muted</div>
+                    <mat-icon [svgIcon]="chat.muted ? 'heroicons_outline:bell-slash' : 'heroicons_outline:bell'" class="text-secondary"></mat-icon>
+                </div>
+                <div class="flex items-center justify-between">
+                    <div>Pinned</div>
+                    <mat-icon [svgIcon]="chat.pinned ? 'heroicons_solid:map-pin' : 'heroicons_outline:map-pin'" class="text-secondary"></mat-icon>
+                </div>
+            </div>
+        }
+
+        <!--  Group chat info  -->
+        @if (isGroup && groupChat) {
+            <div class="mt-8 flex flex-col items-center px-6">
+                <div class="h-32 w-32 rounded-full">
+                    @if (groupChat.imageUrl) {
+                        <img class="h-full w-full rounded-full object-cover" [src]="groupChat.imageUrl" alt="group" />
+                    }
+                    @if (!groupChat.imageUrl) {
+                        <div class="flex h-full w-full items-center justify-center rounded-full bg-primary-100 text-6xl font-semibold uppercase text-primary-600 dark:bg-primary-900 dark:text-primary-200">
+                            {{ groupChat.name.charAt(0) }}
+                        </div>
+                    }
+                </div>
+                <div class="mt-4 text-xl font-semibold">{{ groupChat.name }}</div>
+                @if (groupChat.description) {
+                    <div class="text-secondary mt-1 text-center text-sm">{{ groupChat.description }}</div>
+                }
+                <div class="text-secondary mt-1 text-sm">{{ groupChat.memberCount }} members</div>
+            </div>
+
+            <!-- Members list -->
+            <div class="mt-6 border-t px-6 py-4">
+                <div class="mb-3 text-lg font-medium">Members</div>
+                @for (member of groupChat.members; track member.boUserId) {
+                    <div class="flex items-center py-2">
+                        <div class="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full">
+                            @if (member.avatar) {
+                                <img class="h-full w-full object-cover" [src]="member.avatar" alt="avatar" />
+                            }
+                            @if (!member.avatar) {
+                                <div class="flex h-full w-full items-center justify-center rounded-full bg-gray-200 text-sm uppercase text-gray-600 dark:bg-gray-700 dark:text-gray-200">
+                                    {{ member.fullName.charAt(0) }}
+                                </div>
+                            }
+                        </div>
+                        <div class="ml-3 flex-auto">
+                            <div class="font-medium">{{ member.fullName }}</div>
+                        </div>
+                        @if (member.isAdmin) {
+                            <div class="text-xs text-primary font-medium">Admin</div>
+                        }
+                    </div>
                 }
             </div>
-            <!-- Details -->
-            <div class="mt-10 space-y-4">
-                <div class="mb-3 text-lg font-medium">Details</div>
-                @if (chat.contact.details.emails.length) {
-                    <div>
-                        <div class="text-secondary font-medium">Email</div>
-                        <div class="">
-                            {{ chat.contact.details.emails[0].email }}
-                        </div>
-                    </div>
-                }
-                @if (chat.contact.details.phoneNumbers.length) {
-                    <div>
-                        <div class="text-secondary font-medium">
-                            Phone number
-                        </div>
-                        <div class="">
-                            {{
-                                chat.contact.details.phoneNumbers[0].phoneNumber
-                            }}
-                        </div>
-                    </div>
-                }
-                @if (chat.contact.details.title) {
-                    <div>
-                        <div class="text-secondary font-medium">Title</div>
-                        <div class="">{{ chat.contact.details.title }}</div>
-                    </div>
-                }
-                @if (chat.contact.details.company) {
-                    <div>
-                        <div class="text-secondary font-medium">Company</div>
-                        <div class="">{{ chat.contact.details.company }}</div>
-                    </div>
-                }
-                @if (chat.contact.details.birthday) {
-                    <div>
-                        <div class="text-secondary font-medium">Birthday</div>
-                        <div class="">{{ chat.contact.details.birthday }}</div>
-                    </div>
-                }
-                @if (chat.contact.details.address) {
-                    <div>
-                        <div class="text-secondary font-medium">Address</div>
-                        <div class="">{{ chat.contact.details.address }}</div>
-                    </div>
-                }
-            </div>
-        </div>
+        }
     </div>
 </div>

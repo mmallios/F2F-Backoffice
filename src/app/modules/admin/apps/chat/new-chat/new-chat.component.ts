@@ -1,5 +1,6 @@
 import {
     ChangeDetectionStrategy,
+    ChangeDetectorRef,
     Component,
     Input,
     OnDestroy,
@@ -8,9 +9,11 @@ import {
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDrawer } from '@angular/material/sidenav';
+import { Router } from '@angular/router';
 import { ChatService } from 'app/modules/admin/apps/chat/chat.service';
-import { Contact } from 'app/modules/admin/apps/chat/chat.types';
+import { BOAdminContact } from 'app/modules/admin/apps/chat/chat.types';
 import { Subject, takeUntil } from 'rxjs';
 
 @Component({
@@ -19,54 +22,48 @@ import { Subject, takeUntil } from 'rxjs';
     encapsulation: ViewEncapsulation.None,
     changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: true,
-    imports: [MatButtonModule, MatIconModule],
+    imports: [MatButtonModule, MatIconModule, MatProgressSpinnerModule],
 })
 export class NewChatComponent implements OnInit, OnDestroy {
     @Input() drawer: MatDrawer;
-    contacts: Contact[] = [];
-    private _unsubscribeAll: Subject<any> = new Subject<any>();
+    contacts: BOAdminContact[] = [];
+    loading = false;
+    private _unsubscribeAll = new Subject<void>();
 
-    /**
-     * Constructor
-     */
-    constructor(private _chatService: ChatService) {}
+    constructor(
+        private _chatService: ChatService,
+        private _router: Router,
+        private _cdr: ChangeDetectorRef,
+    ) { }
 
-    // -----------------------------------------------------------------------------------------------------
-    // @ Lifecycle hooks
-    // -----------------------------------------------------------------------------------------------------
-
-    /**
-     * On init
-     */
     ngOnInit(): void {
-        // Contacts
-        this._chatService.contacts$
+        this._chatService.adminContacts$
             .pipe(takeUntil(this._unsubscribeAll))
-            .subscribe((contacts: Contact[]) => {
+            .subscribe(contacts => {
                 this.contacts = contacts;
+                this._cdr.markForCheck();
             });
     }
 
-    /**
-     * On destroy
-     */
     ngOnDestroy(): void {
-        // Unsubscribe from all subscriptions
-        this._unsubscribeAll.next(null);
+        this._unsubscribeAll.next();
         this._unsubscribeAll.complete();
     }
 
-    // -----------------------------------------------------------------------------------------------------
-    // @ Public methods
-    // -----------------------------------------------------------------------------------------------------
+    openChat(contact: BOAdminContact): void {
+        this.loading = true;
+        this._chatService.openOrCreateChat(contact.boUserId).subscribe({
+            next: (res) => {
+                this.loading = false;
+                this.drawer.close();
+                this._router.navigate(['/apps/chat/chat', res.id]);
+                this._cdr.markForCheck();
+            },
+            error: () => { this.loading = false; this._cdr.markForCheck(); }
+        });
+    }
 
-    /**
-     * Track by function for ngFor loops
-     *
-     * @param index
-     * @param item
-     */
     trackByFn(index: number, item: any): any {
-        return item.id || index;
+        return item.boUserId || index;
     }
 }

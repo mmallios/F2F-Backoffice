@@ -80,6 +80,10 @@ export interface AllReportItem {
     reportedAt: string;
     status: number;
     adminComment?: string | null;
+    resolvedByBoUserId?: number | null;
+    resolvedByBoUserFullName?: string | null;
+    resolvedByBoUserImage?: string | null;
+    resolvedAt?: string | null;
     eventId?: number | null;
     eventDate?: string | null;
     homeTeamName?: string | null;
@@ -186,5 +190,9 @@ export class FanCardsAdminService {
 
     saveReportComment(reportId: number, comment: string | null): Observable<void> {
         return this._http.patch<void>(`${this.base}/reports/${reportId}/comment`, { comment });
+    }
+
+    resolveReport(reportId: number, comment: string | null, boUserId: number | null): Observable<void> {
+        return this._http.patch<void>(`${this.base}/reports/${reportId}/resolve`, { comment, boUserId });
     }
 }

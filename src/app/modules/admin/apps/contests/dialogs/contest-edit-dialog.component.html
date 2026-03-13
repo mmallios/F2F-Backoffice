@@ -1,8 +1,16 @@
-<div class="flex flex-col" style="max-height: 90vh;">
+<div class="flex flex-col" style="max-height: 92vh;">
 
     <!-- Header -->
     <div class="flex items-center justify-between border-b px-6 py-4 shrink-0">
-        <h2 class="text-base font-bold leading-none">Επεξεργασία Διαγωνισμού</h2>
+        <div class="flex items-center gap-3">
+            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
+                <mat-icon class="text-primary icon-size-5">edit</mat-icon>
+            </div>
+            <div>
+                <h2 class="text-base font-bold leading-none">Επεξεργασία Διαγωνισμού</h2>
+                <p class="text-secondary text-xs mt-0.5 truncate max-w-xs">{{ contest.title }}</p>
+            </div>
+        </div>
         <button mat-icon-button (click)="cancel()">
             <mat-icon class="icon-size-5">close</mat-icon>
         </button>
@@ -21,64 +29,152 @@
 
         <form [formGroup]="form" class="space-y-4">
 
+            <!-- ── Image uploader ─────────────────────────────── -->
+            <div class="rounded-2xl border p-4 bg-gray-50/80 dark:bg-white/5">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="h-24 w-36 rounded-xl overflow-hidden border bg-gray-200 dark:bg-gray-800 flex items-center justify-center shrink-0">
+                            @if (imagePreview) {
+                            <img [src]="imagePreview" class="h-full w-full object-cover" alt="preview" />
+                            } @else {
+                            <mat-icon class="text-gray-400 icon-size-10">image</mat-icon>
+                            }
+                        </div>
+                        <div>
+                            <div class="font-semibold text-sm">Εικόνα Διαγωνισμού</div>
+                            <div class="text-secondary text-xs mt-0.5">
+                                @if (uploading()) { Μεταφόρτωση… } @else { PNG/JPG έως 3MB }
+                            </div>
+                            @if (uploading()) {
+                            <mat-progress-bar mode="indeterminate" class="mt-2 w-28"></mat-progress-bar>
+                            }
+                        </div>
+                    </div>
+                    <div class="flex gap-2 justify-end shrink-0">
+                        <input #fileInput type="file" accept="image/*" class="hidden"
+                            (change)="onFileSelected($event)" />
+                        <button mat-stroked-button type="button" class="!rounded-xl"
+                            (click)="triggerFileInput(fileInput)" [disabled]="uploading()">
+                            <mat-icon class="icon-size-4 mr-1">upload</mat-icon> Μεταφόρτωση
+                        </button>
+                        @if (imagePreview) {
+                        <button mat-button type="button" class="!rounded-xl text-red-500" (click)="removeImage()"
+                            [disabled]="uploading()">
+                            <mat-icon class="icon-size-4 mr-1">delete_outline</mat-icon> Αφαίρεση
+                        </button>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Title ──────────────────────────────────────── -->
             <mat-form-field class="w-full fuse-mat-dense">
                 <mat-label>Τίτλος *</mat-label>
                 <input matInput formControlName="title" />
             </mat-form-field>
 
+            <!-- ── Description ────────────────────────────────── -->
             <mat-form-field class="w-full fuse-mat-dense">
                 <mat-label>Περιγραφή</mat-label>
                 <textarea matInput rows="3" formControlName="description"></textarea>
             </mat-form-field>
 
-            <mat-form-field class="w-full fuse-mat-dense">
-                <mat-label>URL Εικόνας</mat-label>
-                <input matInput formControlName="image" placeholder="https://…" />
-            </mat-form-field>
-
-            <div class="grid grid-cols-2 gap-3">
-
-                <mat-form-field class="w-full fuse-mat-dense">
-                    <mat-label>Δημοσίευση *</mat-label>
-                    <input matInput type="datetime-local" formControlName="publishDate" />
-                </mat-form-field>
-
-                <mat-form-field class="w-full fuse-mat-dense">
-                    <mat-label>Έναρξη *</mat-label>
-                    <input matInput type="datetime-local" formControlName="startDate" />
-                </mat-form-field>
-
-                <mat-form-field class="w-full fuse-mat-dense">
-                    <mat-label>Λήξη *</mat-label>
-                    <input matInput type="datetime-local" formControlName="endDate" />
-                </mat-form-field>
-
-                <mat-form-field class="w-full fuse-mat-dense">
-                    <mat-label>Αριθμός Νικητών</mat-label>
-                    <input matInput type="number" min="1" formControlName="totalWinners" />
-                </mat-form-field>
-
-                <mat-form-field class="w-full fuse-mat-dense">
-                    <mat-label>Μέγ. ανά χρήστη</mat-label>
-                    <input matInput type="number" min="1" formControlName="maxEntriesPerUser" />
-                </mat-form-field>
-
-                <mat-form-field class="w-full fuse-mat-dense">
-                    <mat-label>Μέγ. συνολικές</mat-label>
-                    <input matInput type="number" min="1" formControlName="maxTotalEntries" />
-                </mat-form-field>
-
+            <!-- ── Δημοσίευση ─────────────────────────────────── -->
+            <div>
+                <div class="text-xs font-bold uppercase tracking-wider text-secondary mb-2 flex items-center gap-1.5">
+                    <mat-icon class="icon-size-3.5 text-gray-500">campaign</mat-icon> Δημοσίευση
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <mat-form-field class="w-full fuse-mat-dense">
+                        <mat-label>Ημερομηνία *</mat-label>
+                        <input matInput [matDatepicker]="pubPicker" formControlName="publishDate" />
+                        <mat-datepicker-toggle matSuffix [for]="pubPicker"></mat-datepicker-toggle>
+                        <mat-datepicker #pubPicker></mat-datepicker>
+                    </mat-form-field>
+                    <mat-form-field class="w-full fuse-mat-dense">
+                        <mat-label>Ώρα</mat-label>
+                        <input matInput type="text" placeholder="HH:mm" formControlName="publishTime" />
+                        <mat-icon matSuffix class="icon-size-4 text-secondary">schedule</mat-icon>
+                    </mat-form-field>
+                </div>
             </div>
 
+            <!-- ── Έναρξη ─────────────────────────────────────── -->
+            <div>
+                <div class="text-xs font-bold uppercase tracking-wider text-secondary mb-2 flex items-center gap-1.5">
+                    <mat-icon class="icon-size-3.5 text-green-500">play_circle</mat-icon> Έναρξη
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <mat-form-field class="w-full fuse-mat-dense">
+                        <mat-label>Ημερομηνία *</mat-label>
+                        <input matInput [matDatepicker]="startPicker" formControlName="startDate" />
+                        <mat-datepicker-toggle matSuffix [for]="startPicker"></mat-datepicker-toggle>
+                        <mat-datepicker #startPicker></mat-datepicker>
+                    </mat-form-field>
+                    <mat-form-field class="w-full fuse-mat-dense">
+                        <mat-label>Ώρα</mat-label>
+                        <input matInput type="text" placeholder="HH:mm" formControlName="startTime" />
+                        <mat-icon matSuffix class="icon-size-4 text-secondary">schedule</mat-icon>
+                    </mat-form-field>
+                </div>
+            </div>
+
+            <!-- ── Λήξη ───────────────────────────────────────── -->
+            <div>
+                <div class="text-xs font-bold uppercase tracking-wider text-secondary mb-2 flex items-center gap-1.5">
+                    <mat-icon class="icon-size-3.5 text-red-500">flag</mat-icon> Λήξη
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <mat-form-field class="w-full fuse-mat-dense">
+                        <mat-label>Ημερομηνία *</mat-label>
+                        <input matInput [matDatepicker]="endPicker" formControlName="endDate" />
+                        <mat-datepicker-toggle matSuffix [for]="endPicker"></mat-datepicker-toggle>
+                        <mat-datepicker #endPicker></mat-datepicker>
+                    </mat-form-field>
+                    <mat-form-field class="w-full fuse-mat-dense">
+                        <mat-label>Ώρα</mat-label>
+                        <input matInput type="text" placeholder="HH:mm" formControlName="endTime" />
+                        <mat-icon matSuffix class="icon-size-4 text-secondary">schedule</mat-icon>
+                    </mat-form-field>
+                </div>
+            </div>
+
+            <!-- ── Numbers ────────────────────────────────────── -->
+            <div class="grid grid-cols-3 gap-3">
+                <mat-form-field class="w-full fuse-mat-dense">
+                    <mat-label>Αριθμός νικητών</mat-label>
+                    <mat-icon matPrefix class="icon-size-4 mr-1 text-amber-500">emoji_events</mat-icon>
+                    <input matInput type="number" min="1" formControlName="totalWinners" />
+                </mat-form-field>
+                <mat-form-field class="w-full fuse-mat-dense">
+                    <mat-label>Μέγ. ανά χρήστη</mat-label>
+                    <mat-icon matPrefix class="icon-size-4 mr-1 text-indigo-500">person</mat-icon>
+                    <input matInput type="number" min="1" formControlName="maxEntriesPerUser" />
+                </mat-form-field>
+                <mat-form-field class="w-full fuse-mat-dense">
+                    <mat-label>Μέγ. συνολικές</mat-label>
+                    <mat-icon matPrefix class="icon-size-4 mr-1 text-purple-500">group</mat-icon>
+                    <input matInput type="number" min="1" formControlName="maxTotalEntries" />
+                </mat-form-field>
+            </div>
+
+            <!-- ── Toggles ────────────────────────────────────── -->
             <div
                 class="flex items-center justify-between gap-4 rounded-xl border bg-gray-50/80 dark:bg-white/5 px-4 py-3">
-                <span class="text-sm font-medium">Ενεργός διαγωνισμός</span>
+                <div class="flex items-center gap-2">
+                    <mat-icon class="icon-size-4 text-secondary">toggle_on</mat-icon>
+                    <span class="text-sm font-medium">Ενεργός διαγωνισμός</span>
+                </div>
                 <mat-slide-toggle formControlName="isActive" color="primary"></mat-slide-toggle>
             </div>
 
             <div
                 class="flex items-center justify-between gap-4 rounded-xl border bg-gray-50/80 dark:bg-white/5 px-4 py-3">
-                <span class="text-sm font-medium">Ειδοποίηση νικητών</span>
+                <div class="flex items-center gap-2">
+                    <mat-icon class="icon-size-4 text-secondary">notifications</mat-icon>
+                    <span class="text-sm font-medium">Ειδοποίηση νικητών</span>
+                </div>
                 <mat-slide-toggle formControlName="sendNotificationsToWinners" color="primary"></mat-slide-toggle>
             </div>
 
@@ -88,7 +184,7 @@
     <!-- Footer -->
     <div class="border-t px-6 py-4 flex items-center justify-end gap-2 shrink-0">
         <button mat-button (click)="cancel()" [disabled]="saving()">Ακύρωση</button>
-        <button mat-flat-button color="primary" (click)="save()" [disabled]="saving() || form.invalid"
+        <button mat-flat-button color="primary" (click)="save()" [disabled]="saving() || uploading() || form.invalid"
             class="!rounded-full !font-semibold">
             @if (saving()) { <span class="inline-block animate-spin mr-1">⟳</span> }
             Αποθήκευση

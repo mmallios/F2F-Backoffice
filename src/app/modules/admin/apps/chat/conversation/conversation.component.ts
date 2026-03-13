@@ -12,17 +12,23 @@ import {
     ViewChild,
     ViewEncapsulation,
 } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatSidenavModule } from '@angular/material/sidenav';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FuseMediaWatcherService } from '@fuse/services/media-watcher';
 import { ChatService } from 'app/modules/admin/apps/chat/chat.service';
-import { Chat } from 'app/modules/admin/apps/chat/chat.types';
 import { ContactInfoComponent } from 'app/modules/admin/apps/chat/contact-info/contact-info.component';
+import {
+    BOChatDetail,
+    BOGroupChatDetail,
+    BOChatMessage,
+    BOGroupChatMessage,
+} from 'app/modules/admin/apps/chat/chat.types';
 import { Subject, takeUntil } from 'rxjs';
 
 @Component({
@@ -39,149 +45,200 @@ import { Subject, takeUntil } from 'rxjs';
         MatIconModule,
         MatMenuModule,
         NgClass,
-        NgTemplateOutlet,
         MatFormFieldModule,
         MatInputModule,
         TextFieldModule,
+        FormsModule,
         DatePipe,
+        NgTemplateOutlet,
     ],
 })
 export class ConversationComponent implements OnInit, OnDestroy {
     @ViewChild('messageInput') messageInput: ElementRef;
-    chat: Chat;
-    drawerMode: 'over' | 'side' = 'side';
-    drawerOpened: boolean = false;
-    private _unsubscribeAll: Subject<any> = new Subject<any>();
+    @ViewChild('messagesContainer') messagesContainer: ElementRef;
 
-    /**
-     * Constructor
-     */
+    chat: BOChatDetail | null = null;
+    groupChat: BOGroupChatDetail | null = null;
+    isGroup = false;
+
+    messageText = '';
+    sending = false;
+
+    drawerMode: 'over' | 'side' = 'side';
+    drawerOpened = false;
+
+    private _unsubscribeAll = new Subject<void>();
+
     constructor(
         private _changeDetectorRef: ChangeDetectorRef,
         private _chatService: ChatService,
         private _fuseMediaWatcherService: FuseMediaWatcherService,
-        private _ngZone: NgZone
-    ) {}
+        private _ngZone: NgZone,
+        private _activatedRoute: ActivatedRoute,
+        private _router: Router,
+    ) { }
 
-    // -----------------------------------------------------------------------------------------------------
-    // @ Decorated methods
-    // -----------------------------------------------------------------------------------------------------
-
-    /**
-     * Resize on 'input' and 'ngModelChange' events
-     *
-     * @private
-     */
     @HostListener('input')
     @HostListener('ngModelChange')
-    private _resizeMessageInput(): void {
-        // This doesn't need to trigger Angular's change detection by itself
+    _resizeMessageInput(): void {
         this._ngZone.runOutsideAngular(() => {
             setTimeout(() => {
-                // Set the height to 'auto' so we can correctly read the scrollHeight
+                if (!this.messageInput?.nativeElement) return;
                 this.messageInput.nativeElement.style.height = 'auto';
-
-                // Detect the changes so the height is applied
                 this._changeDetectorRef.detectChanges();
-
-                // Get the scrollHeight and subtract the vertical padding
-                this.messageInput.nativeElement.style.height = `${this.messageInput.nativeElement.scrollHeight}px`;
-
-                // Detect the changes one more time to apply the final height
+                this.messageInput.nativeElement.style.height =
+                    `${this.messageInput.nativeElement.scrollHeight}px`;
                 this._changeDetectorRef.detectChanges();
             });
         });
     }
 
-    // -----------------------------------------------------------------------------------------------------
-    // @ Lifecycle hooks
-    // -----------------------------------------------------------------------------------------------------
-
-    /**
-     * On init
-     */
     ngOnInit(): void {
-        // Chat
-        this._chatService.chat$
+        this._activatedRoute.data
             .pipe(takeUntil(this._unsubscribeAll))
-            .subscribe((chat: Chat) => {
-                this.chat = chat;
-
-                // Mark for check
+            .subscribe(data => {
+                this.isGroup = data['type'] === 'group';
                 this._changeDetectorRef.markForCheck();
             });
 
-        // Subscribe to media changes
+        this._chatService.activeChat$
+            .pipe(takeUntil(this._unsubscribeAll))
+            .subscribe(chat => {
+                this.chat = chat;
+                this._changeDetectorRef.markForCheck();
+                this._scrollToBottom();
+                // Mark as read when conversation opens with unread messages
+                if (chat && chat.unreadCount > 0) {
+                    this._chatService.markChatRead(chat.id).subscribe();
+                }
+            });
+
+        this._chatService.activeGroupChat$
+            .pipe(takeUntil(this._unsubscribeAll))
+            .subscribe(chat => {
+                this.groupChat = chat;
+                this._changeDetectorRef.markForCheck();
+                this._scrollToBottom();
+                // Mark as read when conversation opens with unread messages
+                if (chat && chat.unreadCount > 0) {
+                    this._chatService.markGroupRead(chat.id).subscribe();
+                }
+            });
+
         this._fuseMediaWatcherService.onMediaChange$
             .pipe(takeUntil(this._unsubscribeAll))
             .subscribe(({ matchingAliases }) => {
-                // Set the drawerMode if the given breakpoint is active
-                if (matchingAliases.includes('lg')) {
-                    this.drawerMode = 'side';
-                } else {
-                    this.drawerMode = 'over';
-                }
-
-                // Mark for check
+                this.drawerMode = matchingAliases.includes('lg') ? 'side' : 'over';
                 this._changeDetectorRef.markForCheck();
             });
     }
 
-    /**
-     * On destroy
-     */
     ngOnDestroy(): void {
-        // Unsubscribe from all subscriptions
-        this._unsubscribeAll.next(null);
+        this._unsubscribeAll.next();
         this._unsubscribeAll.complete();
     }
 
-    // -----------------------------------------------------------------------------------------------------
-    // @ Public methods
-    // -----------------------------------------------------------------------------------------------------
+    get currentChat(): BOChatDetail | BOGroupChatDetail | null {
+        return this.isGroup ? this.groupChat : this.chat;
+    }
 
-    /**
-     * Open the contact info
-     */
+    get messages(): (BOChatMessage | BOGroupChatMessage)[] {
+        return this.currentChat?.messages ?? [];
+    }
+
+    get chatTitle(): string {
+        if (!this.currentChat) return '';
+        if (this.isGroup) return (this.currentChat as BOGroupChatDetail).name;
+        return (this.currentChat as BOChatDetail).contactName ?? '';
+    }
+
+    get chatAvatar(): string | undefined {
+        if (!this.currentChat) return undefined;
+        if (this.isGroup) return (this.currentChat as BOGroupChatDetail).imageUrl ?? undefined;
+        return (this.currentChat as BOChatDetail).contactAvatar ?? undefined;
+    }
+
+    get isMuted(): boolean { return this.currentChat?.muted ?? false; }
+    get isPinned(): boolean { return this.currentChat?.pinned ?? false; }
+
+    sendMessage(): void {
+        const body = this.messageText.trim();
+        if (!body || this.sending || !this.currentChat) return;
+
+        this.sending = true;
+        const id = this.currentChat.id;
+        const obs = this.isGroup
+            ? this._chatService.sendGroupMessage(id, body)
+            : this._chatService.sendMessage(id, body);
+
+        obs.subscribe({
+            next: () => {
+                this.messageText = '';
+                this.sending = false;
+                if (this.messageInput?.nativeElement) {
+                    this.messageInput.nativeElement.style.height = 'auto';
+                }
+                this._changeDetectorRef.markForCheck();
+                this._scrollToBottom();
+            },
+            error: () => { this.sending = false; this._changeDetectorRef.markForCheck(); }
+        });
+    }
+
+    onEnterKey(event: KeyboardEvent): void {
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
+            this.sendMessage();
+        }
+    }
+
+    toggleMute(): void {
+        if (!this.currentChat) return;
+        const muted = !this.currentChat.muted;
+        const id = this.currentChat.id;
+        (this.isGroup
+            ? this._chatService.updateGroupSettings(id, { muted })
+            : this._chatService.updateChatSettings(id, { muted })
+        ).subscribe();
+    }
+
+    togglePin(): void {
+        if (!this.currentChat) return;
+        const pinned = !this.currentChat.pinned;
+        const id = this.currentChat.id;
+        (this.isGroup
+            ? this._chatService.updateGroupSettings(id, { pinned })
+            : this._chatService.updateChatSettings(id, { pinned })
+        ).subscribe();
+    }
+
     openContactInfo(): void {
-        // Open the drawer
         this.drawerOpened = true;
-
-        // Mark for check
         this._changeDetectorRef.markForCheck();
     }
 
-    /**
-     * Reset the chat
-     */
     resetChat(): void {
-        this._chatService.resetChat();
-
-        // Close the contact info in case it's opened
+        this._chatService.resetActiveChat();
         this.drawerOpened = false;
-
-        // Mark for check
         this._changeDetectorRef.markForCheck();
     }
 
-    /**
-     * Toggle mute notifications
-     */
-    toggleMuteNotifications(): void {
-        // Toggle the muted
-        this.chat.muted = !this.chat.muted;
-
-        // Update the chat on the server
-        this._chatService.updateChat(this.chat.id, this.chat).subscribe();
-    }
-
-    /**
-     * Track by function for ngFor loops
-     *
-     * @param index
-     * @param item
-     */
     trackByFn(index: number, item: any): any {
         return item.id || index;
+    }
+
+    isSameDay(a: string, b: string): boolean {
+        return new Date(a).toDateString() === new Date(b).toDateString();
+    }
+
+    private _scrollToBottom(): void {
+        this._ngZone.runOutsideAngular(() => {
+            setTimeout(() => {
+                if (this.messagesContainer?.nativeElement) {
+                    this.messagesContainer.nativeElement.scrollTop =
+                        this.messagesContainer.nativeElement.scrollHeight;
+                }
+            }, 50);
+        });
     }
 }

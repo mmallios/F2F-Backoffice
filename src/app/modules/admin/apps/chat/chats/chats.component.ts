@@ -1,4 +1,4 @@
-import { NgClass } from '@angular/common';
+import { DatePipe, NgClass } from '@angular/common';
 import {
     ChangeDetectionStrategy,
     ChangeDetectorRef,
@@ -8,16 +8,23 @@ import {
     ViewEncapsulation,
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { RouterLink, RouterOutlet } from '@angular/router';
+import { AuthService } from 'app/core/auth/auth.service';
+import {
+    BOChatSummary,
+    BOGroupChatSummary,
+    ChatListItem,
+} from 'app/modules/admin/apps/chat/chat.types';
 import { ChatService } from 'app/modules/admin/apps/chat/chat.service';
-import { Chat, Profile } from 'app/modules/admin/apps/chat/chat.types';
 import { NewChatComponent } from 'app/modules/admin/apps/chat/new-chat/new-chat.component';
 import { ProfileComponent } from 'app/modules/admin/apps/chat/profile/profile.component';
+import { NewGroupChatDialogComponent } from 'app/modules/admin/apps/chat/new-group-chat-dialog/new-group-chat-dialog.component';
 import { Subject, takeUntil } from 'rxjs';
 
 @Component({
@@ -35,128 +42,155 @@ import { Subject, takeUntil } from 'rxjs';
         MatMenuModule,
         MatFormFieldModule,
         MatInputModule,
+        MatDialogModule,
         NgClass,
+        DatePipe,
         RouterLink,
         RouterOutlet,
     ],
 })
 export class ChatsComponent implements OnInit, OnDestroy {
-    chats: Chat[];
+    chats: ChatListItem[] = [];
+    filteredChats: ChatListItem[] = [];
+    activeTab: 'all' | 'group' | 'private' = 'all';
+    selectedChatId: number | null = null;
+    selectedIsGroup: boolean = false;
     drawerComponent: 'profile' | 'new-chat';
     drawerOpened: boolean = false;
-    filteredChats: Chat[];
-    profile: Profile;
-    selectedChat: Chat;
-    private _unsubscribeAll: Subject<any> = new Subject<any>();
 
-    /**
-     * Constructor
-     */
+    private _lastSearch = '';
+    private _unsubscribeAll = new Subject<void>();
+
     constructor(
         private _chatService: ChatService,
-        private _changeDetectorRef: ChangeDetectorRef
-    ) {}
+        private _auth: AuthService,
+        private _changeDetectorRef: ChangeDetectorRef,
+        private _dialog: MatDialog,
+    ) { }
 
-    // -----------------------------------------------------------------------------------------------------
-    // @ Lifecycle hooks
-    // -----------------------------------------------------------------------------------------------------
+    get myProfile() {
+        return this._auth.currentUser;
+    }
 
-    /**
-     * On init
-     */
+    get totalUnread(): number {
+        return this.chats.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
+    }
+
     ngOnInit(): void {
-        // Chats
         this._chatService.chats$
             .pipe(takeUntil(this._unsubscribeAll))
-            .subscribe((chats: Chat[]) => {
-                this.chats = this.filteredChats = chats;
-
-                // Mark for check
+            .subscribe(chats => {
+                this.chats = chats;
+                this._applyFilter(this._lastSearch);
                 this._changeDetectorRef.markForCheck();
             });
 
-        // Profile
-        this._chatService.profile$
+        this._chatService.activeChat$
             .pipe(takeUntil(this._unsubscribeAll))
-            .subscribe((profile: Profile) => {
-                this.profile = profile;
-
-                // Mark for check
+            .subscribe(chat => {
+                if (chat) {
+                    this.selectedChatId = chat.id;
+                    this.selectedIsGroup = false;
+                }
                 this._changeDetectorRef.markForCheck();
             });
 
-        // Selected chat
-        this._chatService.chat$
+        this._chatService.activeGroupChat$
             .pipe(takeUntil(this._unsubscribeAll))
-            .subscribe((chat: Chat) => {
-                this.selectedChat = chat;
-
-                // Mark for check
+            .subscribe(chat => {
+                if (chat) {
+                    this.selectedChatId = chat.id;
+                    this.selectedIsGroup = true;
+                }
                 this._changeDetectorRef.markForCheck();
             });
     }
 
-    /**
-     * On destroy
-     */
     ngOnDestroy(): void {
-        // Unsubscribe from all subscriptions
-        this._unsubscribeAll.next(null);
+        this._unsubscribeAll.next();
         this._unsubscribeAll.complete();
-
-        // Reset the chat
-        this._chatService.resetChat();
+        this._chatService.resetActiveChat();
     }
 
-    // -----------------------------------------------------------------------------------------------------
-    // @ Public methods
-    // -----------------------------------------------------------------------------------------------------
+    setTab(tab: 'all' | 'group' | 'private'): void {
+        this.activeTab = tab;
+        this._applyFilter(this._lastSearch);
+        this._changeDetectorRef.markForCheck();
+    }
 
-    /**
-     * Filter the chats
-     *
-     * @param query
-     */
     filterChats(query: string): void {
-        // Reset the filter
-        if (!query) {
-            this.filteredChats = this.chats;
-            return;
-        }
-
-        this.filteredChats = this.chats.filter((chat) =>
-            chat.contact.name.toLowerCase().includes(query.toLowerCase())
-        );
+        this._lastSearch = query;
+        this._applyFilter(query);
     }
 
-    /**
-     * Open the new chat sidebar
-     */
+    private _applyFilter(query: string): void {
+        let result = this.chats;
+        if (this.activeTab === 'group') {
+            result = result.filter(c => !!c.isGroupChat);
+        } else if (this.activeTab === 'private') {
+            result = result.filter(c => !c.isGroupChat);
+        }
+        if (query) {
+            const q = query.toLowerCase();
+            result = result.filter(c => {
+                const name = c.isGroupChat
+                    ? (c as BOGroupChatSummary).name
+                    : (c as BOChatSummary).contactName;
+                return name?.toLowerCase().includes(q);
+            });
+        }
+        this.filteredChats = result;
+        this._changeDetectorRef.markForCheck();
+    }
+
+    getChatName(c: ChatListItem): string {
+        return c.isGroupChat
+            ? (c as BOGroupChatSummary).name
+            : (c as BOChatSummary).contactName ?? '';
+    }
+
+    getChatAvatar(c: ChatListItem): string | undefined {
+        return c.isGroupChat
+            ? (c as BOGroupChatSummary).imageUrl ?? undefined
+            : (c as BOChatSummary).contactAvatar ?? undefined;
+    }
+
+    getChatInitial(c: ChatListItem): string {
+        return this.getChatName(c).charAt(0).toUpperCase();
+    }
+
+    getRouterLink(c: ChatListItem): string[] {
+        return c.isGroupChat ? ['group', c.id.toString()] : ['chat', c.id.toString()];
+    }
+
+    isSelected(c: ChatListItem): boolean {
+        return this.selectedChatId === c.id && !!c.isGroupChat === this.selectedIsGroup;
+    }
+
     openNewChat(): void {
         this.drawerComponent = 'new-chat';
         this.drawerOpened = true;
-
-        // Mark for check
         this._changeDetectorRef.markForCheck();
     }
 
-    /**
-     * Open the profile sidebar
-     */
+    openNewGroup(): void {
+        const dialogRef = this._dialog.open(NewGroupChatDialogComponent, {
+            width: '500px',
+            data: { myBoUserId: this.myProfile?.boUserId },
+        });
+        dialogRef.afterClosed().subscribe((created: boolean) => {
+            if (created) {
+                this._chatService.loadAll().subscribe();
+            }
+        });
+    }
+
     openProfile(): void {
         this.drawerComponent = 'profile';
         this.drawerOpened = true;
-
-        // Mark for check
         this._changeDetectorRef.markForCheck();
     }
 
-    /**
-     * Track by function for ngFor loops
-     *
-     * @param index
-     * @param item
-     */
     trackByFn(index: number, item: any): any {
         return item.id || index;
     }

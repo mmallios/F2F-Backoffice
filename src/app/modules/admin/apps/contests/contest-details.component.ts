@@ -22,6 +22,7 @@ import {
 } from '@fuse/services/contests/contests-admin.service';
 import { ContestEditDialogComponent } from './dialogs/contest-edit-dialog.component';
 import { WinnerPickerDialogComponent } from './dialogs/winner-picker-dialog.component';
+import { AllParticipantsDialogComponent } from './dialogs/all-participants-dialog.component';
 
 @Component({
     selector: 'app-contest-details',
@@ -79,7 +80,7 @@ export class ContestDetailsComponent implements OnInit, OnDestroy {
         this.dialog
             .open(ContestEditDialogComponent, {
                 data: c,
-                width: '640px',
+                width: '800px',
                 maxWidth: '95vw',
                 maxHeight: '90vh',
                 disableClose: true,
@@ -126,6 +127,29 @@ export class ContestDetailsComponent implements OnInit, OnDestroy {
 
     get participants(): ContestEntryDto[] {
         return this.contest()?.entries?.filter((e) => !e.isWinner) ?? [];
+    }
+
+    get allEntries(): ContestEntryDto[] {
+        return this.contest()?.entries ?? [];
+    }
+
+    get previewEntries(): ContestEntryDto[] {
+        return this.allEntries.slice(0, 7);
+    }
+
+    openAllParticipants(): void {
+        const c = this.contest();
+        if (!c) return;
+        this.dialog
+            .open(AllParticipantsDialogComponent, {
+                data: { contestId: c.id, entries: this.allEntries },
+                width: '620px',
+                maxWidth: '95vw',
+                maxHeight: '90vh',
+            })
+            .afterClosed()
+            .pipe(takeUntil(this.destroy$))
+            .subscribe((changed) => { if (changed) this.load(); });
     }
 
     entryName(e: ContestEntryDto): string {

@@ -33,6 +33,7 @@ export interface ContestEntryUserDto {
     fullName?: string | null;
     email?: string | null;
     image?: string | null;
+    code?: string | null;
 }
 
 export interface ContestEntryDto {
@@ -112,5 +113,10 @@ export class ContestsAdminService {
     /** DELETE /api/Contests/{id} */
     delete(id: number): Observable<void> {
         return this.http.delete<void>(`${this.base}/${id}`);
+    }
+
+    /** DELETE /api/Contests/{contestId}/entries/{entryId} */
+    removeEntry(contestId: number, entryId: number): Observable<void> {
+        return this.http.delete<void>(`${this.base}/${contestId}/entries/${entryId}`);
     }
 }

@@ -1,52 +1,80 @@
-export interface Profile {
-    id?: string;
-    name?: string;
-    email?: string;
-    avatar?: string;
-    about?: string;
+export interface BOChatMessage {
+    id: number;
+    senderBoUserId: number;
+    senderName?: string;
+    senderAvatar?: string;
+    body: string;
+    isDeleted: boolean;
+    isMine: boolean;
+    createdOn: string;
 }
 
-export interface Contact {
-    id?: string;
-    avatar?: string;
-    name?: string;
-    about?: string;
-    details?: {
-        emails?: {
-            email?: string;
-            label?: string;
-        }[];
-        phoneNumbers?: {
-            country?: string;
-            phoneNumber?: string;
-            label?: string;
-        }[];
-        title?: string;
-        company?: string;
-        birthday?: string;
-        address?: string;
-    };
-    attachments?: {
-        media?: any[];
-        docs?: any[];
-        links?: any[];
-    };
-}
-
-export interface Chat {
-    id?: string;
-    contactId?: string;
-    contact?: Contact;
-    unreadCount?: number;
-    muted?: boolean;
+export interface BOChatSummary {
+    id: number;
+    contactBoUserId: number;
+    contactName: string;
+    contactAvatar?: string;
+    contactEmail?: string;
+    muted: boolean;
+    pinned: boolean;
+    archived: boolean;
+    unreadCount: number;
     lastMessage?: string;
     lastMessageAt?: string;
-    messages?: {
-        id?: string;
-        chatId?: string;
-        contactId?: string;
-        isMine?: boolean;
-        value?: string;
-        createdAt?: string;
-    }[];
+    createdOn: string;
+    isGroupChat?: false;
 }
+
+export interface BOChatDetail extends BOChatSummary {
+    messages: BOChatMessage[];
+}
+
+export interface BOGroupChatMessage {
+    id: number;
+    senderBoUserId: number;
+    senderName?: string;
+    senderAvatar?: string;
+    body: string;
+    isDeleted: boolean;
+    isMine: boolean;
+    createdOn: string;
+}
+
+export interface BOGroupMember {
+    boUserId: number;
+    fullName: string;
+    avatar?: string;
+    isAdmin: boolean;
+}
+
+export interface BOGroupChatSummary {
+    id: number;
+    name: string;
+    description?: string;
+    imageUrl?: string;
+    isGroupChat: true;
+    memberCount: number;
+    muted: boolean;
+    pinned: boolean;
+    archived: boolean;
+    unreadCount: number;
+    lastMessage?: string;
+    lastMessageAt?: string;
+    createdOn: string;
+}
+
+export interface BOGroupChatDetail extends BOGroupChatSummary {
+    isAdmin: boolean;
+    members: BOGroupMember[];
+    messages: BOGroupChatMessage[];
+}
+
+export type ChatListItem = BOChatSummary | BOGroupChatSummary;
+
+export interface BOAdminContact {
+    boUserId: number;
+    fullName: string;
+    email?: string;
+    avatar?: string;
+}
+

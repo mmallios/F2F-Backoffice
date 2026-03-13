@@ -1,0 +1,226 @@
+<div class="absolute inset-0 flex min-w-0 flex-col overflow-hidden">
+    <div class="flex-auto overflow-y-auto">
+
+        <!-- Header -->
+        <div class="border-b px-6 py-7 md:px-8">
+            <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div class="min-w-0">
+                    <div class="text-3xl md:text-4xl font-extrabold leading-none tracking-tight">
+                        Κατηγορίες Προσφορών
+                    </div>
+                    <div class="text-secondary mt-2 font-medium">
+                        Διαχείριση κατηγοριών για ταξινόμηση προσφορών
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                    <button mat-flat-button color="primary" (click)="openNew()" class="!rounded-full !font-semibold">
+                        <mat-icon class="mr-1">add</mat-icon>
+                        Νέα Κατηγορία
+                    </button>
+                    <button mat-icon-button (click)="openNew()" [disabled]="loading()" matTooltip="Ανανέωση"
+                        (click)="$event.stopPropagation()">
+                        <mat-icon>refresh</mat-icon>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats strip -->
+        <div class="px-6 md:px-8 pt-5 pb-1">
+            <div class="grid grid-cols-3 gap-4">
+                <div class="flex items-center gap-4 rounded-2xl border bg-card p-4 shadow-sm">
+                    <div class="flex items-center justify-center w-12 h-12 rounded-xl bg-violet-500/10 shrink-0">
+                        <mat-icon class="text-violet-500">category</mat-icon>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-extrabold leading-none">
+                            {{ loading() ? '—' : categories.length }}
+                        </div>
+                        <div class="text-secondary text-xs mt-1">Σύνολο</div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4 rounded-2xl border bg-card p-4 shadow-sm">
+                    <div class="flex items-center justify-center w-12 h-12 rounded-xl bg-green-500/10 shrink-0">
+                        <mat-icon class="text-green-500">check_circle</mat-icon>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-extrabold leading-none">
+                            {{ loading() ? '—' : activeCount }}
+                        </div>
+                        <div class="text-secondary text-xs mt-1">Ενεργές</div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4 rounded-2xl border bg-card p-4 shadow-sm">
+                    <div class="flex items-center justify-center w-12 h-12 rounded-xl bg-orange-500/10 shrink-0">
+                        <mat-icon class="text-orange-500">local_offer</mat-icon>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-extrabold leading-none">
+                            {{ loading() ? '—' : totalOffers }}
+                        </div>
+                        <div class="text-secondary text-xs mt-1">Συν. Προσφορές</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Grid -->
+        <div class="px-6 md:px-8 py-5">
+
+            @if (loading()) {
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                @for (_ of [1,2,3,4,5,6]; track $index) {
+                <div class="rounded-2xl border bg-card p-5 animate-pulse shadow-sm">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-10 h-10 rounded-xl bg-gray-200 dark:bg-gray-700"></div>
+                        <div class="flex-1">
+                            <div class="h-4 w-3/4 rounded bg-gray-200 dark:bg-gray-700 mb-1"></div>
+                            <div class="h-3 w-1/2 rounded bg-gray-200 dark:bg-gray-700"></div>
+                        </div>
+                    </div>
+                    <div class="h-3 w-full rounded bg-gray-200 dark:bg-gray-700"></div>
+                </div>
+                }
+            </div>
+            } @else if (categories.length === 0) {
+            <div class="flex flex-col items-center justify-center py-20 gap-4">
+                <mat-icon class="text-5xl w-16 h-16 opacity-30">category</mat-icon>
+                <div class="text-secondary text-xl font-medium">Δεν υπάρχουν κατηγορίες ακόμα</div>
+                <button mat-flat-button color="primary" (click)="openNew()" class="!rounded-full">
+                    <mat-icon class="mr-1">add</mat-icon>
+                    Πρώτη Κατηγορία
+                </button>
+            </div>
+            } @else {
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                @for (cat of categories; track trackById($index, cat)) {
+                <div class="relative flex flex-col rounded-2xl border bg-card p-5 shadow-sm transition hover:shadow-md"
+                    [class.opacity-60]="!cat.isActive">
+
+                    <!-- Inactive badge -->
+                    @if (!cat.isActive) {
+                    <span
+                        class="absolute top-3 right-3 rounded-full bg-gray-200 dark:bg-gray-700 px-2 py-0.5 text-xs font-semibold text-gray-500">
+                        Ανενεργή
+                    </span>
+                    }
+
+                    <!-- Icon + label -->
+                    <div class="flex items-center gap-3 mb-4">
+                        <div
+                            class="flex items-center justify-center w-10 h-10 rounded-xl bg-violet-500/10 text-violet-500 shrink-0 text-lg font-bold">
+                            @if (cat.icon) {
+                            <mat-icon class="icon-size-5">{{ cat.icon }}</mat-icon>
+                            } @else {
+                            <mat-icon class="icon-size-5">category</mat-icon>
+                            }
+                        </div>
+                        <div class="min-w-0">
+                            <div class="font-bold truncate">{{ cat.label }}</div>
+                            <div class="text-xs text-secondary font-mono truncate">{{ cat.code }}</div>
+                        </div>
+                    </div>
+
+                    <!-- Stats row -->
+                    <div class="flex items-center gap-4 text-sm text-secondary mb-4">
+                        <span class="flex items-center gap-1">
+                            <mat-icon class="icon-size-4">local_offer</mat-icon>
+                            {{ cat.offerCount }} προσφορές
+                        </span>
+                        <span class="flex items-center gap-1">
+                            <mat-icon class="icon-size-4">sort</mat-icon>
+                            #{{ cat.order }}
+                        </span>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex items-center justify-end gap-1 mt-auto pt-3 border-t">
+                        <button mat-icon-button (click)="openEdit(cat)" matTooltip="Επεξεργασία">
+                            <mat-icon class="icon-size-5">edit</mat-icon>
+                        </button>
+                        <button mat-icon-button color="warn" (click)="deleteCategory(cat)" matTooltip="Απενεργοποίηση">
+                            <mat-icon class="icon-size-5">delete_outline</mat-icon>
+                        </button>
+                    </div>
+                </div>
+                }
+            </div>
+            }
+
+        </div>
+
+    </div>
+</div>
+
+<!-- ─── Add / Edit Modal ─────────────────────────────────────────────────────── -->
+@if (modalOpen) {
+<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+    <div class="bg-card w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
+
+        <!-- Modal header -->
+        <div class="flex items-center justify-between px-6 py-4 border-b">
+            <h2 class="text-lg font-bold">
+                {{ editingId == null ? 'Νέα Κατηγορία' : 'Επεξεργασία Κατηγορίας' }}
+            </h2>
+            <button mat-icon-button (click)="closeModal()">
+                <mat-icon>close</mat-icon>
+            </button>
+        </div>
+
+        <!-- Modal body -->
+        <form [formGroup]="form" class="flex flex-col gap-4 px-6 py-5">
+
+            <mat-form-field class="w-full fuse-mat-dense fuse-mat-rounded">
+                <mat-label>Ετικέτα *</mat-label>
+                <input matInput formControlName="label" placeholder="π.χ. Εστιατόρια" />
+                @if (form.get('label')?.hasError('required') && form.get('label')?.touched) {
+                <mat-error>Απαιτείται ετικέτα</mat-error>
+                }
+            </mat-form-field>
+
+            <mat-form-field class="w-full fuse-mat-dense fuse-mat-rounded">
+                <mat-label>Κωδικός *</mat-label>
+                <input matInput formControlName="code" placeholder="π.χ. restaurants" />
+                @if (form.get('code')?.hasError('required') && form.get('code')?.touched) {
+                <mat-error>Απαιτείται κωδικός</mat-error>
+                }
+            </mat-form-field>
+
+            <mat-form-field class="w-full fuse-mat-dense fuse-mat-rounded">
+                <mat-label>Εικονίδιο (Material icon name)</mat-label>
+                <input matInput formControlName="icon" placeholder="π.χ. restaurant, local_offer" />
+                <mat-hint>Προαιρετικό. Ονόματα από Material Icons.</mat-hint>
+            </mat-form-field>
+
+            <mat-form-field class="w-full fuse-mat-dense fuse-mat-rounded">
+                <mat-label>Σειρά εμφάνισης</mat-label>
+                <input matInput type="number" formControlName="order" placeholder="0" />
+            </mat-form-field>
+
+            @if (editingId != null) {
+            <div class="flex items-center gap-3">
+                <mat-slide-toggle formControlName="isActive" color="primary">
+                    Ενεργή κατηγορία
+                </mat-slide-toggle>
+            </div>
+            }
+
+        </form>
+
+        <!-- Modal footer -->
+        <div class="flex items-center justify-end gap-3 px-6 py-4 border-t bg-gray-50/50 dark:bg-white/5">
+            <button mat-stroked-button (click)="closeModal()" [disabled]="saving()">
+                Ακύρωση
+            </button>
+            <button mat-flat-button color="primary" (click)="save()" [disabled]="saving() || form.invalid"
+                class="!rounded-full !font-semibold">
+                @if (saving()) {
+                <mat-icon class="animate-spin mr-1">refresh</mat-icon>
+                }
+                {{ editingId == null ? 'Δημιουργία' : 'Αποθήκευση' }}
+            </button>
+        </div>
+
+    </div>
+</div>
+}

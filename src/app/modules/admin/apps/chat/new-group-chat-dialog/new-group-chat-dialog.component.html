@@ -1,0 +1,121 @@
+<h2 mat-dialog-title>New Group Chat</h2>
+
+<mat-dialog-content>
+    @if (saving) {
+    <div class="flex items-center justify-center py-8">
+        <mat-spinner diameter="36"></mat-spinner>
+    </div>
+    }
+
+    <div [class.hidden]="saving">
+        <!-- Image uploader -->
+        <div class="mb-4 rounded-2xl border p-4 bg-gray-50 dark:bg-white/5">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <div
+                        class="h-14 w-14 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-800 flex items-center justify-center flex-shrink-0">
+                        @if (imagePreview) {
+                        <img [src]="imagePreview" class="h-full w-full object-cover" alt="group" />
+                        } @else {
+                        <span class="font-bold uppercase text-gray-700 dark:text-gray-200">
+                            {{ groupName.charAt(0) || '?' }}
+                        </span>
+                        }
+                    </div>
+                    <div class="min-w-0">
+                        <div class="font-semibold">Εικόνα Group</div>
+                        <div class="text-secondary text-sm">PNG/JPG έως 3MB</div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <input #fileInput type="file" accept="image/*" class="hidden" (change)="onFileSelected($event)" />
+                    <button mat-stroked-button class="!rounded-xl" type="button" (click)="triggerFileInput(fileInput)"
+                        [disabled]="uploadingImage || saving">
+                        @if (uploadingImage) {
+                        <mat-spinner diameter="18" class="mr-2"></mat-spinner>
+                        } @else {
+                        <mat-icon class="mr-2" [svgIcon]="'heroicons_outline:arrow-up-tray'"
+                            style="margin-right:4px"></mat-icon>
+                        }
+                        Μεταφόρτωση
+                    </button>
+                    @if (imagePreview) {
+                    <button mat-button class="!rounded-xl" type="button" (click)="removeImage()" [disabled]="saving">
+                        <mat-icon [svgIcon]="'heroicons_outline:trash'"></mat-icon>
+                    </button>
+                    }
+                </div>
+            </div>
+            @if (uploadImageError) {
+            <div class="mt-2 text-sm text-red-500">{{ uploadImageError }}</div>
+            }
+        </div>
+
+        <!-- Group name -->
+        <mat-form-field class="w-full">
+            <mat-label>Group name</mat-label>
+            <mat-icon matPrefix [svgIcon]="'heroicons_outline:user-group'"></mat-icon>
+            <input matInput [(ngModel)]="groupName" placeholder="Enter group name" maxlength="80" />
+        </mat-form-field>
+
+        <!-- Description -->
+        <mat-form-field class="mt-2 w-full">
+            <mat-label>Description (optional)</mat-label>
+            <mat-icon matPrefix [svgIcon]="'heroicons_outline:information-circle'"></mat-icon>
+            <input matInput [(ngModel)]="groupDescription" placeholder="Group description" maxlength="200" />
+        </mat-form-field>
+
+        <!-- Search members -->
+        <mat-form-field class="mt-2 w-full">
+            <mat-label>Search admins</mat-label>
+            <mat-icon matPrefix [svgIcon]="'heroicons_outline:magnifying-glass'"></mat-icon>
+            <input matInput [(ngModel)]="searchQuery" placeholder="Search by name or email" />
+        </mat-form-field>
+
+        <!-- Members list -->
+        <div class="mt-2 max-h-64 overflow-y-auto rounded border">
+            @if (filteredContacts.length) {
+            @for (contact of filteredContacts; track contact.boUserId) {
+            <div class="flex cursor-pointer items-center border-b px-4 py-3 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800"
+                [ngClass]="{ 'bg-primary-50 dark:bg-primary-900': isSelected(contact.boUserId) }"
+                (click)="toggleMember(contact.boUserId)">
+                <mat-checkbox [checked]="isSelected(contact.boUserId)" (change)="toggleMember(contact.boUserId)"
+                    (click)="$event.stopPropagation()"></mat-checkbox>
+                <div class="ml-3 flex h-9 w-9 items-center justify-center overflow-hidden rounded-full">
+                    @if (contact.avatar) {
+                    <img class="h-full w-full object-cover" [src]="contact.avatar" alt="avatar" />
+                    }
+                    @if (!contact.avatar) {
+                    <div
+                        class="flex h-full w-full items-center justify-center rounded-full bg-gray-200 text-sm uppercase text-gray-600 dark:bg-gray-700 dark:text-gray-200">
+                        {{ contact.fullName.charAt(0) }}
+                    </div>
+                    }
+                </div>
+                <div class="ml-3 min-w-0">
+                    <div class="truncate font-medium">{{ contact.fullName }}</div>
+                    @if (contact.email) {
+                    <div class="text-secondary truncate text-xs">{{ contact.email }}</div>
+                    }
+                </div>
+            </div>
+            }
+            } @else {
+            <div class="p-4 text-center text-sm text-gray-500">No admins found</div>
+            }
+        </div>
+
+        @if (selectedIds.size > 0) {
+        <div class="mt-2 text-sm text-primary">
+            {{ selectedIds.size }} member{{ selectedIds.size > 1 ? 's' : '' }} selected
+        </div>
+        }
+    </div>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+    <button mat-button (click)="cancel()" [disabled]="saving">Cancel</button>
+    <button mat-flat-button color="primary" [disabled]="!canCreate" (click)="create()">
+        Create Group
+    </button>
+</mat-dialog-actions>

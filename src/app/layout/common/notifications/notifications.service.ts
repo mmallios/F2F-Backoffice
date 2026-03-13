@@ -67,7 +67,8 @@ export class NotificationsService {
         }
 
         // Start the SignalR connection (idempotent — only connects once).
-        this._boHub.connect();
+        // Pass boUserId so the hub joins the personal announcement group.
+        this._boHub.connect(boUserId);
 
         return this._httpClient
             .get<BONotificationDto[]>(`${environment.apiUrl}/BONotifications`, { params: { boUserId: String(boUserId) } })

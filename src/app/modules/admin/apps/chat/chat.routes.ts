@@ -12,33 +12,40 @@ import { ConversationComponent } from 'app/modules/admin/apps/chat/conversation/
 import { EmptyConversationComponent } from 'app/modules/admin/apps/chat/empty-conversation/empty-conversation.component';
 import { catchError, throwError } from 'rxjs';
 
-/**
- * Conversation resolver
- *
- * @param route
- * @param state
- */
-const conversationResolver = (
+/** Resolver: load a private chat by id */
+const privateChatResolver = (
     route: ActivatedRouteSnapshot,
     state: RouterStateSnapshot
 ) => {
     const chatService = inject(ChatService);
     const router = inject(Router);
+    const id = Number(route.paramMap.get('id'));
 
-    return chatService.getChatById(route.paramMap.get('id')).pipe(
-        // Error here means the requested chat is not available
+    return chatService.loadChatById(id).pipe(
         catchError((error) => {
-            // Log the error
             console.error(error);
-
-            // Get the parent url
             const parentUrl = state.url.split('/').slice(0, -1).join('/');
-
-            // Navigate to there
             router.navigateByUrl(parentUrl);
+            return throwError(() => error);
+        })
+    );
+};
 
-            // Throw an error
-            return throwError(error);
+/** Resolver: load a group chat by id */
+const groupChatResolver = (
+    route: ActivatedRouteSnapshot,
+    state: RouterStateSnapshot
+) => {
+    const chatService = inject(ChatService);
+    const router = inject(Router);
+    const id = Number(route.paramMap.get('id'));
+
+    return chatService.loadGroupChatById(id).pipe(
+        catchError((error) => {
+            console.error(error);
+            const parentUrl = state.url.split('/').slice(0, -1).join('/');
+            router.navigateByUrl(parentUrl);
+            return throwError(() => error);
         })
     );
 };
@@ -48,9 +55,8 @@ export default [
         path: '',
         component: ChatComponent,
         resolve: {
-            chats: () => inject(ChatService).getChats(),
-            contacts: () => inject(ChatService).getContacts(),
-            profile: () => inject(ChatService).getProfile(),
+            chats: () => inject(ChatService).loadAll(),
+            contacts: () => inject(ChatService).loadAdminContacts(),
         },
         children: [
             {
@@ -63,14 +69,20 @@ export default [
                         component: EmptyConversationComponent,
                     },
                     {
-                        path: ':id',
+                        path: 'chat/:id',
                         component: ConversationComponent,
-                        resolve: {
-                            conversation: conversationResolver,
-                        },
+                        data: { type: 'private' },
+                        resolve: { conversation: privateChatResolver },
+                    },
+                    {
+                        path: 'group/:id',
+                        component: ConversationComponent,
+                        data: { type: 'group' },
+                        resolve: { conversation: groupChatResolver },
                     },
                 ],
             },
         ],
     },
 ] as Routes;
+

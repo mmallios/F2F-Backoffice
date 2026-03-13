@@ -3,15 +3,15 @@ import { UserService } from 'app/core/user/user.service';
 import { NavigationService } from 'app/core/navigation/navigation.service';
 import { MessagesService } from 'app/layout/common/messages/messages.service';
 import { NotificationsService } from 'app/layout/common/notifications/notifications.service';
-import { QuickChatService } from 'app/layout/common/quick-chat/quick-chat.service';
 import { ShortcutsService } from 'app/layout/common/shortcuts/shortcuts.service';
+import { ChatService } from 'app/modules/admin/apps/chat/chat.service';
 import { forkJoin } from 'rxjs';
 
 export const initialDataResolver = () => {
     const messagesService = inject(MessagesService);
     const navigationService = inject(NavigationService);
     const notificationsService = inject(NotificationsService);
-    const quickChatService = inject(QuickChatService);
+    const chatService = inject(ChatService);
     const shortcutsService = inject(ShortcutsService);
     const userService = inject(UserService);
 
@@ -21,7 +21,7 @@ export const initialDataResolver = () => {
         navigationService.get(),
         messagesService.getAll(),
         notificationsService.getAll(),
-        quickChatService.getChats(),
+        chatService.loadAll(),
         shortcutsService.getAll(),
     ]);
 };

@@ -1,40 +1,112 @@
 <div class="absolute inset-0 flex flex-col">
 
     <!-- ── Header ─────────────────────────────────────────────────── -->
-    <div class="border-b px-6 py-5 flex items-center justify-between shrink-0 bg-card">
-        <!-- Back + title -->
-        <div class="flex items-center gap-3 min-w-0">
-            <a mat-icon-button routerLink="/apps/contests" matTooltip="Πίσω στη λίστα">
-                <mat-icon>arrow_back</mat-icon>
-            </a>
-            <div class="min-w-0">
-                @if (loading()) {
-                <div class="animate-pulse h-6 w-48 rounded bg-gray-200 dark:bg-gray-700"></div>
-                } @else {
-                <h1 class="text-xl font-extrabold leading-none truncate">{{ contest()?.title }}</h1>
-                <p class="text-secondary text-xs mt-0.5">Διαγωνισμός #{{ contestId }}</p>
-                }
+    <div class="border-b px-6 pt-5 shrink-0 bg-card flex flex-col gap-4">
+        <!-- Top row: back + title + buttons -->
+        <div class="flex items-center justify-between">
+            <!-- Back + title -->
+            <div class="flex items-center gap-3 min-w-0">
+                <a mat-icon-button routerLink="/apps/contests" matTooltip="Πίσω στη λίστα">
+                    <mat-icon>arrow_back</mat-icon>
+                </a>
+                <div class="min-w-0">
+                    @if (loading()) {
+                    <div class="animate-pulse h-6 w-48 rounded bg-gray-200 dark:bg-gray-700"></div>
+                    } @else {
+                    <h1 class="text-xl font-extrabold leading-none truncate">{{ contest()?.title }}</h1>
+                    <p class="text-secondary text-xs mt-0.5">Διαγωνισμός #{{ contestId }}</p>
+                    }
+                </div>
             </div>
+
+            <!-- Action buttons -->
+            @if (!loading() && contest()) {
+            <div class="flex items-center gap-2 shrink-0">
+                <button mat-stroked-button (click)="openEdit()" class="!rounded-full !font-semibold !text-sm">
+                    <mat-icon class="icon-size-4 mr-1">edit</mat-icon>
+                    Επεξεργασία
+                </button>
+                @if ((contest()?.entriesCount ?? 0) > 0) {
+                <button mat-flat-button color="primary" (click)="openWinnerPicker()" [disabled]="winners.length > 0"
+                    class="!rounded-full !font-bold !text-sm">
+                    <mat-icon class="mr-1">emoji_events</mat-icon>
+                    ΕΠΙΛΟΓΗ ΝΙΚΗΤΩΝ
+                </button>
+                }
+                <button mat-icon-button color="warn" (click)="deleteContest()" [disabled]="deleting()"
+                    matTooltip="Διαγραφή διαγωνισμού">
+                    <mat-icon>delete_outline</mat-icon>
+                </button>
+            </div>
+            }
         </div>
 
-        <!-- Action buttons -->
-        @if (!loading() && contest()) {
-        <div class="flex items-center gap-2 shrink-0">
-            <button mat-stroked-button (click)="openEdit()" class="!rounded-full !font-semibold !text-sm">
-                <mat-icon class="icon-size-4 mr-1">edit</mat-icon>
-                Επεξεργασία
-            </button>
-            @if ((contest()?.entriesCount ?? 0) > 0) {
-            <button mat-flat-button color="primary" (click)="openWinnerPicker()"
-                class="!rounded-full !font-bold !text-sm">
-                <mat-icon class="mr-1">emoji_events</mat-icon>
-                ΕΠΙΛΟΓΗ ΝΙΚΗΤΩΝ
-            </button>
-            }
-            <button mat-icon-button color="warn" (click)="deleteContest()" [disabled]="deleting()"
-                matTooltip="Διαγραφή διαγωνισμού">
-                <mat-icon>delete_outline</mat-icon>
-            </button>
+        <!-- Bottom row: stats -->
+        @if (!loading() && contest(); as c) {
+        <div class="grid grid-cols-6 gap-3 pb-5">
+
+            <div class="flex items-center gap-3 rounded-2xl border bg-gray-50/80 dark:bg-white/5 px-4 py-3">
+                <div class="flex items-center justify-center w-9 h-9 rounded-xl bg-gray-500/10 shrink-0">
+                    <mat-icon class="text-gray-500 icon-size-5">campaign</mat-icon>
+                </div>
+                <div class="min-w-0">
+                    <div class="text-xs text-secondary">Δημοσίευση</div>
+                    <div class="font-semibold text-sm truncate">{{ c.publishDate | date:'dd/MM/yyyy' }}</div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3 rounded-2xl border bg-gray-50/80 dark:bg-white/5 px-4 py-3">
+                <div class="flex items-center justify-center w-9 h-9 rounded-xl bg-green-500/10 shrink-0">
+                    <mat-icon class="text-green-500 icon-size-5">play_circle</mat-icon>
+                </div>
+                <div class="min-w-0">
+                    <div class="text-xs text-secondary">Έναρξη</div>
+                    <div class="font-semibold text-sm truncate">{{ c.startDate | date:'dd/MM/yyyy HH:mm' }}</div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3 rounded-2xl border bg-gray-50/80 dark:bg-white/5 px-4 py-3">
+                <div class="flex items-center justify-center w-9 h-9 rounded-xl bg-red-500/10 shrink-0">
+                    <mat-icon class="text-red-500 icon-size-5">flag</mat-icon>
+                </div>
+                <div class="min-w-0">
+                    <div class="text-xs text-secondary">Λήξη</div>
+                    <div class="font-semibold text-sm truncate">{{ c.endDate | date:'dd/MM/yyyy HH:mm' }}</div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3 rounded-2xl border bg-indigo-50/80 dark:bg-indigo-950/20 px-4 py-3">
+                <div class="flex items-center justify-center w-9 h-9 rounded-xl bg-indigo-500/10 shrink-0">
+                    <mat-icon class="text-indigo-500 icon-size-5">group</mat-icon>
+                </div>
+                <div class="min-w-0">
+                    <div class="text-xs text-secondary">Συμμετοχές</div>
+                    <div class="font-extrabold text-lg text-indigo-600 dark:text-indigo-400 leading-none mt-0.5">{{
+                        c.entriesCount }}</div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3 rounded-2xl border bg-amber-50/80 dark:bg-amber-950/20 px-4 py-3">
+                <div class="flex items-center justify-center w-9 h-9 rounded-xl bg-amber-500/10 shrink-0">
+                    <mat-icon class="text-amber-500 icon-size-5">emoji_events</mat-icon>
+                </div>
+                <div class="min-w-0">
+                    <div class="text-xs text-secondary">Νικητές</div>
+                    <div class="font-extrabold text-lg text-amber-600 dark:text-amber-400 leading-none mt-0.5">{{
+                        winners.length }} / {{ c.totalWinners ?? '—' }}</div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3 rounded-2xl border bg-gray-50/80 dark:bg-white/5 px-4 py-3">
+                <div class="flex items-center justify-center w-9 h-9 rounded-xl bg-purple-500/10 shrink-0">
+                    <mat-icon class="text-purple-500 icon-size-5">person</mat-icon>
+                </div>
+                <div class="min-w-0">
+                    <div class="text-xs text-secondary">Μέγ. ανά χρήστη</div>
+                    <div class="font-semibold text-sm">{{ c.maxEntriesPerUser }}</div>
+                </div>
+            </div>
+
         </div>
         }
     </div>
@@ -109,54 +181,25 @@
 
             <!-- Description -->
             @if (c.description) {
-            <p class="mb-5 text-sm leading-relaxed text-secondary">{{ c.description }}</p>
+            <div class="mb-5 rounded-2xl border bg-card shadow-sm overflow-hidden">
+                <div class="flex items-center gap-2 px-4 py-3 border-b bg-gray-50/80 dark:bg-white/5">
+                    <mat-icon class="icon-size-4 text-secondary">description</mat-icon>
+                    <span class="text-xs font-bold uppercase tracking-wider text-secondary">Περιγραφή Διαγωνισμού</span>
+                </div>
+                <p class="px-4 py-3 text-sm leading-relaxed">{{ c.description }}</p>
+            </div>
             }
 
             <!-- Context -->
             @if (c.context) {
-            <div class="mb-5 rounded-xl border bg-gray-50/80 dark:bg-white/5 px-4 py-3 text-sm">
-                <span class="font-semibold text-xs uppercase tracking-wider text-secondary block mb-1">Πλαίσιο</span>
-                <p class="leading-relaxed">{{ c.context }}</p>
+            <div class="mb-5 rounded-2xl border bg-card shadow-sm overflow-hidden">
+                <div class="flex items-center gap-2 px-4 py-3 border-b bg-gray-50/80 dark:bg-white/5">
+                    <mat-icon class="icon-size-4 text-secondary">info_outline</mat-icon>
+                    <span class="text-xs font-bold uppercase tracking-wider text-secondary">Πλαίσιο</span>
+                </div>
+                <p class="px-4 py-3 text-sm leading-relaxed">{{ c.context }}</p>
             </div>
             }
-
-            <!-- Stats grid -->
-            <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
-
-                <div class="flex flex-col gap-1 rounded-xl border bg-gray-50/80 dark:bg-white/5 p-3">
-                    <span class="text-xs text-secondary">Δημοσίευση</span>
-                    <span class="font-semibold text-sm">{{ c.publishDate | date:'dd/MM/yyyy' }}</span>
-                </div>
-
-                <div class="flex flex-col gap-1 rounded-xl border bg-gray-50/80 dark:bg-white/5 p-3">
-                    <span class="text-xs text-secondary">Έναρξη</span>
-                    <span class="font-semibold text-sm">{{ c.startDate | date:'dd/MM/yyyy HH:mm' }}</span>
-                </div>
-
-                <div class="flex flex-col gap-1 rounded-xl border bg-gray-50/80 dark:bg-white/5 p-3">
-                    <span class="text-xs text-secondary">Λήξη</span>
-                    <span class="font-semibold text-sm">{{ c.endDate | date:'dd/MM/yyyy HH:mm' }}</span>
-                </div>
-
-                <div class="flex flex-col gap-1 rounded-xl border bg-indigo-50/80 dark:bg-indigo-950/20 p-3">
-                    <span class="text-xs text-secondary">Συμμετοχές</span>
-                    <span class="font-extrabold text-xl text-indigo-600 dark:text-indigo-400">{{ c.entriesCount
-                        }}</span>
-                </div>
-
-                <div class="flex flex-col gap-1 rounded-xl border bg-amber-50/80 dark:bg-amber-950/20 p-3">
-                    <span class="text-xs text-secondary">Νικητές</span>
-                    <span class="font-extrabold text-xl text-amber-600 dark:text-amber-400">
-                        {{ winners.length }} / {{ c.totalWinners ?? '—' }}
-                    </span>
-                </div>
-
-                <div class="flex flex-col gap-1 rounded-xl border bg-gray-50/80 dark:bg-white/5 p-3">
-                    <span class="text-xs text-secondary">Μέγ. ανά χρήστη</span>
-                    <span class="font-semibold text-sm">{{ c.maxEntriesPerUser }}</span>
-                </div>
-
-            </div>
 
             }
         </div>
@@ -208,12 +251,11 @@
                         }
                         <!-- Info -->
                         <div class="min-w-0 flex-1">
-                            <div class="text-sm font-semibold truncate">
-                                {{ entryName(w) }}
-                                <span class="text-secondary font-normal text-xs">({{ entryCode(w) }})</span>
-                            </div>
-                            <div class="text-xs text-secondary mt-0.5">
-                                {{ w.participatedAt | date:'dd/MM/yyyy HH:mm' }}
+                            <div class="text-sm font-semibold truncate">{{ entryName(w) }}</div>
+                            <div class="text-xs text-secondary mt-0.5 flex items-center gap-1.5">
+                                <span class="font-mono">{{ w.user?.code || '#' + w.userId }}</span>
+                                <span>·</span>
+                                <span>{{ w.participatedAt | date:'dd/MM/yyyy HH:mm' }}</span>
                             </div>
                         </div>
                         <mat-icon class="text-amber-500 icon-size-4 shrink-0 mt-1">star</mat-icon>
@@ -225,15 +267,13 @@
             <div class="border-t my-4"></div>
             }
 
-            <!-- ── All participants ──────────────────────────── -->
+            <!-- ── All participations ──────────────────────────── -->
             <div class="flex items-center gap-2 mb-3">
                 <mat-icon class="text-indigo-500 icon-size-5">people</mat-icon>
-                <span class="font-bold text-sm">
-                    Συμμετέχοντες ({{ participants.length }})
-                </span>
+                <span class="font-bold text-sm">Συμμετοχές ({{ allEntries.length }})</span>
             </div>
 
-            @if (participants.length === 0 && winners.length === 0) {
+            @if (allEntries.length === 0) {
             <div class="text-center py-8 text-secondary">
                 <mat-icon class="text-4xl w-10 h-10 opacity-30 mb-2">group_off</mat-icon>
                 <p class="text-sm">Δεν υπάρχουν συμμετοχές ακόμα</p>
@@ -241,7 +281,7 @@
             }
 
             <div class="space-y-2">
-                @for (p of participants; track p.id) {
+                @for (p of previewEntries; track p.id) {
                 <div
                     class="flex items-start gap-3 rounded-xl border bg-card px-3 py-2.5 hover:bg-gray-50/60 dark:hover:bg-white/5 transition-colors">
                     <!-- Avatar -->
@@ -255,17 +295,25 @@
                     }
                     <!-- Info -->
                     <div class="min-w-0 flex-1">
-                        <div class="text-sm font-semibold truncate">
-                            {{ entryName(p) }}
-                            <span class="text-secondary font-normal text-xs">({{ entryCode(p) }})</span>
-                        </div>
-                        <div class="text-xs text-secondary mt-0.5">
-                            {{ p.participatedAt | date:'dd/MM/yyyy HH:mm' }}
+                        <div class="text-sm font-semibold truncate">{{ entryName(p) }}</div>
+                        <div class="text-xs text-secondary mt-0.5 flex items-center gap-1.5">
+                            <span class="font-mono">{{ p.user?.code || '#' + p.userId }}</span>
+                            <span>·</span>
+                            <span>{{ p.participatedAt | date:'dd/MM/yyyy HH:mm' }}</span>
                         </div>
                     </div>
                 </div>
                 }
             </div>
+
+            @if (allEntries.length > 7) {
+            <div class="mt-4 text-center">
+                <button mat-stroked-button (click)="openAllParticipants()" class="!rounded-full !text-sm">
+                    <mat-icon class="icon-size-4 mr-1">format_list_bulleted</mat-icon>
+                    Προβολή όλων ({{ allEntries.length }})
+                </button>
+            </div>
+            }
 
             }
         </div><!-- /right panel -->

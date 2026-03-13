@@ -9,6 +9,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
@@ -23,6 +24,10 @@ import {
     FanCardsAdminService,
 } from '@fuse/services/fan-cards/fan-cards-admin.service';
 import { User, UsersService } from '@fuse/services/users/users.service';
+import {
+    FanCardReportResolveDialogComponent,
+    FanCardReportResolveDialogData,
+} from '../fan-card-report-resolve-dialog/fan-card-report-resolve-dialog.component';
 
 @Component({
     selector: 'fan-card-reports',
@@ -35,6 +40,7 @@ import { User, UsersService } from '@fuse/services/users/users.service';
         FormsModule,
         ReactiveFormsModule,
         MatButtonModule,
+        MatDialogModule,
         MatFormFieldModule,
         MatIconModule,
         MatInputModule,
@@ -73,6 +79,7 @@ export class FanCardReportsComponent implements OnInit, OnDestroy {
     constructor(
         private _service: FanCardsAdminService,
         private _usersService: UsersService,
+        private _dialog: MatDialog,
         private _cdr: ChangeDetectorRef,
     ) { }
 
@@ -173,5 +180,37 @@ export class FanCardReportsComponent implements OnInit, OnDestroy {
             case 2: return 'Επιλύθηκε';
             default: return String(s);
         }
+    }
+
+    openResolveDialog(item: AllReportItem): void {
+        const ref = this._dialog.open<FanCardReportResolveDialogComponent, FanCardReportResolveDialogData>(
+            FanCardReportResolveDialogComponent,
+            {
+                data: { report: item, mode: 'resolve' },
+                width: '720px',
+                maxWidth: '95vw',
+            }
+        );
+        ref.afterClosed().subscribe((result) => {
+            if (result?.resolved) {
+                item.status = 2;
+                item.adminComment = result.comment || null;
+                item.resolvedByBoUserFullName = result.resolvedByBoUserFullName ?? null;
+                item.resolvedByBoUserImage = result.resolvedByBoUserImage ?? null;
+                item.resolvedAt = result.resolvedAt ?? null;
+                this._cdr.markForCheck();
+            }
+        });
+    }
+
+    openViewDialog(item: AllReportItem): void {
+        this._dialog.open<FanCardReportResolveDialogComponent, FanCardReportResolveDialogData>(
+            FanCardReportResolveDialogComponent,
+            {
+                data: { report: item, mode: 'view' },
+                width: '720px',
+                maxWidth: '95vw',
+            }
+        );
     }
 }
