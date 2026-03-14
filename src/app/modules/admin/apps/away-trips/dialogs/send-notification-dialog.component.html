@@ -1,0 +1,65 @@
+<h2 mat-dialog-title class="flex items-center gap-2">
+    <mat-icon class="text-primary">notifications</mat-icon>
+    Αποστολή Ειδοποίησης
+</h2>
+
+<mat-dialog-content class="!pt-4">
+    <form [formGroup]="form" class="flex flex-col gap-4" style="min-width: 400px;">
+
+        <!-- Image upload -->
+        <div class="flex flex-col gap-2">
+            <label class="text-sm font-medium">Εικόνα ειδοποίησης (προαιρετικό)</label>
+            <div class="relative w-full h-32 rounded-xl border-2 border-dashed flex items-center justify-center bg-gray-50/50 dark:bg-gray-800/30 overflow-hidden cursor-pointer"
+                (click)="triggerFileInput(fileInput)">
+                @if (imagePreview) {
+                <img [src]="imagePreview" class="w-full h-full object-cover" />
+                <button mat-icon-button class="!absolute top-1 right-1 !bg-black/40 !text-white"
+                    (click)="removeImage(); $event.stopPropagation()">
+                    <mat-icon class="!text-sm">close</mat-icon>
+                </button>
+                } @else {
+                <div class="flex flex-col items-center gap-1 text-secondary">
+                    @if (uploading()) {
+                    <mat-icon class="animate-spin">refresh</mat-icon>
+                    } @else {
+                    <mat-icon>add_photo_alternate</mat-icon>
+                    <span class="text-xs">Κλικ για εικόνα (max 3MB)</span>
+                    }
+                </div>
+                }
+            </div>
+            <input #fileInput type="file" accept="image/*" class="hidden" (change)="onFileSelected($event)" />
+        </div>
+
+        <!-- Title -->
+        <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full">
+            <mat-label>Τίτλος *</mat-label>
+            <input matInput formControlName="title" placeholder="π.χ. Ανακοίνωση εισιτηρίων" />
+        </mat-form-field>
+
+        <!-- Description -->
+        <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full">
+            <mat-label>Μήνυμα</mat-label>
+            <textarea matInput formControlName="description" rows="3"
+                placeholder="Το περιεχόμενο της ειδοποίησης..."></textarea>
+        </mat-form-field>
+
+        <!-- Email toggle -->
+        <div class="flex items-center gap-3 rounded-xl border p-3">
+            <mat-slide-toggle formControlName="sendEmailNotification" color="primary"></mat-slide-toggle>
+            <div>
+                <div class="font-medium text-sm">Αποστολή Email</div>
+                <div class="text-secondary text-xs">Αποστολή και email ειδοποίησης σε όλους τους ενδιαφερόμενους</div>
+            </div>
+        </div>
+    </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end" class="!px-6 !pb-4 gap-2">
+    <button mat-stroked-button (click)="cancel()">Ακύρωση</button>
+    <button mat-flat-button color="primary" (click)="send()" [disabled]="form.invalid || uploading()"
+        class="!rounded-full !font-semibold">
+        <mat-icon class="mr-1">send</mat-icon>
+        Αποστολή
+    </button>
+</mat-dialog-actions>

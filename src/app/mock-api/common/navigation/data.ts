@@ -127,6 +127,13 @@ export const defaultNavigation: FuseNavigationItem[] = [
                         icon: 'heroicons_outline:squares-2x2',
                         link: '/apps/offers/categories',
                     },
+                    {
+                        id: 'apps.away-trips',
+                        title: 'Away Trips',
+                        type: 'basic',
+                        icon: 'heroicons_outline:paper-airplane',
+                        link: '/apps/away-trips',
+                    },
                 ],
             },
 

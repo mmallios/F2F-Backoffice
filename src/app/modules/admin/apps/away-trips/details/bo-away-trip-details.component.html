@@ -1,0 +1,825 @@
+<div class="absolute inset-0 flex min-w-0 flex-col overflow-hidden">
+    <div class="flex-auto overflow-y-auto">
+
+        @if (loading()) {
+        <div class="flex items-center justify-center h-full">
+            <mat-icon class="animate-spin text-4xl text-primary opacity-50">refresh</mat-icon>
+        </div>
+        } @else if (!trip && tripId) {
+        <div class="flex flex-col items-center justify-center h-full gap-4">
+            <mat-icon class="text-secondary opacity-30 text-[5rem]">flight_off</mat-icon>
+            <p class="text-secondary">Το away trip δεν βρέθηκε.</p>
+            <button mat-stroked-button (click)="goBack()">Επιστροφή στη λίστα</button>
+        </div>
+        } @else if (trip) {
+
+        <!-- ══════════════════════════════════════════════════════════════════
+             HEADER + STATS
+             ══════════════════════════════════════════════════════════════════ -->
+        <div class="border-b bg-card">
+
+            <!-- Title row -->
+            <div class="flex items-center gap-4 px-6 md:px-8 pt-5 pb-4">
+                <button mat-icon-button (click)="goBack()" matTooltip="Πίσω στη λίστα"
+                    class="shrink-0 !bg-default/5 hover:!bg-default/10">
+                    <mat-icon>arrow_back</mat-icon>
+                </button>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-3 flex-wrap">
+                        <h1 class="text-2xl md:text-3xl font-extrabold leading-tight truncate">{{ trip.title }}</h1>
+                        <span
+                            [class]="trip.isActive
+                            ? 'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                            : 'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'">
+                            <mat-icon class="!text-xs !w-3 !h-3">{{ trip.isActive ? 'check_circle' : 'lock'
+                                }}</mat-icon>
+                            {{ trip.isActive ? 'Ενεργό' : 'Ανενεργό' }}
+                        </span>
+                    </div>
+                    @if (trip.description) {
+                    <p class="text-secondary text-sm mt-0.5 line-clamp-1">{{ trip.description }}</p>
+                    }
+                </div>
+                <!-- Action buttons (desktop) -->
+                <div class="flex items-center gap-2 shrink-0">
+                    <button mat-stroked-button (click)="confirmToggleActive()"
+                        [color]="trip.isActive ? 'warn' : 'primary'"
+                        class="!rounded-full !font-semibold hidden md:flex">
+                        <mat-icon class="mr-1">{{ trip.isActive ? 'lock' : 'lock_open' }}</mat-icon>
+                        {{ trip.isActive ? 'Απενεργοποίηση' : 'Ενεργοποίηση' }}
+                    </button>
+                    <button mat-flat-button color="accent" (click)="openSendNotification()" [disabled]="sendingNotif()"
+                        class="!rounded-full !font-semibold">
+                        @if (sendingNotif()) {
+                        <mat-icon class="animate-spin mr-1">refresh</mat-icon>
+                        } @else {
+                        <mat-icon class="mr-1">notifications</mat-icon>
+                        }
+                        <span class="hidden sm:inline">Αποστολή Ειδοποίησης</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stats row -->
+            <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 px-6 md:px-8 pb-5">
+
+                <!-- Event date -->
+                <div class="flex items-center gap-3 rounded-2xl border bg-gray-50/50 dark:bg-white/5 p-4">
+                    <div
+                        class="w-11 h-11 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shrink-0">
+                        <mat-icon class="text-blue-600 dark:text-blue-400 !text-xl">calendar_today</mat-icon>
+                    </div>
+                    <div class="min-w-0">
+                        <div class="text-xs text-secondary uppercase tracking-wider font-semibold mb-0.5">Ημερομηνία
+                        </div>
+                        <div class="font-bold text-sm truncate">
+                            @if (trip.event?.eventDate) {
+                            {{ formatDateShort(trip.event!.eventDate) }}
+                            } @else {
+                            <span class="text-secondary font-normal text-xs">Χωρίς ημερομηνία</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Match card (spans 2 cols) -->
+                <div
+                    class="col-span-2 lg:col-span-2 flex items-center gap-2 rounded-2xl border bg-gray-50/50 dark:bg-white/5 p-4">
+                    @if (trip.event) {
+                    <div class="flex-1 flex items-center gap-2 min-w-0">
+                        <!-- Home team -->
+                        <div class="flex flex-col items-center gap-1 shrink-0 w-16">
+                            @if (trip.event.homeTeamLogoUrl) {
+                            <img [src]="trip.event.homeTeamLogoUrl" class="w-10 h-10 object-contain"
+                                [alt]="trip.event.homeTeamName ?? ''" />
+                            } @else {
+                            <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                <mat-icon class="text-primary !text-lg">sports_soccer</mat-icon>
+                            </div>
+                            }
+                            <span class="text-[11px] font-semibold leading-tight text-center line-clamp-2">{{
+                                trip.event.homeTeamName }}</span>
+                        </div>
+                        <!-- Middle -->
+                        <div class="flex-1 min-w-0 text-center">
+                            <div class="text-sm font-black text-secondary">VS</div>
+                            @if (trip.event.competitionName) {
+                            <div class="text-[10px] text-secondary leading-tight mt-0.5 line-clamp-1">{{
+                                trip.event.competitionName }}</div>
+                            }
+                            @if (trip.event.matchday) {
+                            <div class="text-[10px] text-secondary">Αγ. {{ trip.event.matchday }}</div>
+                            }
+                        </div>
+                        <!-- Away team -->
+                        <div class="flex flex-col items-center gap-1 shrink-0 w-16">
+                            @if (trip.event.awayTeamLogoUrl) {
+                            <img [src]="trip.event.awayTeamLogoUrl" class="w-10 h-10 object-contain"
+                                [alt]="trip.event.awayTeamName ?? ''" />
+                            } @else {
+                            <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                <mat-icon class="text-primary !text-lg">sports_soccer</mat-icon>
+                            </div>
+                            }
+                            <span class="text-[11px] font-semibold leading-tight text-center line-clamp-2">{{
+                                trip.event.awayTeamName }}</span>
+                        </div>
+                    </div>
+                    } @else {
+                    <div
+                        class="w-11 h-11 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center shrink-0">
+                        <mat-icon class="text-secondary !text-xl">sports_soccer</mat-icon>
+                    </div>
+                    <div>
+                        <div class="text-xs text-secondary uppercase tracking-wider font-semibold mb-0.5">Αγώνας</div>
+                        <div class="text-secondary text-sm">Χωρίς σύνδεση</div>
+                    </div>
+                    }
+                </div>
+
+                <!-- Available tickets -->
+                <div class="flex items-center gap-3 rounded-2xl border bg-gray-50/50 dark:bg-white/5 p-4">
+                    <div
+                        class="w-11 h-11 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0">
+                        <mat-icon class="text-emerald-600 dark:text-emerald-400 !text-xl">confirmation_number</mat-icon>
+                    </div>
+                    <div>
+                        <div class="text-xs text-secondary uppercase tracking-wider font-semibold mb-0.5">Διαθέσιμα
+                        </div>
+                        <div class="font-bold text-xl tabular-nums">{{ totalAvailableTickets > 0 ? totalAvailableTickets
+                            : '∞' }}</div>
+                    </div>
+                </div>
+
+                <!-- Interests -->
+                <div class="flex items-center gap-3 rounded-2xl border bg-gray-50/50 dark:bg-white/5 p-4">
+                    <div
+                        class="w-11 h-11 rounded-xl bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center shrink-0">
+                        <mat-icon class="text-rose-600 dark:text-rose-400 !text-xl">favorite</mat-icon>
+                    </div>
+                    <div>
+                        <div class="text-xs text-secondary uppercase tracking-wider font-semibold mb-0.5">Ενδιαφέροντα
+                        </div>
+                        <div class="font-bold text-xl tabular-nums">{{ trip.interestCount }}</div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Mobile activate button -->
+            <div class="px-6 pb-4 md:hidden">
+                <button mat-stroked-button class="w-full !rounded-full !font-semibold"
+                    [color]="trip.isActive ? 'warn' : 'primary'" (click)="confirmToggleActive()">
+                    <mat-icon class="mr-1">{{ trip.isActive ? 'lock' : 'lock_open' }}</mat-icon>
+                    {{ trip.isActive ? 'Απενεργοποίηση' : 'Ενεργοποίηση' }}
+                </button>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════════════════════════════════════
+             TABS
+             ══════════════════════════════════════════════════════════════════ -->
+        <div class="px-6 md:px-8 pt-5 pb-8">
+            <mat-tab-group animationDuration="150ms" class="rounded-2xl border bg-card shadow-sm overflow-hidden">
+
+                <!-- ─────────────────────────────────────────────────────────
+                     Tab 1: Πληροφορίες
+                     ───────────────────────────────────────────────────────── -->
+                <mat-tab label="Πληροφορίες">
+                    <div class="p-6">
+
+                        <!-- VIEW MODE -->
+                        @if (!infoEditMode) {
+                        <div class="flex items-center justify-between mb-5">
+                            <h3 class="text-base font-bold">Στοιχεία Ταξιδιού</h3>
+                            <button mat-stroked-button (click)="enterEditMode()" class="!rounded-full !font-semibold">
+                                <mat-icon class="mr-1 !text-base">edit</mat-icon>Επεξεργασία
+                            </button>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="md:col-span-2">
+                                @if (trip.imageUrl) {
+                                <img [src]="trip.imageUrl"
+                                    class="w-full max-w-sm h-52 rounded-2xl object-cover shadow-sm"
+                                    [alt]="trip.title" />
+                                } @else {
+                                <div
+                                    class="w-full max-w-sm h-52 rounded-2xl border-2 border-dashed bg-gray-50/50 dark:bg-gray-800/30 flex items-center justify-center">
+                                    <mat-icon class="text-secondary opacity-30 text-4xl">image</mat-icon>
+                                </div>
+                                }
+                            </div>
+
+                            <div class="rounded-xl bg-gray-50/50 dark:bg-white/5 p-4">
+                                <div class="text-xs text-secondary uppercase tracking-wider font-semibold mb-1">Τίτλος
+                                </div>
+                                <div class="font-semibold">{{ trip.title }}</div>
+                            </div>
+
+                            <div class="rounded-xl bg-gray-50/50 dark:bg-white/5 p-4">
+                                <div class="text-xs text-secondary uppercase tracking-wider font-semibold mb-1">
+                                    Κατάσταση</div>
+                                <span
+                                    [class]="trip.isActive
+                                    ? 'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                    : 'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'">
+                                    <mat-icon class="!text-xs !w-3 !h-3">{{ trip.isActive ? 'check_circle' : 'lock'
+                                        }}</mat-icon>
+                                    {{ trip.isActive ? 'Ενεργό' : 'Ανενεργό' }}
+                                </span>
+                            </div>
+
+                            @if (trip.event) {
+                            <div class="md:col-span-2 rounded-xl bg-gray-50/50 dark:bg-white/5 p-4">
+                                <div class="text-xs text-secondary uppercase tracking-wider font-semibold mb-1">Αγώνας
+                                </div>
+                                <div class="font-semibold">{{ trip.event.homeTeamName }} vs {{ trip.event.awayTeamName
+                                    }}</div>
+                                @if (trip.event.competitionName) {
+                                <div class="text-secondary text-sm mt-0.5">
+                                    {{ trip.event.competitionName }}
+                                    @if (trip.event.matchday) { · Αγωνιστική {{ trip.event.matchday }} }
+                                </div>
+                                }
+                            </div>
+                            }
+
+                            @if (trip.description) {
+                            <div class="md:col-span-2 rounded-xl bg-gray-50/50 dark:bg-white/5 p-4">
+                                <div class="text-xs text-secondary uppercase tracking-wider font-semibold mb-1">
+                                    Περιγραφή</div>
+                                <p class="text-secondary text-sm leading-relaxed whitespace-pre-line">{{
+                                    trip.description }}</p>
+                            </div>
+                            }
+                        </div>
+                        }
+
+                        <!-- EDIT MODE -->
+                        @if (infoEditMode) {
+                        <div class="flex items-center justify-between mb-5">
+                            <h3 class="text-base font-bold">Επεξεργασία Στοιχείων</h3>
+                            <button mat-icon-button (click)="cancelEditMode()" matTooltip="Ακύρωση αλλαγών">
+                                <mat-icon>close</mat-icon>
+                            </button>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Image upload -->
+                            <div class="flex flex-col gap-2 md:col-span-2">
+                                <label class="text-sm font-medium">Εικόνα</label>
+                                <div class="relative w-full max-w-sm h-48 rounded-2xl border-2 border-dashed flex items-center justify-center bg-gray-50/50 dark:bg-gray-800/30 overflow-hidden cursor-pointer"
+                                    (click)="triggerFileInput(fileInput)">
+                                    @if (imagePreview) {
+                                    <img [src]="imagePreview" class="w-full h-full object-cover" />
+                                    <button mat-icon-button class="!absolute top-1 right-1 !bg-black/40 !text-white"
+                                        (click)="removeImage(); $event.stopPropagation()">
+                                        <mat-icon class="!text-sm">close</mat-icon>
+                                    </button>
+                                    } @else {
+                                    <div class="flex flex-col items-center gap-2 text-secondary">
+                                        @if (uploading()) {
+                                        <mat-icon class="animate-spin">refresh</mat-icon>
+                                        } @else {
+                                        <mat-icon class="text-3xl">add_photo_alternate</mat-icon>
+                                        <span class="text-xs">Κλικ για ανέβασμα εικόνας</span>
+                                        }
+                                    </div>
+                                    }
+                                </div>
+                                <input #fileInput type="file" accept="image/*" class="hidden"
+                                    (change)="onFileSelected($event)" />
+                            </div>
+
+                            <form [formGroup]="infoForm" class="contents">
+                                <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full">
+                                    <mat-label>Τίτλος *</mat-label>
+                                    <input matInput formControlName="title" />
+                                </mat-form-field>
+
+                                <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full">
+                                    <mat-label>Συνδεδεμένος Αγώνας (προαιρετικό)</mat-label>
+                                    <mat-select formControlName="eventId">
+                                        <mat-option [value]="null">— Κανένας —</mat-option>
+                                        @for (ev of events; track ev.id) {
+                                        <mat-option [value]="ev.id">
+                                            {{ ev.homeTeamName }} vs {{ ev.awayTeamName }} — {{ formatDate(ev.eventDate)
+                                            }}
+                                        </mat-option>
+                                        }
+                                    </mat-select>
+                                </mat-form-field>
+
+                                <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full md:col-span-2">
+                                    <mat-label>Περιγραφή</mat-label>
+                                    <textarea matInput formControlName="description" rows="4"></textarea>
+                                </mat-form-field>
+
+                                <div class="md:col-span-2">
+                                    <mat-slide-toggle formControlName="isActive" color="primary">
+                                        Ενεργό (εμφανίζεται με πλήρες περιεχόμενο στους χρήστες)
+                                    </mat-slide-toggle>
+                                </div>
+
+                                <div class="md:col-span-2 flex justify-end gap-3">
+                                    <button mat-stroked-button (click)="cancelEditMode()">Ακύρωση</button>
+                                    <button mat-flat-button color="primary" (click)="saveInfo()"
+                                        [disabled]="infoForm.invalid || saving() || uploading()"
+                                        class="!rounded-full !font-semibold">
+                                        @if (saving()) { <mat-icon class="animate-spin mr-1">refresh</mat-icon> }
+                                        Αποθήκευση
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                        }
+                    </div>
+                </mat-tab>
+
+                <!-- ─────────────────────────────────────────────────────────
+                     Tab 2: Κατηγορίες Εισιτηρίων
+                     ───────────────────────────────────────────────────────── -->
+                <mat-tab label="Κατηγορίες Εισιτηρίων">
+                    <div class="p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-base font-bold">
+                                Κατηγορίες Εισιτηρίων
+                                <span
+                                    class="ml-1.5 px-1.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary">
+                                    {{ categories.length }}
+                                </span>
+                            </h3>
+                            <button mat-flat-button color="primary" (click)="openNewCategory()"
+                                class="!rounded-full !font-semibold">
+                                <mat-icon class="mr-1">add</mat-icon>Νέα Κατηγορία
+                            </button>
+                        </div>
+
+                        @if (categories.length === 0) {
+                        <div class="flex flex-col items-center justify-center py-14 gap-3">
+                            <mat-icon class="text-secondary opacity-30 text-[3rem]">confirmation_number</mat-icon>
+                            <span class="text-secondary text-sm">Δεν υπάρχουν κατηγορίες εισιτηρίων</span>
+                        </div>
+                        } @else {
+                        <div class="overflow-x-auto rounded-xl border">
+                            <table mat-table [dataSource]="catDS" class="w-full min-w-max">
+
+                                <!-- Seat view thumb -->
+                                <ng-container matColumnDef="seatView">
+                                    <th mat-header-cell *matHeaderCellDef
+                                        class="!text-xs !font-semibold !uppercase !tracking-wider !text-secondary !w-16">
+                                        Θέση</th>
+                                    <td mat-cell *matCellDef="let row" class="!py-2.5">
+                                        @if (row.seatViewImageUrl) {
+                                        <img [src]="row.seatViewImageUrl" class="w-12 h-10 rounded-lg object-cover"
+                                            [alt]="row.name" />
+                                        } @else {
+                                        <div
+                                            class="w-12 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                                            <mat-icon class="text-secondary opacity-50 !text-base">event_seat</mat-icon>
+                                        </div>
+                                        }
+                                    </td>
+                                </ng-container>
+
+                                <!-- Name -->
+                                <ng-container matColumnDef="name">
+                                    <th mat-header-cell *matHeaderCellDef
+                                        class="!text-xs !font-semibold !uppercase !tracking-wider !text-secondary">
+                                        Κατηγορία</th>
+                                    <td mat-cell *matCellDef="let row" class="font-semibold">{{ row.name }}</td>
+                                </ng-container>
+
+                                <!-- Price -->
+                                <ng-container matColumnDef="price">
+                                    <th mat-header-cell *matHeaderCellDef
+                                        class="!text-xs !font-semibold !uppercase !tracking-wider !text-secondary">Τιμή
+                                    </th>
+                                    <td mat-cell *matCellDef="let row" class="font-bold text-primary tabular-nums">€{{
+                                        row.price | number:'1.2-2' }}</td>
+                                </ng-container>
+
+                                <!-- Max per user -->
+                                <ng-container matColumnDef="maxPerUser">
+                                    <th mat-header-cell *matHeaderCellDef
+                                        class="!text-xs !font-semibold !uppercase !tracking-wider !text-secondary">
+                                        Max/Χρήστη</th>
+                                    <td mat-cell *matCellDef="let row" class="text-secondary tabular-nums text-center">
+                                        {{ row.maxPerUser }}</td>
+                                </ng-container>
+
+                                <!-- ΔΙΑΘΕΣΙΜΑ -->
+                                <ng-container matColumnDef="totalAvailable">
+                                    <th mat-header-cell *matHeaderCellDef
+                                        class="!text-xs !font-semibold !uppercase !tracking-wider !text-secondary">
+                                        Διαθέσιμα</th>
+                                    <td mat-cell *matCellDef="let row">
+                                        <span
+                                            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 tabular-nums">
+                                            <mat-icon class="!text-xs !w-3 !h-3">check_circle</mat-icon>
+                                            {{ row.totalAvailable > 0 ? row.totalAvailable : '∞' }}
+                                        </span>
+                                    </td>
+                                </ng-container>
+
+                                <!-- ΚΛΕΙΣΜΕΝΑ -->
+                                <ng-container matColumnDef="booked">
+                                    <th mat-header-cell *matHeaderCellDef
+                                        class="!text-xs !font-semibold !uppercase !tracking-wider !text-secondary">
+                                        Κλεισμένα</th>
+                                    <td mat-cell *matCellDef="let row">
+                                        <span
+                                            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 tabular-nums">
+                                            <mat-icon class="!text-xs !w-3 !h-3">local_activity</mat-icon>
+                                            0
+                                        </span>
+                                    </td>
+                                </ng-container>
+
+                                <!-- Actions -->
+                                <ng-container matColumnDef="actions">
+                                    <th mat-header-cell *matHeaderCellDef></th>
+                                    <td mat-cell *matCellDef="let row">
+                                        <div class="flex items-center gap-0.5">
+                                            <button mat-icon-button (click)="openCatInterests(row)"
+                                                matTooltip="Ενδιαφερόμενοι χρήστες"
+                                                class="!text-secondary hover:!text-primary">
+                                                <mat-icon class="!text-base">people</mat-icon>
+                                            </button>
+                                            <button mat-icon-button (click)="openEditCategory(row)"
+                                                matTooltip="Επεξεργασία" class="!text-secondary hover:!text-primary">
+                                                <mat-icon class="!text-base">edit</mat-icon>
+                                            </button>
+                                            <button mat-icon-button color="warn" (click)="deleteCategory(row)"
+                                                matTooltip="Διαγραφή">
+                                                <mat-icon class="!text-base">delete</mat-icon>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </ng-container>
+
+                                <tr mat-header-row *matHeaderRowDef="catColumns" class="bg-gray-50/80 dark:bg-white/5">
+                                </tr>
+                                <tr mat-row *matRowDef="let row; columns: catColumns;"
+                                    class="hover:bg-gray-50/60 dark:hover:bg-white/5 transition-colors"></tr>
+                            </table>
+                        </div>
+                        }
+                    </div>
+                </mat-tab>
+
+                <!-- ─────────────────────────────────────────────────────────
+                     Tab 3: Ενδιαφέρον Χρηστών
+                     ───────────────────────────────────────────────────────── -->
+                <mat-tab>
+                    <ng-template mat-tab-label>
+                        Ενδιαφέρον Χρηστών
+                        <span
+                            class="ml-1.5 px-1.5 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400">
+                            {{ interests.length }}
+                        </span>
+                    </ng-template>
+                    <div class="p-6">
+                        @if (interests.length === 0) {
+                        <div class="flex flex-col items-center justify-center py-14 gap-3">
+                            <mat-icon class="text-secondary opacity-30 text-[3rem]">favorite_border</mat-icon>
+                            <span class="text-secondary text-sm">Δεν υπάρχουν καταχωρήσεις ενδιαφέροντος</span>
+                        </div>
+                        } @else {
+                        <div class="overflow-x-auto rounded-xl border">
+                            <table mat-table [dataSource]="interestDS" class="w-full min-w-max">
+
+                                <ng-container matColumnDef="avatar">
+                                    <th mat-header-cell *matHeaderCellDef class="!w-14"></th>
+                                    <td mat-cell *matCellDef="let row" class="!py-2.5">
+                                        @if (row.userImageUrl) {
+                                        <img [src]="row.userImageUrl" class="w-9 h-9 rounded-full object-cover" />
+                                        } @else {
+                                        <div
+                                            class="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
+                                            <mat-icon class="text-primary !text-base">person</mat-icon>
+                                        </div>
+                                        }
+                                    </td>
+                                </ng-container>
+
+                                <ng-container matColumnDef="name">
+                                    <th mat-header-cell *matHeaderCellDef
+                                        class="!text-xs !font-semibold !uppercase !tracking-wider !text-secondary">Όνομα
+                                    </th>
+                                    <td mat-cell *matCellDef="let row" class="font-semibold">{{ row.userFullName }}</td>
+                                </ng-container>
+
+                                <ng-container matColumnDef="code">
+                                    <th mat-header-cell *matHeaderCellDef
+                                        class="!text-xs !font-semibold !uppercase !tracking-wider !text-secondary">
+                                        Κωδικός</th>
+                                    <td mat-cell *matCellDef="let row">
+                                        <code
+                                            class="text-xs bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">{{ row.userCode }}</code>
+                                    </td>
+                                </ng-container>
+
+                                <ng-container matColumnDef="email">
+                                    <th mat-header-cell *matHeaderCellDef
+                                        class="!text-xs !font-semibold !uppercase !tracking-wider !text-secondary">Email
+                                    </th>
+                                    <td mat-cell *matCellDef="let row" class="text-secondary text-sm">{{ row.userEmail
+                                        }}</td>
+                                </ng-container>
+
+                                <ng-container matColumnDef="registeredAt">
+                                    <th mat-header-cell *matHeaderCellDef
+                                        class="!text-xs !font-semibold !uppercase !tracking-wider !text-secondary">
+                                        Ημερομηνία</th>
+                                    <td mat-cell *matCellDef="let row" class="text-secondary text-sm whitespace-nowrap">
+                                        {{ formatDate(row.registeredAt) }}</td>
+                                </ng-container>
+
+                                <ng-container matColumnDef="actions">
+                                    <th mat-header-cell *matHeaderCellDef></th>
+                                    <td mat-cell *matCellDef="let row">
+                                        <button mat-icon-button (click)="openUserDetails(row)"
+                                            matTooltip="Στοιχεία χρήστη" class="!text-secondary hover:!text-primary">
+                                            <mat-icon class="!text-base">info</mat-icon>
+                                        </button>
+                                    </td>
+                                </ng-container>
+
+                                <tr mat-header-row *matHeaderRowDef="interestColumns"
+                                    class="bg-gray-50/80 dark:bg-white/5"></tr>
+                                <tr mat-row *matRowDef="let row; columns: interestColumns;"
+                                    class="hover:bg-gray-50/60 dark:hover:bg-white/5 transition-colors"></tr>
+                            </table>
+                        </div>
+                        }
+                    </div>
+                </mat-tab>
+
+                <!-- ─────────────────────────────────────────────────────────
+                     Tab 4: Ειδοποιήσεις
+                     ───────────────────────────────────────────────────────── -->
+                <mat-tab>
+                    <ng-template mat-tab-label>
+                        Ειδοποιήσεις
+                        <span
+                            class="ml-1.5 px-1.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                            {{ notifications.length }}
+                        </span>
+                    </ng-template>
+                    <div class="p-6">
+                        <div class="flex items-center justify-between mb-5">
+                            <h3 class="text-base font-bold">Ιστορικό Ειδοποιήσεων</h3>
+                            <button mat-flat-button color="primary" (click)="openSendNotification()"
+                                [disabled]="sendingNotif()" class="!rounded-full !font-semibold">
+                                @if (sendingNotif()) { <mat-icon class="animate-spin mr-1">refresh</mat-icon> }
+                                @else { <mat-icon class="mr-1">send</mat-icon> }
+                                Νέα Ειδοποίηση
+                            </button>
+                        </div>
+
+                        @if (notifications.length === 0) {
+                        <div class="flex flex-col items-center justify-center py-14 gap-3">
+                            <mat-icon class="text-secondary opacity-30 text-[3rem]">notifications_none</mat-icon>
+                            <span class="text-secondary text-sm">Δεν έχουν σταλεί ειδοποιήσεις</span>
+                        </div>
+                        } @else {
+                        <div class="flex flex-col gap-3">
+                            @for (notif of notifications; track notif.id) {
+                            <div
+                                class="flex gap-4 rounded-2xl border p-4 hover:bg-gray-50/60 dark:hover:bg-white/5 transition-colors">
+                                @if (notif.imageUrl) {
+                                <img [src]="notif.imageUrl" class="w-16 h-16 rounded-xl object-cover shrink-0" />
+                                } @else {
+                                <div
+                                    class="w-16 h-16 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                                    <mat-icon class="text-primary text-2xl">notifications</mat-icon>
+                                </div>
+                                }
+                                <div class="flex-1 min-w-0">
+                                    <div class="font-semibold">{{ notif.title }}</div>
+                                    @if (notif.description) {
+                                    <div class="text-secondary text-sm mt-0.5 line-clamp-2">{{ notif.description }}
+                                    </div>
+                                    }
+                                    <div class="text-secondary text-xs mt-1.5 flex items-center gap-1">
+                                        <mat-icon class="!text-xs !w-3 !h-3">access_time</mat-icon>
+                                        {{ formatDate(notif.sentAt) }}
+                                    </div>
+                                </div>
+                            </div>
+                            }
+                        </div>
+                        }
+                    </div>
+                </mat-tab>
+
+            </mat-tab-group>
+        </div>
+
+        }
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     CATEGORY CREATE / EDIT MODAL
+     ══════════════════════════════════════════════════════════════════════════ -->
+@if (catModalOpen) {
+<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" (click)="closeCatModal()">
+    <div class="bg-card w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
+        (click)="$event.stopPropagation()">
+
+        <div class="flex items-center justify-between px-6 py-4 border-b shrink-0">
+            <h2 class="text-lg font-bold">
+                {{ editingCatId == null ? 'Νέα Κατηγορία' : 'Επεξεργασία Κατηγορίας' }}
+            </h2>
+            <button mat-icon-button (click)="closeCatModal()"><mat-icon>close</mat-icon></button>
+        </div>
+
+        <div class="overflow-y-auto flex-1">
+            <form [formGroup]="catForm" class="grid grid-cols-1 sm:grid-cols-2 gap-4 px-6 py-5">
+
+                <div class="flex flex-col gap-2 sm:col-span-2">
+                    <label class="text-sm font-medium">Εικόνα Θέσης (προαιρετικό)</label>
+                    <div class="relative w-full h-32 rounded-xl border-2 border-dashed flex items-center justify-center bg-gray-50/50 dark:bg-gray-800/30 overflow-hidden cursor-pointer"
+                        (click)="catFileInput.click()">
+                        @if (catImagePreview) {
+                        <img [src]="catImagePreview" class="w-full h-full object-cover" />
+                        <button mat-icon-button class="!absolute top-1 right-1 !bg-black/40 !text-white"
+                            (click)="removeCatImage(); $event.stopPropagation()">
+                            <mat-icon class="!text-sm">close</mat-icon>
+                        </button>
+                        } @else {
+                        <div class="flex flex-col items-center gap-1 text-secondary">
+                            @if (catUploading()) { <mat-icon class="animate-spin">refresh</mat-icon> }
+                            @else {
+                            <mat-icon>event_seat</mat-icon>
+                            <span class="text-xs">Εικόνα θέσης / σχεδιάγραμμα</span>
+                            }
+                        </div>
+                        }
+                    </div>
+                    <input #catFileInput type="file" accept="image/*" class="hidden"
+                        (change)="onCatFileSelected($event)" />
+                </div>
+
+                <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full sm:col-span-2">
+                    <mat-label>Όνομα Κατηγορίας *</mat-label>
+                    <input matInput formControlName="name" placeholder="π.χ. Κατηγορία Α" />
+                </mat-form-field>
+
+                <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full">
+                    <mat-label>Τιμή (€) *</mat-label>
+                    <input matInput type="number" formControlName="price" min="0" step="0.01" />
+                    <span matSuffix>€</span>
+                </mat-form-field>
+
+                <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full">
+                    <mat-label>Max ανά χρήστη *</mat-label>
+                    <input matInput type="number" formControlName="maxPerUser" min="1" />
+                </mat-form-field>
+
+                <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full">
+                    <mat-label>Διαθέσιμα εισιτήρια (0 = ∞)</mat-label>
+                    <input matInput type="number" formControlName="totalAvailable" min="0" />
+                    <mat-icon matSuffix class="text-secondary !text-base">confirmation_number</mat-icon>
+                </mat-form-field>
+
+                <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full">
+                    <mat-label>Σειρά εμφάνισης</mat-label>
+                    <input matInput type="number" formControlName="order" />
+                </mat-form-field>
+
+            </form>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 px-6 py-4 border-t bg-gray-50/50 dark:bg-white/5 shrink-0">
+            <button mat-stroked-button (click)="closeCatModal()">Ακύρωση</button>
+            <button mat-flat-button color="primary" (click)="saveCategory()"
+                [disabled]="catForm.invalid || catUploading()" class="!rounded-full !font-semibold">
+                {{ editingCatId == null ? 'Δημιουργία' : 'Αποθήκευση' }}
+            </button>
+        </div>
+    </div>
+</div>
+}
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     CATEGORY INTERESTS MODAL
+     ══════════════════════════════════════════════════════════════════════════ -->
+@if (catInterestsModalOpen && catInterestsCat) {
+<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" (click)="closeCatInterests()">
+    <div class="bg-card w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden max-h-[85vh] flex flex-col"
+        (click)="$event.stopPropagation()">
+
+        <div class="flex items-center justify-between px-6 py-4 border-b shrink-0">
+            <div>
+                <div class="text-xs text-secondary font-semibold uppercase tracking-wider">Ενδιαφερόμενοι χρήστες</div>
+                <h2 class="text-lg font-bold">{{ catInterestsCat.name }}</h2>
+            </div>
+            <button mat-icon-button (click)="closeCatInterests()"><mat-icon>close</mat-icon></button>
+        </div>
+
+        <div class="overflow-y-auto flex-1 p-4">
+            @if (interests.length === 0) {
+            <div class="flex flex-col items-center justify-center py-12 gap-3">
+                <mat-icon class="text-secondary opacity-30 text-[3rem]">people_outline</mat-icon>
+                <span class="text-secondary text-sm">Δεν υπάρχουν ενδιαφερόμενοι</span>
+            </div>
+            } @else {
+            <div class="text-xs text-secondary mb-3 px-1">
+                <strong>{{ interests.length }}</strong> χρήστες έχουν εκδηλώσει ενδιαφέρον για αυτό το ταξίδι
+            </div>
+            <div class="flex flex-col gap-2">
+                @for (user of interests; track user.interestId) {
+                <div
+                    class="flex items-center gap-3 rounded-xl border p-3 hover:bg-gray-50/60 dark:hover:bg-white/5 transition-colors">
+                    @if (user.userImageUrl) {
+                    <img [src]="user.userImageUrl" class="w-10 h-10 rounded-full object-cover shrink-0" />
+                    } @else {
+                    <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                        <mat-icon class="text-primary !text-base">person</mat-icon>
+                    </div>
+                    }
+                    <div class="flex-1 min-w-0">
+                        <div class="font-semibold text-sm">{{ user.userFullName }}</div>
+                        <div class="text-secondary text-xs truncate">{{ user.userEmail }}</div>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <code
+                            class="text-xs bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">{{ user.userCode }}</code>
+                        <button mat-icon-button (click)="closeCatInterests(); openUserDetails(user)"
+                            matTooltip="Στοιχεία χρήστη" class="!w-8 !h-8 !text-secondary hover:!text-primary">
+                            <mat-icon class="!text-sm">open_in_new</mat-icon>
+                        </button>
+                    </div>
+                </div>
+                }
+            </div>
+            }
+        </div>
+
+        <div class="flex justify-end px-6 py-4 border-t bg-gray-50/50 dark:bg-white/5 shrink-0">
+            <button mat-stroked-button (click)="closeCatInterests()">Κλείσιμο</button>
+        </div>
+    </div>
+</div>
+}
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     USER DETAILS MODAL
+     ══════════════════════════════════════════════════════════════════════════ -->
+@if (userDetailsModalOpen && selectedUser) {
+<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" (click)="closeUserDetails()">
+    <div class="bg-card w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden" (click)="$event.stopPropagation()">
+
+        <div class="flex items-center justify-between px-6 py-4 border-b">
+            <h2 class="text-base font-bold">Στοιχεία Χρήστη</h2>
+            <button mat-icon-button (click)="closeUserDetails()"><mat-icon>close</mat-icon></button>
+        </div>
+
+        <div class="p-6">
+            <!-- Avatar + name -->
+            <div class="flex flex-col items-center gap-3 pb-6 mb-6 border-b">
+                @if (selectedUser.userImageUrl) {
+                <img [src]="selectedUser.userImageUrl"
+                    class="w-20 h-20 rounded-full object-cover shadow-md ring-4 ring-primary/10" />
+                } @else {
+                <div
+                    class="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center shadow-md ring-4 ring-primary/10">
+                    <mat-icon class="text-primary text-3xl">person</mat-icon>
+                </div>
+                }
+                <div class="text-center">
+                    <div class="font-bold text-lg">{{ selectedUser.userFullName }}</div>
+                    <code
+                        class="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded mt-1 inline-block">{{ selectedUser.userCode }}</code>
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                <div class="flex items-center gap-3 rounded-xl bg-gray-50/50 dark:bg-white/5 p-3">
+                    <mat-icon class="text-secondary !text-lg shrink-0">email</mat-icon>
+                    <div class="min-w-0">
+                        <div class="text-[10px] text-secondary font-semibold uppercase tracking-wider">Email</div>
+                        <div class="text-sm font-medium truncate">{{ selectedUser.userEmail }}</div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 rounded-xl bg-gray-50/50 dark:bg-white/5 p-3">
+                    <mat-icon class="text-rose-500 !text-lg shrink-0">favorite</mat-icon>
+                    <div>
+                        <div class="text-[10px] text-secondary font-semibold uppercase tracking-wider">Εκδήλωση
+                            Ενδιαφέροντος</div>
+                        <div class="text-sm font-medium">{{ formatDate(selectedUser.registeredAt) }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-end px-6 py-4 border-t bg-gray-50/50 dark:bg-white/5">
+            <button mat-stroked-button (click)="closeUserDetails()">Κλείσιμο</button>
+        </div>
+    </div>
+</div>
+}

@@ -11,6 +11,7 @@ export interface Notification {
     // BO-specific
     type?: number;       // 1=SupportTicket, 2=SupportReply, 3=Order, 4=Registration
     referenceId?: number | null;
+    referenceCode?: string | null;
 }
 
 export const BONotifType = {
@@ -38,9 +39,9 @@ export const BONotifLabel: Record<number, string> = {
 };
 
 export const BONotifLink: Record<number, (refId?: number | null) => string | null> = {
-    1: (id) => id ? `apps/support/tickets` : null,
-    2: (id) => id ? `apps/support/tickets` : null,
-    3: () => `apps/orders`,
+    1: () => null,   // no auto-redirect — user must click the button in the detail modal
+    2: () => null,   // no auto-redirect — user must click the button in the detail modal
+    3: () => null,   // no auto-redirect — user must click the button in the detail modal
     4: () => null,   // no auto-redirect — user must click the button in the detail modal
     5: (id) => id ? `apps/bo-announcements/${id}` : `apps/bo-announcements`,
 };

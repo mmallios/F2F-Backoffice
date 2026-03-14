@@ -1,0 +1,315 @@
+<div class="absolute inset-0 flex min-w-0 flex-col overflow-hidden">
+    <div class="flex-auto overflow-y-auto">
+
+        <!-- Header -->
+        <div class="border-b px-6 py-7 md:px-8">
+            <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div class="min-w-0">
+                    <div class="text-3xl md:text-4xl font-extrabold leading-none tracking-tight">Away Trips</div>
+                    <div class="text-secondary mt-2 font-medium">Διαχείριση εκδρομών εκτός έδρας</div>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                    <button mat-flat-button color="primary" (click)="openNew()" class="!rounded-full !font-semibold">
+                        <mat-icon class="mr-1">add</mat-icon>
+                        Νέο Away Trip
+                    </button>
+                    <button mat-icon-button (click)="_load()" [disabled]="loading()" matTooltip="Ανανέωση">
+                        <mat-icon>refresh</mat-icon>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats strip -->
+        <div class="px-6 md:px-8 pt-5 pb-1">
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div class="flex items-center gap-4 rounded-2xl border bg-card p-4 shadow-sm">
+                    <div class="flex items-center justify-center w-12 h-12 rounded-xl bg-blue-500/10 shrink-0">
+                        <mat-icon class="text-blue-500">flight</mat-icon>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-extrabold leading-none">{{ loading() ? '—' : totalTrips() }}</div>
+                        <div class="text-secondary text-xs mt-1">Σύνολο</div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4 rounded-2xl border bg-card p-4 shadow-sm">
+                    <div class="flex items-center justify-center w-12 h-12 rounded-xl bg-green-500/10 shrink-0">
+                        <mat-icon class="text-green-500">check_circle</mat-icon>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-extrabold leading-none">{{ loading() ? '—' : activeTrips() }}</div>
+                        <div class="text-secondary text-xs mt-1">Ενεργά</div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4 rounded-2xl border bg-card p-4 shadow-sm">
+                    <div class="flex items-center justify-center w-12 h-12 rounded-xl bg-gray-500/10 shrink-0">
+                        <mat-icon class="text-gray-500">lock</mat-icon>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-extrabold leading-none">{{ loading() ? '—' : inactiveTrips() }}</div>
+                        <div class="text-secondary text-xs mt-1">Ανενεργά</div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4 rounded-2xl border bg-card p-4 shadow-sm">
+                    <div class="flex items-center justify-center w-12 h-12 rounded-xl bg-orange-500/10 shrink-0">
+                        <mat-icon class="text-orange-500">favorite</mat-icon>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-extrabold leading-none">{{ loading() ? '—' : totalInterests() }}</div>
+                        <div class="text-secondary text-xs mt-1">Ενδιαφέροντα</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="px-6 md:px-8 py-4">
+            <div class="flex flex-col sm:flex-row gap-3 rounded-2xl border bg-card px-4 py-3 shadow-sm items-center"
+                [formGroup]="filters">
+                <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full sm:w-72 shrink-0">
+                    <mat-icon matPrefix>search</mat-icon>
+                    <input matInput formControlName="search" placeholder="Αναζήτηση τίτλου..." />
+                </mat-form-field>
+                <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full sm:w-48 shrink-0">
+                    <mat-label>Κατάσταση</mat-label>
+                    <mat-select formControlName="statusFilter">
+                        <mat-option value="all">Όλα</mat-option>
+                        <mat-option value="active">Ενεργά</mat-option>
+                        <mat-option value="inactive">Ανενεργά</mat-option>
+                    </mat-select>
+                </mat-form-field>
+                <button mat-stroked-button (click)="resetFilters()" class="shrink-0 !rounded-full"
+                    matTooltip="Καθαρισμός φίλτρων">
+                    <mat-icon class="mr-1">filter_alt_off</mat-icon>
+                    Καθαρισμός
+                </button>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="px-6 md:px-8 pb-6">
+            <div class="rounded-2xl border bg-card shadow-sm overflow-hidden">
+
+                @if (loading()) {
+                <div class="flex items-center justify-center py-16">
+                    <mat-icon class="animate-spin text-4xl text-primary opacity-50">refresh</mat-icon>
+                </div>
+                } @else if (dataSource.data.length === 0) {
+                <div class="flex flex-col items-center justify-center py-16 gap-3">
+                    <mat-icon class="text-secondary opacity-30 w-16 h-16 text-[4rem]">flight</mat-icon>
+                    <span class="text-secondary">Δεν βρέθηκαν away trips</span>
+                </div>
+                } @else {
+                <div class="overflow-x-auto">
+                    <table mat-table [dataSource]="dataSource" matSort class="w-full min-w-max">
+
+                        <!-- Image -->
+                        <ng-container matColumnDef="image">
+                            <th mat-header-cell *matHeaderCellDef
+                                class="!text-xs !font-semibold !uppercase !tracking-wider !text-secondary">Εικόνα</th>
+                            <td mat-cell *matCellDef="let row">
+                                @if (row.imageUrl) {
+                                <img [src]="row.imageUrl" class="w-12 h-12 rounded-lg object-cover" />
+                                } @else {
+                                <div
+                                    class="w-12 h-12 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                                    <mat-icon class="text-secondary text-xl">flight</mat-icon>
+                                </div>
+                                }
+                            </td>
+                        </ng-container>
+
+                        <!-- Title -->
+                        <ng-container matColumnDef="title">
+                            <th mat-header-cell *matHeaderCellDef mat-sort-header
+                                class="!text-xs !font-semibold !uppercase !tracking-wider !text-secondary">Τίτλος</th>
+                            <td mat-cell *matCellDef="let row">
+                                <div class="font-semibold">{{ row.title }}</div>
+                                @if (row.description) {
+                                <div class="text-secondary text-xs truncate max-w-xs">{{ row.description }}</div>
+                                }
+                            </td>
+                        </ng-container>
+
+                        <!-- Event -->
+                        <ng-container matColumnDef="event">
+                            <th mat-header-cell *matHeaderCellDef
+                                class="!text-xs !font-semibold !uppercase !tracking-wider !text-secondary">Αγώνας</th>
+                            <td mat-cell *matCellDef="let row">
+                                @if (row.event) {
+                                <div class="flex items-center gap-2">
+                                    @if (row.event.homeTeamLogoUrl) {
+                                    <img [src]="row.event.homeTeamLogoUrl" class="w-5 h-5 object-contain" />
+                                    }
+                                    <span class="text-xs">{{ row.event.homeTeamName }} vs {{ row.event.awayTeamName
+                                        }}</span>
+                                </div>
+                                <div class="text-secondary text-xs">{{ formatDate(row.event.eventDate) }}</div>
+                                } @else {
+                                <span class="text-secondary text-xs">—</span>
+                                }
+                            </td>
+                        </ng-container>
+
+                        <!-- Active -->
+                        <ng-container matColumnDef="isActive">
+                            <th mat-header-cell *matHeaderCellDef mat-sort-header
+                                class="!text-xs !font-semibold !uppercase !tracking-wider !text-secondary">Κατάσταση
+                            </th>
+                            <td mat-cell *matCellDef="let row">
+                                <button (click)="toggleActive(row); $event.stopPropagation()"
+                                    [class]="row.isActive
+                                        ? 'inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 cursor-pointer hover:opacity-80'
+                                        : 'inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 cursor-pointer hover:opacity-80'">
+                                    <mat-icon class="!text-xs !w-3 !h-3">{{ row.isActive ? 'check_circle' : 'lock'
+                                        }}</mat-icon>
+                                    {{ row.isActive ? 'Ενεργό' : 'Ανενεργό' }}
+                                </button>
+                            </td>
+                        </ng-container>
+
+                        <!-- Interest count -->
+                        <ng-container matColumnDef="interestCount">
+                            <th mat-header-cell *matHeaderCellDef mat-sort-header
+                                class="!text-xs !font-semibold !uppercase !tracking-wider !text-secondary">Ενδιαφέροντα
+                            </th>
+                            <td mat-cell *matCellDef="let row">
+                                <div class="flex items-center gap-1">
+                                    <mat-icon class="text-orange-400 !text-base">favorite</mat-icon>
+                                    <span class="font-semibold">{{ row.interestCount }}</span>
+                                </div>
+                            </td>
+                        </ng-container>
+
+                        <!-- Actions -->
+                        <ng-container matColumnDef="actions">
+                            <th mat-header-cell *matHeaderCellDef
+                                class="!text-xs !font-semibold !uppercase !tracking-wider !text-secondary !text-right">
+                                Ενέργειες</th>
+                            <td mat-cell *matCellDef="let row" class="!text-right">
+                                <button mat-icon-button (click)="openDetails(row); $event.stopPropagation()"
+                                    matTooltip="Λεπτομέρειες">
+                                    <mat-icon>open_in_new</mat-icon>
+                                </button>
+                                <button mat-icon-button (click)="openEdit(row); $event.stopPropagation()"
+                                    matTooltip="Επεξεργασία">
+                                    <mat-icon>edit</mat-icon>
+                                </button>
+                                <button mat-icon-button color="warn" (click)="deleteTrip(row); $event.stopPropagation()"
+                                    matTooltip="Διαγραφή">
+                                    <mat-icon>delete</mat-icon>
+                                </button>
+                            </td>
+                        </ng-container>
+
+                        <tr mat-header-row *matHeaderRowDef="displayedColumns" class="bg-gray-50/80 dark:bg-white/5">
+                        </tr>
+                        <tr mat-row *matRowDef="let row; columns: displayedColumns;"
+                            class="hover:bg-gray-50/60 dark:hover:bg-white/5 transition-colors cursor-pointer"
+                            [class.opacity-60]="!row.isActive" (click)="openDetails(row)"></tr>
+                    </table>
+                </div>
+                <mat-paginator [pageSizeOptions]="[10, 25, 50]" pageSize="25" showFirstLastButtons
+                    class="border-t"></mat-paginator>
+                }
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     Create / Edit modal
+     ═══════════════════════════════════════════════════════════════ -->
+@if (modalOpen) {
+<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" (click)="closeModal()">
+    <div class="bg-card w-full max-w-xl rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
+        (click)="$event.stopPropagation()">
+
+        <!-- Header -->
+        <div class="flex items-center justify-between px-6 py-4 border-b shrink-0">
+            <h2 class="text-lg font-bold">
+                {{ editingId == null ? 'Νέο Away Trip' : 'Επεξεργασία Away Trip' }}
+            </h2>
+            <button mat-icon-button (click)="closeModal()"><mat-icon>close</mat-icon></button>
+        </div>
+
+        <!-- Body -->
+        <div class="overflow-y-auto flex-1">
+            <form [formGroup]="form" class="grid grid-cols-1 gap-4 px-6 py-5">
+
+                <!-- Image upload -->
+                <div class="flex flex-col gap-2">
+                    <label class="text-sm font-medium">Εικόνα</label>
+                    <div class="relative w-full h-40 rounded-xl border-2 border-dashed flex items-center justify-center bg-gray-50/50 dark:bg-gray-800/30 overflow-hidden cursor-pointer"
+                        (click)="triggerFileInput(fileInput)">
+                        @if (imagePreview) {
+                        <img [src]="imagePreview" class="w-full h-full object-cover" />
+                        <button mat-icon-button class="!absolute top-1 right-1 !bg-black/40 !text-white"
+                            (click)="removeImage(); $event.stopPropagation()">
+                            <mat-icon class="!text-sm">close</mat-icon>
+                        </button>
+                        } @else {
+                        <div class="flex flex-col items-center gap-2 text-secondary">
+                            @if (uploading()) {
+                            <mat-icon class="animate-spin">refresh</mat-icon>
+                            } @else {
+                            <mat-icon class="text-3xl">add_photo_alternate</mat-icon>
+                            <span class="text-xs">Κάντε κλικ για ανέβασμα (max 3MB)</span>
+                            }
+                        </div>
+                        }
+                    </div>
+                    <input #fileInput type="file" accept="image/*" class="hidden" (change)="onFileSelected($event)" />
+                </div>
+
+                <!-- Title -->
+                <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full">
+                    <mat-label>Τίτλος *</mat-label>
+                    <input matInput formControlName="title" placeholder="π.χ. Away Trip Μπαρτσελόνα" />
+                </mat-form-field>
+
+                <!-- Description -->
+                <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full">
+                    <mat-label>Περιγραφή</mat-label>
+                    <textarea matInput formControlName="description" rows="3"
+                        placeholder="Σύντομη περιγραφή του ταξιδιού..."></textarea>
+                </mat-form-field>
+
+                <!-- Event -->
+                <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full">
+                    <mat-label>Συνδεδεμένος Αγώνας (προαιρετικό)</mat-label>
+                    <mat-select formControlName="eventId">
+                        <mat-option [value]="null">— Κανένας —</mat-option>
+                        @for (ev of events; track ev.id) {
+                        <mat-option [value]="ev.id">
+                            {{ ev.homeTeamName }} vs {{ ev.awayTeamName }} — {{ formatDate(ev.eventDate) }}
+                        </mat-option>
+                        }
+                    </mat-select>
+                </mat-form-field>
+
+                <!-- isActive (edit only) -->
+                @if (editingId != null) {
+                <mat-slide-toggle formControlName="isActive" color="primary">
+                    Ενεργό (εμφανίζεται στη λίστα με πλήρες περιεχόμενο)
+                </mat-slide-toggle>
+                }
+
+            </form>
+        </div>
+
+        <!-- Footer -->
+        <div class="flex items-center justify-end gap-3 px-6 py-4 border-t bg-gray-50/50 dark:bg-white/5 shrink-0">
+            <button mat-stroked-button (click)="closeModal()" [disabled]="saving()">Ακύρωση</button>
+            <button mat-flat-button color="primary" (click)="save()"
+                [disabled]="saving() || form.invalid || uploading()" class="!rounded-full !font-semibold">
+                @if (saving()) {
+                <mat-icon class="animate-spin mr-1">refresh</mat-icon>
+                }
+                {{ editingId == null ? 'Δημιουργία' : 'Αποθήκευση' }}
+            </button>
+        </div>
+    </div>
+</div>
+}

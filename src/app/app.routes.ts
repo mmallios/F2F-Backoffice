@@ -119,6 +119,7 @@ export const appRoutes: Route[] = [
                     { path: 'news', loadChildren: () => import('app/modules/admin/apps/news/news.routes') },
                     { path: 'contests', loadChildren: () => import('app/modules/admin/apps/contests/contests.routes').then(m => m.CONTESTS_ROUTES) },
                     { path: 'offers', loadChildren: () => import('app/modules/admin/apps/offers/offers.routes').then(m => m.OFFERS_ROUTES) },
+                    { path: 'away-trips', loadChildren: () => import('app/modules/admin/apps/away-trips/away-trips.routes').then(m => m.AWAY_TRIPS_ROUTES) },
                     { path: 'settings/admin-activity', loadChildren: () => import('app/modules/admin/apps/admin-activity/admin-activity.routes').then(m => m.ADMIN_ACTIVITY_ROUTES) },
                     { path: 'fan2fan-stats', loadChildren: () => import('app/modules/admin/apps/fan2fan-stats/fan2fan-stats.routes').then(m => m.FAN2FAN_STATS_ROUTES) }
                 ]

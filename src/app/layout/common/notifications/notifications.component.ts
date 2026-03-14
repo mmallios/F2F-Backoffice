@@ -172,6 +172,26 @@ export class NotificationsComponent implements OnInit, OnDestroy {
     }
 
     /**
+     * Navigate to the specific support ticket from detail modal
+     */
+    goToSupportTicket(): void {
+        const id = this.selectedNotification?.referenceId;
+        if (!id) return;
+        this.closeDetail();
+        this._router.navigate(['/apps/support/tickets', id]);
+    }
+
+    /**
+     * Navigate to the specific order from detail modal
+     */
+    goToOrder(): void {
+        const code = this.selectedNotification?.referenceCode;
+        if (!code) return;
+        this.closeDetail();
+        this._router.navigate(['/apps/orders', code]);
+    }
+
+    /**
      * Toggle read status of the given notification
      */
     toggleRead(notification: Notification): void {

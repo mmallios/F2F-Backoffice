@@ -181,6 +181,26 @@
             </button>
         </div>
         }
+
+        <!-- Support ticket action button -->
+        @if (selectedNotification.type === BONotifType.NewSupportTicket || selectedNotification.type === BONotifType.SupportReply) {
+        <div class="mt-5">
+            <button mat-flat-button color="primary" class="w-full" (click)="goToSupportTicket()">
+                <mat-icon class="icon-size-4 mr-1" [svgIcon]="'heroicons_outline:arrow-right'"></mat-icon>
+                ΠΡΟΒΟΛΗ ΑΙΤΗΜΑΤΟΣ ΥΠΟΣΤΗΡΙΞΗΣ
+            </button>
+        </div>
+        }
+
+        <!-- Order action button -->
+        @if (selectedNotification.type === BONotifType.NewOrder) {
+        <div class="mt-5">
+            <button mat-flat-button color="primary" class="w-full" (click)="goToOrder()">
+                <mat-icon class="icon-size-4 mr-1" [svgIcon]="'heroicons_outline:arrow-right'"></mat-icon>
+                ΠΡΟΒΟΛΗ ΠΑΡΑΓΓΕΛΙΑΣ
+            </button>
+        </div>
+        }
     </div>
 </div>
 }
