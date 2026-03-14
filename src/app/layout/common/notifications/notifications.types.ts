@@ -41,6 +41,6 @@ export const BONotifLink: Record<number, (refId?: number | null) => string | nul
     1: (id) => id ? `apps/support/tickets` : null,
     2: (id) => id ? `apps/support/tickets` : null,
     3: () => `apps/orders`,
-    4: () => `registration-requests`,
+    4: () => null,   // no auto-redirect — user must click the button in the detail modal
     5: (id) => id ? `apps/bo-announcements/${id}` : `apps/bo-announcements`,
 };

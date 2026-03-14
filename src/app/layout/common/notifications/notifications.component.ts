@@ -15,9 +15,9 @@ import {
 import { MatButton, MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { RouterLink } from '@angular/router';
+import { RouterLink, Router } from '@angular/router';
 import { NotificationsService } from 'app/layout/common/notifications/notifications.service';
-import { BONotifIcon, BONotifLabel, Notification } from 'app/layout/common/notifications/notifications.types';
+import { BONotifIcon, BONotifLabel, BONotifType, Notification } from 'app/layout/common/notifications/notifications.types';
 import { Subject, takeUntil } from 'rxjs';
 
 @Component({
@@ -48,6 +48,7 @@ export class NotificationsComponent implements OnInit, OnDestroy {
     detailModalOpen: boolean = false;
     readonly BONotifIcon = BONotifIcon;
     readonly BONotifLabel = BONotifLabel;
+    readonly BONotifType = BONotifType;
     private _overlayRef: OverlayRef;
     private _unsubscribeAll: Subject<any> = new Subject<any>();
 
@@ -58,8 +59,9 @@ export class NotificationsComponent implements OnInit, OnDestroy {
         private _changeDetectorRef: ChangeDetectorRef,
         private _notificationsService: NotificationsService,
         private _overlay: Overlay,
-        private _viewContainerRef: ViewContainerRef
-    ) {}
+        private _viewContainerRef: ViewContainerRef,
+        private _router: Router
+    ) { }
 
     // -----------------------------------------------------------------------------------------------------
     // @ Lifecycle hooks
@@ -141,6 +143,7 @@ export class NotificationsComponent implements OnInit, OnDestroy {
      * Open notification detail modal and mark it as read
      */
     openDetail(notification: Notification): void {
+        this.closePanel();
         this.selectedNotification = notification;
         this.detailModalOpen = true;
         this._changeDetectorRef.markForCheck();
@@ -157,6 +160,15 @@ export class NotificationsComponent implements OnInit, OnDestroy {
         this.detailModalOpen = false;
         this.selectedNotification = null;
         this._changeDetectorRef.markForCheck();
+    }
+
+    /**
+     * Navigate to registration requests from detail modal
+     */
+    goToRegistrationRequests(): void {
+        this.closeDetail();
+        this.closePanel();
+        this._router.navigateByUrl('/apps/registration-requests');
     }
 
     /**

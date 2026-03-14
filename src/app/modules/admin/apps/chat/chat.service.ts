@@ -11,6 +11,7 @@ import {
 import {
     BehaviorSubject,
     Observable,
+    Subject,
     forkJoin,
     map,
     tap,
@@ -26,6 +27,7 @@ export class ChatService {
     private _activeChat = new BehaviorSubject<BOChatDetail | null>(null);
     private _activeGroupChat = new BehaviorSubject<BOGroupChatDetail | null>(null);
     private _adminContacts = new BehaviorSubject<BOAdminContact[]>([]);
+    private _openQuickChat = new Subject<number>();
 
     constructor(
         private _http: HttpClient,
@@ -38,6 +40,11 @@ export class ChatService {
     get activeChat$(): Observable<BOChatDetail | null> { return this._activeChat.asObservable(); }
     get activeGroupChat$(): Observable<BOGroupChatDetail | null> { return this._activeGroupChat.asObservable(); }
     get adminContacts$(): Observable<BOAdminContact[]> { return this._adminContacts.asObservable(); }
+    get openQuickChat$(): Observable<number> { return this._openQuickChat.asObservable(); }
+
+    requestOpenQuickChat(chatId: number): void {
+        this._openQuickChat.next(chatId);
+    }
 
     get myBoUserId(): number {
         return this._auth.currentUser?.boUserId ?? 0;

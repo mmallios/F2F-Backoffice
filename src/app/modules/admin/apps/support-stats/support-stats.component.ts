@@ -203,6 +203,7 @@ export class SupportStatsComponent implements OnInit, OnDestroy {
             AdminTicketsDialogComponent,
             {
                 data: { boUserId: row.boUserId, adminName: row.fullName },
+                width: '1100px',
                 maxWidth: '95vw',
                 panelClass: 'rounded-2xl',
             }

@@ -171,6 +171,16 @@
         <div class="text-secondary text-xs">
             {{ selectedNotification.time | date: 'dd MMM yyyy, HH:mm' }}
         </div>
+
+        <!-- Registration request action button -->
+        @if (selectedNotification.type === BONotifType.NewRegistrationRequest) {
+        <div class="mt-5">
+            <button mat-flat-button color="primary" class="w-full" (click)="goToRegistrationRequests()">
+                <mat-icon class="icon-size-4 mr-1" [svgIcon]="'heroicons_outline:arrow-right'"></mat-icon>
+                ΠΡΟΒΟΛΗ ΑΙΤΗΜΑΤΟΣ
+            </button>
+        </div>
+        }
     </div>
 </div>
 }

@@ -81,6 +81,14 @@
             <!-- Messages -->
             <div #messagesContainer class="flex flex-col overflow-y-auto" style="flex: 1 1 0;">
                 <div class="bg-card flex flex-auto shrink flex-col p-6 dark:bg-transparent">
+                    @if (messages.length === 0) {
+                    <div class="flex flex-auto flex-col items-center justify-center py-16">
+                        <mat-icon class="icon-size-24 text-gray-300 dark:text-gray-600"
+                            [svgIcon]="'heroicons_outline:chat-bubble-left-right'"></mat-icon>
+                        <div class="mt-4 text-center text-base font-medium">Δεν υπάρχουν μηνύματα ακόμα</div>
+                        <div class="text-hint mt-1 text-center text-sm">Στείλε το πρώτο μήνυμα!</div>
+                    </div>
+                    }
                     @for (message of messages; track trackByFn(i, message); let i = $index; let first = $first; let last
                     = $last) {
                     <!-- Day separator -->

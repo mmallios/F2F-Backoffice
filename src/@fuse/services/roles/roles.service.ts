@@ -81,6 +81,7 @@ export interface AdminRowDto {
     roleId: number;
     roleName: string;
     isActive: boolean;
+    mobile?: string | null;
 }
 
 export interface AvailableUserDto {

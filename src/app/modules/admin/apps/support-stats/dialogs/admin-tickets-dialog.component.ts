@@ -1,13 +1,13 @@
 import { CommonModule } from '@angular/common';
 import {
-    ChangeDetectionStrategy,
-    ChangeDetectorRef,
-    Component,
-    Inject,
-    OnInit,
-    ViewChild,
-    inject,
-    signal,
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  Component,
+  Inject,
+  OnInit,
+  ViewChild,
+  inject,
+  signal,
 } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
@@ -19,31 +19,31 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { finalize } from 'rxjs';
 
 import {
-    SupportTicketsAdminService,
-    SupportTicketAdminDto,
-    SupportTicketStatus,
+  SupportTicketsAdminService,
+  SupportTicketAdminDto,
+  SupportTicketStatus,
 } from '@fuse/services/support/support-tickets-admin.service';
 
 export interface AdminTicketsDialogData {
-    boUserId: number;
-    adminName: string;
+  boUserId: number;
+  adminName: string;
 }
 
 @Component({
-    selector: 'app-admin-tickets-dialog',
-    standalone: true,
-    imports: [
-        CommonModule,
-        MatDialogModule,
-        MatButtonModule,
-        MatIconModule,
-        MatTableModule,
-        MatPaginatorModule,
-        MatChipsModule,
-        MatTooltipModule,
-    ],
-    template: `
-    <div class="flex flex-col min-w-0" style="width: 720px; max-width: 95vw;">
+  selector: 'app-admin-tickets-dialog',
+  standalone: true,
+  imports: [
+    CommonModule,
+    MatDialogModule,
+    MatButtonModule,
+    MatIconModule,
+    MatTableModule,
+    MatPaginatorModule,
+    MatChipsModule,
+    MatTooltipModule,
+  ],
+  template: `
+    <div class="flex flex-col min-w-0" style="width: 1100px; max-width: 95vw;">
       <!-- Header -->
       <div class="flex items-center justify-between px-6 py-4 border-b">
         <div>
@@ -135,77 +135,77 @@ export interface AdminTicketsDialogData {
       }
     </div>
     `,
-    changeDetection: ChangeDetectionStrategy.OnPush,
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AdminTicketsDialogComponent implements OnInit {
-    private api = inject(SupportTicketsAdminService);
-    private cdr = inject(ChangeDetectorRef);
+  private api = inject(SupportTicketsAdminService);
+  private cdr = inject(ChangeDetectorRef);
 
-    loading = signal(true);
-    total = signal(0);
-    dataSource = new MatTableDataSource<SupportTicketAdminDto>([]);
+  loading = signal(true);
+  total = signal(0);
+  dataSource = new MatTableDataSource<SupportTicketAdminDto>([]);
 
-    pageIndex = 0;
-    pageSize = 10;
+  pageIndex = 0;
+  pageSize = 10;
 
-    readonly columns = ['id', 'createdAt', 'subject', 'category', 'status'];
+  readonly columns = ['id', 'createdAt', 'subject', 'category', 'status'];
 
-    constructor(
-        @Inject(MAT_DIALOG_DATA) public data: AdminTicketsDialogData,
-        private ref: MatDialogRef<AdminTicketsDialogComponent>,
-    ) { }
+  constructor(
+    @Inject(MAT_DIALOG_DATA) public data: AdminTicketsDialogData,
+    private ref: MatDialogRef<AdminTicketsDialogComponent>,
+  ) { }
 
-    ngOnInit(): void {
-        this.load();
+  ngOnInit(): void {
+    this.load();
+  }
+
+  load(): void {
+    this.loading.set(true);
+    this.api.getAdminTickets(this.data.boUserId, {
+      page: this.pageIndex + 1,
+      pageSize: this.pageSize,
+      sort: 'createdAt:desc',
+    }).pipe(finalize(() => this.loading.set(false)))
+      .subscribe({
+        next: (result) => {
+          this.dataSource.data = result.items;
+          this.total.set(result.total);
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.dataSource.data = [];
+          this.cdr.markForCheck();
+        },
+      });
+  }
+
+  onPage(e: PageEvent): void {
+    this.pageIndex = e.pageIndex;
+    this.pageSize = e.pageSize;
+    this.load();
+  }
+
+  close(): void {
+    this.ref.close();
+  }
+
+  statusLabel(status: SupportTicketStatus): string {
+    switch (status) {
+      case SupportTicketStatus.Pending: return 'Εκκρεμεί';
+      case SupportTicketStatus.Answered: return 'Απαντήθηκε';
+      case SupportTicketStatus.Completed: return 'Ολοκληρώθηκε';
+      case SupportTicketStatus.Deleted: return 'Διεγράφη';
+      default: return String(status);
     }
+  }
 
-    load(): void {
-        this.loading.set(true);
-        this.api.getAdminTickets(this.data.boUserId, {
-            page: this.pageIndex + 1,
-            pageSize: this.pageSize,
-            sort: 'createdAt:desc',
-        }).pipe(finalize(() => this.loading.set(false)))
-            .subscribe({
-                next: (result) => {
-                    this.dataSource.data = result.items;
-                    this.total.set(result.total);
-                    this.cdr.markForCheck();
-                },
-                error: () => {
-                    this.dataSource.data = [];
-                    this.cdr.markForCheck();
-                },
-            });
+  statusChipClass(status: SupportTicketStatus): string {
+    switch (status) {
+      case SupportTicketStatus.Pending: return '!bg-amber-100 !text-amber-800 dark:!bg-amber-900 dark:!text-amber-200';
+      case SupportTicketStatus.Answered: return '!bg-blue-100 !text-blue-800 dark:!bg-blue-900 dark:!text-blue-200';
+      case SupportTicketStatus.Completed: return '!bg-green-100 !text-green-800 dark:!bg-green-900 dark:!text-green-200';
+      case SupportTicketStatus.Deleted: return '!bg-red-100 !text-red-800 dark:!bg-red-900 dark:!text-red-200';
+      default: return '';
     }
-
-    onPage(e: PageEvent): void {
-        this.pageIndex = e.pageIndex;
-        this.pageSize = e.pageSize;
-        this.load();
-    }
-
-    close(): void {
-        this.ref.close();
-    }
-
-    statusLabel(status: SupportTicketStatus): string {
-        switch (status) {
-            case SupportTicketStatus.Pending: return 'Εκκρεμεί';
-            case SupportTicketStatus.Answered: return 'Απαντήθηκε';
-            case SupportTicketStatus.Completed: return 'Ολοκληρώθηκε';
-            case SupportTicketStatus.Deleted: return 'Διεγράφη';
-            default: return String(status);
-        }
-    }
-
-    statusChipClass(status: SupportTicketStatus): string {
-        switch (status) {
-            case SupportTicketStatus.Pending: return '!bg-amber-100 !text-amber-800 dark:!bg-amber-900 dark:!text-amber-200';
-            case SupportTicketStatus.Answered: return '!bg-blue-100 !text-blue-800 dark:!bg-blue-900 dark:!text-blue-200';
-            case SupportTicketStatus.Completed: return '!bg-green-100 !text-green-800 dark:!bg-green-900 dark:!text-green-200';
-            case SupportTicketStatus.Deleted: return '!bg-red-100 !text-red-800 dark:!bg-red-900 dark:!text-red-200';
-            default: return '';
-        }
-    }
+  }
 }

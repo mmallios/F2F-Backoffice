@@ -121,6 +121,18 @@ export class QuickChatComponent implements OnInit, AfterViewInit, OnDestroy {
                 if (chat) this.activeChat = null;
                 this._changeDetectorRef.markForCheck();
             });
+
+        this._chatService.openQuickChat$
+            .pipe(takeUntil(this._unsubscribeAll))
+            .subscribe(chatId => {
+                this._chatService.loadChatById(chatId).subscribe({
+                    next: () => {
+                        this.conversationVisible = true;
+                        this._toggleOpened(true);
+                        this._changeDetectorRef.markForCheck();
+                    },
+                });
+            });
     }
 
     ngAfterViewInit(): void {

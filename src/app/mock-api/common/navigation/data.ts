@@ -203,11 +203,11 @@ export const defaultNavigation: FuseNavigationItem[] = [
                         link: '/apps/settings/roles',
                     },
                     {
-                        id: 'apps.bo-announcements',
-                        title: 'Ανακοινώσεις Admins',
+                        id: 'headquarters.announcements',
+                        title: 'Ανακοινώσεις F2F',
                         type: 'basic',
                         icon: 'heroicons_outline:megaphone',
-                        link: '/apps/bo-announcements',
+                        link: '/apps/announcements',
                     },
                     {
                         id: 'apps.admin-activity',
@@ -230,18 +230,19 @@ export const defaultNavigation: FuseNavigationItem[] = [
         children: [
             {
                 id: 'headquarters.chat',
-                title: 'Συνομιλίες F2F',
+                title: 'Συνομιλίες HQ',
                 type: 'basic',
                 icon: 'heroicons_outline:chat-bubble-left-right',
                 link: '/apps/chat',
             },
             {
-                id: 'headquarters.announcements',
-                title: 'Ανακοινώσεις F2F',
+                id: 'apps.bo-announcements',
+                title: 'Ανακοινώσεις HQ',
                 type: 'basic',
                 icon: 'heroicons_outline:megaphone',
-                link: '/apps/announcements',
+                link: '/apps/bo-announcements',
             },
+
             {
                 id: 'apps.fan2fan-stats',
                 title: 'Στατιστικά FAN2FAN',
