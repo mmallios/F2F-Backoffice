@@ -1,0 +1,281 @@
+<div class="absolute inset-0 flex min-w-0 flex-col overflow-hidden">
+    <div class="flex-auto overflow-y-auto">
+
+        <!-- ── Header ──────────────────────────────────────────────────────── -->
+        <div class="border-b px-6 py-7 md:px-8">
+            <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div class="min-w-0">
+                    <div class="text-3xl md:text-4xl font-extrabold leading-none tracking-tight">
+                        Στατιστικά Διαχειριστών
+                    </div>
+                    <div class="text-secondary mt-2 font-medium">
+                        Δραστηριότητα και ενέργειες ανά διαχειριστή
+                    </div>
+                </div>
+                <button mat-icon-button (click)="load()" [disabled]="loading()" matTooltip="Ανανέωση">
+                    <mat-icon>refresh</mat-icon>
+                </button>
+            </div>
+        </div>
+
+        <!-- ── Error ──────────────────────────────────────────────────────── -->
+        @if (error()) {
+        <div
+            class="mx-6 mt-5 md:mx-8 flex items-center gap-3 rounded-2xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/50 px-5 py-4 text-red-700 dark:text-red-300">
+            <mat-icon class="text-red-500 shrink-0">error_outline</mat-icon>
+            <span>{{ error() }}</span>
+        </div>
+        }
+
+        <!-- ── Stats strip (4 cards) ───────────────────────────────────────── -->
+        <div class="px-6 md:px-8 pt-6 pb-1">
+            <div class="grid grid-cols-2 xl:grid-cols-4 gap-4">
+
+                <!-- Total admins -->
+                <div class="flex items-center gap-4 rounded-2xl border bg-card p-4 shadow-sm">
+                    <div class="flex items-center justify-center w-12 h-12 rounded-xl bg-indigo-500/10 shrink-0">
+                        <mat-icon class="text-indigo-500">manage_accounts</mat-icon>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-extrabold leading-none">
+                            {{ loading() ? '—' : (overview()?.totalAdmins ?? '—') }}
+                        </div>
+                        <div class="text-secondary text-xs mt-1">Σύνολο Διαχειριστών</div>
+                    </div>
+                </div>
+
+                <!-- Actions today -->
+                <div class="flex items-center gap-4 rounded-2xl border bg-card p-4 shadow-sm">
+                    <div class="flex items-center justify-center w-12 h-12 rounded-xl bg-orange-500/10 shrink-0">
+                        <mat-icon class="text-orange-500">bolt</mat-icon>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-extrabold leading-none">
+                            {{ loading() ? '—' : (overview()?.totalActionsToday ?? '—') }}
+                        </div>
+                        <div class="text-secondary text-xs mt-1">Ενέργειες Σήμερα</div>
+                    </div>
+                </div>
+
+                <!-- Actions this week -->
+                <div class="flex items-center gap-4 rounded-2xl border bg-card p-4 shadow-sm">
+                    <div class="flex items-center justify-center w-12 h-12 rounded-xl bg-green-500/10 shrink-0">
+                        <mat-icon class="text-green-500">calendar_view_week</mat-icon>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-extrabold leading-none">
+                            {{ loading() ? '—' : (overview()?.totalActionsThisWeek ?? '—') }}
+                        </div>
+                        <div class="text-secondary text-xs mt-1">Ενέργειες Εβδομάδας</div>
+                    </div>
+                </div>
+
+                <!-- Login sessions -->
+                <div class="flex items-center gap-4 rounded-2xl border bg-card p-4 shadow-sm">
+                    <div class="flex items-center justify-center w-12 h-12 rounded-xl bg-violet-500/10 shrink-0">
+                        <mat-icon class="text-violet-500">login</mat-icon>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-extrabold leading-none">
+                            {{ loading() ? '—' : (overview()?.totalLoginSessions ?? '—') }}
+                        </div>
+                        <div class="text-secondary text-xs mt-1">Συνολικές Συνεδρίες</div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ── Filter bar ──────────────────────────────────────────────────── -->
+        <div class="px-6 md:px-8 pt-5" [formGroup]="filters">
+            <div class="bg-gray-50/80 dark:bg-white/5 border rounded-2xl shadow-sm px-4 py-4 md:px-6 md:py-5">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+
+                    <!-- Admin filter -->
+                    <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full" subscriptSizing="dynamic">
+                        <mat-icon matPrefix class="icon-size-5" svgIcon="heroicons_outline:user"></mat-icon>
+                        <mat-label>Φίλτρο Διαχειριστή</mat-label>
+                        <mat-select formControlName="adminId">
+                            <mat-option [value]="null">Όλοι οι Διαχειριστές</mat-option>
+                            @for (adm of allAdmins; track adm.boUserId) {
+                            <mat-option [value]="adm.boUserId">{{ adm.fullName }}</mat-option>
+                            }
+                        </mat-select>
+                    </mat-form-field>
+
+                    <!-- Sort -->
+                    <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full" subscriptSizing="dynamic">
+                        <mat-icon matPrefix class="icon-size-5" svgIcon="heroicons_outline:bars-arrow-down"></mat-icon>
+                        <mat-label>Ταξινόμηση</mat-label>
+                        <mat-select formControlName="sort">
+                            @for (opt of sortOptions; track opt.value) {
+                            <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
+                            }
+                        </mat-select>
+                    </mat-form-field>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Table card ──────────────────────────────────────────────────── -->
+        <div class="px-6 py-6 md:px-8">
+            <div class="bg-card rounded-2xl border shadow-sm overflow-hidden">
+
+                <!-- Loading skeleton -->
+                @if (loading()) {
+                <div class="p-8">
+                    <div class="animate-pulse space-y-3">
+                        <div class="h-4 w-1/3 rounded bg-gray-200 dark:bg-gray-700"></div>
+                        <div class="h-4 w-2/3 rounded bg-gray-200 dark:bg-gray-700"></div>
+                        <div class="h-4 w-1/2 rounded bg-gray-200 dark:bg-gray-700"></div>
+                    </div>
+                </div>
+                } @else {
+
+                @if (!dataSource.data.length) {
+                <div class="p-10 text-center">
+                    <mat-icon class="text-secondary !w-14 !h-14 !text-6xl">manage_accounts</mat-icon>
+                    <div class="text-2xl font-semibold tracking-tight mt-4">Δεν βρέθηκαν διαχειριστές</div>
+                    <div class="text-secondary mt-2">Δεν υπάρχουν διαχειριστές για τα επιλεγμένα κριτήρια.</div>
+                </div>
+                } @else {
+
+                <div class="overflow-x-auto">
+                    <table mat-table [dataSource]="dataSource" class="min-w-[960px] w-full">
+
+                        <!-- Admin col -->
+                        <ng-container matColumnDef="admin">
+                            <th mat-header-cell *matHeaderCellDef class="px-6">Διαχειριστής</th>
+                            <td mat-cell *matCellDef="let row" class="px-6 py-3">
+                                <div class="flex items-center gap-3">
+                                    <div
+                                        class="h-10 w-10 rounded-full overflow-hidden flex items-center justify-center bg-gray-100 dark:bg-gray-800 shrink-0">
+                                        @if (row.image) {
+                                        <img [src]="row.image" [alt]="row.fullName"
+                                            class="h-full w-full object-cover" />
+                                        } @else {
+                                        <span class="text-sm font-bold text-gray-700 dark:text-gray-200 uppercase">
+                                            {{ row.fullName?.charAt(0) || '?' }}
+                                        </span>
+                                        }
+                                    </div>
+                                    <div class="min-w-0">
+                                        <div class="font-semibold truncate flex items-center gap-1.5">
+                                            {{ row.fullName }}
+                                            @if (!row.isActive) {
+                                            <span
+                                                class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">
+                                                Ανενεργός
+                                            </span>
+                                            }
+                                        </div>
+                                        @if (row.email) {
+                                        <div class="text-secondary text-sm truncate">{{ row.email }}</div>
+                                        }
+                                    </div>
+                                </div>
+                            </td>
+                        </ng-container>
+
+                        <!-- Role -->
+                        <ng-container matColumnDef="role">
+                            <th mat-header-cell *matHeaderCellDef>Ρόλος</th>
+                            <td mat-cell *matCellDef="let row" class="py-3">
+                                @if (row.roleName) {
+                                <span
+                                    class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-200">
+                                    {{ row.roleName }}
+                                </span>
+                                } @else {
+                                <span class="text-secondary text-sm">—</span>
+                                }
+                            </td>
+                        </ng-container>
+
+                        <!-- Total actions -->
+                        <ng-container matColumnDef="totalActions">
+                            <th mat-header-cell *matHeaderCellDef class="!text-center">Σύνολο</th>
+                            <td mat-cell *matCellDef="let row" class="!text-center py-3">
+                                <span
+                                    class="inline-flex items-center justify-center min-w-[2.5rem] h-8 px-2 rounded-lg bg-gray-100 dark:bg-gray-700 font-bold text-sm">
+                                    {{ row.totalActions }}
+                                </span>
+                            </td>
+                        </ng-container>
+
+                        <!-- Actions today -->
+                        <ng-container matColumnDef="actionsToday">
+                            <th mat-header-cell *matHeaderCellDef class="!text-center">Σήμερα</th>
+                            <td mat-cell *matCellDef="let row" class="!text-center py-3">
+                                <span
+                                    [class]="row.actionsToday > 0
+                                    ? 'inline-flex items-center justify-center min-w-[2rem] h-7 px-2 rounded-full text-xs font-semibold bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-200'
+                                    : 'inline-flex items-center justify-center min-w-[2rem] h-7 px-2 rounded-full text-xs font-semibold bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'">
+                                    {{ row.actionsToday }}
+                                </span>
+                            </td>
+                        </ng-container>
+
+                        <!-- Actions this week -->
+                        <ng-container matColumnDef="actionsThisWeek">
+                            <th mat-header-cell *matHeaderCellDef class="!text-center">Εβδομάδα</th>
+                            <td mat-cell *matCellDef="let row" class="!text-center py-3">
+                                <span
+                                    [class]="row.actionsThisWeek > 0
+                                    ? 'inline-flex items-center justify-center min-w-[2rem] h-7 px-2 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200'
+                                    : 'inline-flex items-center justify-center min-w-[2rem] h-7 px-2 rounded-full text-xs font-semibold bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'">
+                                    {{ row.actionsThisWeek }}
+                                </span>
+                            </td>
+                        </ng-container>
+
+                        <!-- Last login -->
+                        <ng-container matColumnDef="lastAction">
+                            <th mat-header-cell *matHeaderCellDef>Τελευταία Σύνδεση</th>
+                            <td mat-cell *matCellDef="let row" class="py-3 text-sm text-secondary whitespace-nowrap">
+                                @if (row.lastLoginAt) {
+                                {{ row.lastLoginAt | date:'dd/MM/yyyy HH:mm' }}
+                                } @else {
+                                <span class="italic">—</span>
+                                }
+                            </td>
+                        </ng-container>
+
+                        <!-- Actions -->
+                        <ng-container matColumnDef="actions">
+                            <th mat-header-cell *matHeaderCellDef class="!text-right pr-6"></th>
+                            <td mat-cell *matCellDef="let row" class="!text-right pr-4 py-3">
+                                <div class="flex items-center justify-end gap-2">
+                                    <button mat-stroked-button class="!rounded-xl !text-xs"
+                                        matTooltip="Ιστορικό ενεργειών" (click)="openActions(row)">
+                                        <mat-icon class="icon-size-4 mr-1">history</mat-icon>
+                                        Ενέργειες
+                                    </button>
+                                    <button mat-stroked-button class="!rounded-xl !text-xs"
+                                        matTooltip="Συνεδρίες σύνδεσης" (click)="openSessions(row)">
+                                        <mat-icon class="icon-size-4 mr-1">login</mat-icon>
+                                        Συνεδρίες
+                                    </button>
+                                </div>
+                            </td>
+                        </ng-container>
+
+                        <tr mat-header-row *matHeaderRowDef="columns"></tr>
+                        <tr mat-row *matRowDef="let row; columns: columns;"
+                            class="hover:bg-hover transition-colors duration-100"></tr>
+                    </table>
+                </div>
+
+                <mat-paginator [length]="total()" [pageSize]="pageSize()" [pageSizeOptions]="[5, 10, 20, 50]"
+                    (page)="onPage($event)" class="border-t">
+                </mat-paginator>
+
+                }
+                }
+
+            </div>
+        </div>
+
+    </div>
+</div>

@@ -1,4 +1,4 @@
-import { AsyncPipe, CommonModule, DOCUMENT, I18nPluralPipe, NgClass } from '@angular/common';
+import { CommonModule, DOCUMENT, I18nPluralPipe, NgClass } from '@angular/common';
 import {
     ChangeDetectionStrategy,
     ChangeDetectorRef,
@@ -20,7 +20,7 @@ import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatSort, MatSortModule } from '@angular/material/sort';
 import { MatChipsModule } from '@angular/material/chips';
-import { ActivatedRoute, Router, RouterLink, RouterOutlet } from '@angular/router';
+import { ActivatedRoute, Router, RouterOutlet } from '@angular/router';
 import { FuseMediaWatcherService } from '@fuse/services/media-watcher';
 import { Subject, filter, fromEvent, takeUntil, forkJoin, catchError, finalize, of } from 'rxjs';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -40,11 +40,9 @@ import { GroupChatCreateDialogComponent } from './dialogs/groupchat-create-dialo
         CommonModule,
         MatSidenavModule,
         RouterOutlet,
-        RouterLink,
 
         FormsModule,
         ReactiveFormsModule,
-        AsyncPipe,
         I18nPluralPipe,
         NgClass,
 
@@ -104,7 +102,7 @@ export class GroupChatsComponent implements OnInit, OnDestroy {
     ngOnInit(): void {
         this.loading = true;
 
-        this._groupChatsService.getAll()
+        this._groupChatsService.getAll(true)
             .pipe(takeUntil(this._unsubscribeAll))
             .subscribe({
                 next: (groups) => {

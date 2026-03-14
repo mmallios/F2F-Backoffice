@@ -162,6 +162,15 @@ export const defaultNavigation: FuseNavigationItem[] = [
             },
 
             // ── Υποστήριξη ───────────────────────────────────────
+            // ── Στατιστικά FAN2FAN ───────────────────────────────
+            {
+                id: 'apps.fan2fan-stats',
+                title: 'Στατιστικά FAN2FAN',
+                type: 'basic',
+                icon: 'heroicons_outline:chart-pie',
+                link: '/apps/fan2fan-stats',
+            },
+
             {
                 id: 'apps.support',
                 title: 'Υποστήριξη',
@@ -206,6 +215,13 @@ export const defaultNavigation: FuseNavigationItem[] = [
                         icon: 'heroicons_outline:megaphone',
                         link: '/apps/bo-announcements',
                     },
+                    {
+                        id: 'apps.admin-activity',
+                        title: 'Στατιστικά Διαχειριστών',
+                        type: 'basic',
+                        icon: 'heroicons_outline:chart-bar-square',
+                        link: '/apps/settings/admin-activity',
+                    },
                 ],
             },
 
@@ -220,14 +236,14 @@ export const defaultNavigation: FuseNavigationItem[] = [
         children: [
             {
                 id: 'headquarters.chat',
-                title: 'Συνομηλια F2F',
+                title: 'Συνομιλίες F2F',
                 type: 'basic',
                 icon: 'heroicons_outline:chat-bubble-left-right',
                 link: '/apps/chat',
             },
             {
                 id: 'headquarters.announcements',
-                title: 'Ανακοινωσεις F2F',
+                title: 'Ανακοινώσεις F2F',
                 type: 'basic',
                 icon: 'heroicons_outline:megaphone',
                 link: '/apps/announcements',

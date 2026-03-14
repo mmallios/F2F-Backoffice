@@ -18,6 +18,7 @@ export interface GroupChat {
 
     image?: string | null;
     isActive: boolean;
+    isPaused: boolean;
 }
 
 export interface CreateGroupChatDto {
@@ -60,6 +61,8 @@ export interface GroupMessageDto {
     isDeleted: boolean;
     replyTo?: ReplyPreviewDto | null;
     reactions?: ReactionDto[] | null;
+    images?: { url: string; fileName?: string }[];
+    audios?: { url: string }[];
 }
 
 export interface ReplyPreviewDto {
@@ -93,8 +96,9 @@ export class GroupChatsService {
 
     // GET /groupchats/all
     // groupchats.service.ts (FIXED)
-    getAll(): Observable<GroupChat[]> {
-        return this.http.get<any[]>(`${this.baseUrl}/groupchat/all`).pipe(
+    getAll(isFromBackoffice = false): Observable<GroupChat[]> {
+        const params = isFromBackoffice ? '?isFromBackoffice=true' : '';
+        return this.http.get<any[]>(`${this.baseUrl}/groupchat/all${params}`).pipe(
             map((rows) => (rows ?? []).map((x) => this.mapGroupChat(x)))
         );
     }
@@ -123,6 +127,7 @@ export class GroupChatsService {
 
             image: (x.image ?? x.Image ?? null),
             isActive: Boolean(x.isActive ?? x.IsActive ?? false),
+            isPaused: Boolean(x.isPaused ?? x.IsPaused ?? false),
         };
     }
 
@@ -136,6 +141,13 @@ export class GroupChatsService {
             isDeleted: Boolean(x.isDeleted ?? x.IsDeleted ?? false),
             replyTo: x.replyTo ?? x.ReplyTo ?? null,
             reactions: x.reactions ?? x.Reactions ?? [],
+            images: (x.images ?? x.Images ?? []).map((img: any) => ({
+                url: String(img.url ?? img.Url ?? img),
+                fileName: img.fileName ?? img.FileName ?? undefined,
+            })),
+            audios: (x.audios ?? x.Audios ?? []).map((aud: any) => ({
+                url: String(aud.url ?? aud.Url ?? aud),
+            })),
         };
     }
 
@@ -177,8 +189,25 @@ export class GroupChatsService {
         return this.http.put(`${this.baseUrl}/groupchat/${id}`, dto);
     }
 
-    addMessage(groupId: number, dto: { senderUserId: number; body: string; replyToMessageId?: string | null }) {
+    addMessage(groupId: number, dto: { senderUserId: number; body: string; replyToMessageId?: string | null; images?: string[]; audios?: string[] }) {
         return this.http.post<GroupMessageDto>(`${this.baseUrl}/groupchat/${groupId}/messages`, dto);
+    }
+
+    getMembers(groupId: number): Observable<{ userId: number; isAdmin: boolean }[]> {
+        return this.http.get<any[]>(`${this.baseUrl}/groupchat/${groupId}/users`).pipe(
+            map(rows => (rows ?? []).map(x => ({
+                userId: Number(x.userId ?? x.UserId),
+                isAdmin: Boolean(x.isAdmin ?? x.IsAdmin ?? false)
+            })))
+        );
+    }
+
+    pauseGroupChat(groupId: number, userId: number): Observable<any> {
+        return this.http.post(`${this.baseUrl}/groupchat/${groupId}/pause`, { userId });
+    }
+
+    unpauseGroupChat(groupId: number, userId: number): Observable<any> {
+        return this.http.post(`${this.baseUrl}/groupchat/${groupId}/unpause`, { userId });
     }
 
 

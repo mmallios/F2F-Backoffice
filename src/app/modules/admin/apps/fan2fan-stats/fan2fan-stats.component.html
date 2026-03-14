@@ -1,0 +1,251 @@
+<div class="absolute inset-0 flex min-w-0 flex-col overflow-hidden">
+    <div class="flex-auto overflow-y-auto">
+
+        <!-- ── Header ──────────────────────────────────────────────────────── -->
+        <div class="border-b px-6 py-7 md:px-8">
+            <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div class="min-w-0">
+                    <div class="text-3xl md:text-4xl font-extrabold leading-none tracking-tight">
+                        Στατιστικά FAN2FAN
+                    </div>
+                    <div class="text-secondary mt-2 font-medium">
+                        Εικόνα χρηστών, συνδέσεων και γεωγραφικής κατανομής
+                    </div>
+                </div>
+                <button mat-icon-button (click)="load()" [disabled]="loading()" matTooltip="Ανανέωση">
+                    <mat-icon>refresh</mat-icon>
+                </button>
+            </div>
+        </div>
+
+        <!-- ── Error ──────────────────────────────────────────────────────── -->
+        @if (error()) {
+        <div
+            class="mx-6 mt-5 md:mx-8 flex items-center gap-3 rounded-2xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/50 px-5 py-4 text-red-700 dark:text-red-300">
+            <mat-icon class="text-red-500 shrink-0">error_outline</mat-icon>
+            <span>{{ error() }}</span>
+        </div>
+        }
+
+        <!-- ── Stat cards (4) ──────────────────────────────────────────────── -->
+        <div class="px-6 md:px-8 pt-6 pb-1">
+            <div class="grid grid-cols-2 xl:grid-cols-4 gap-4">
+
+                <!-- Ενεργοί Χρήστες (Keycloak active sessions) -->
+                <div class="flex items-center gap-5 rounded-2xl border bg-card px-6 py-7 shadow-sm min-h-[120px]">
+                    <div class="flex items-center justify-center w-20 h-20 rounded-2xl bg-green-500/10 shrink-0">
+                        <mat-icon class="text-green-500" style="font-size:44px;width:44px;height:44px;">group</mat-icon>
+                    </div>
+                    <div class="min-w-0">
+                        <div class="text-4xl font-extrabold leading-none">
+                            {{ loading() ? '—' : (overview()?.activeSessions | number) ?? '—' }}
+                        </div>
+                        <div class="text-secondary text-sm mt-2 font-medium">Ενεργοί Χρήστες</div>
+                        <div class="text-secondary text-xs mt-1">Keycloak online sessions</div>
+                    </div>
+                </div>
+
+                <!-- Αιτήματα Εγγραφής -->
+                <div class="flex items-center gap-5 rounded-2xl border bg-card px-6 py-7 shadow-sm min-h-[120px]">
+                    <div class="flex items-center justify-center w-20 h-20 rounded-2xl bg-amber-500/10 shrink-0">
+                        <mat-icon class="text-amber-500"
+                            style="font-size:44px;width:44px;height:44px;">how_to_reg</mat-icon>
+                    </div>
+                    <div class="min-w-0">
+                        <div class="text-4xl font-extrabold leading-none">
+                            {{ loading() ? '—' : (overview()?.newRegistrationsToday | number) ?? '—' }}
+                        </div>
+                        <div class="text-secondary text-sm mt-2 font-medium">Αιτήματα Σήμερα</div>
+                        @if (!loading() && overview()) {
+                        <div class="flex gap-3 mt-1.5">
+                            <span
+                                class="inline-flex items-center gap-1 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 px-2 py-0.5 text-xs font-semibold">
+                                {{ overview()!.pendingRegistrations }} Αναπάντητα
+                            </span>
+                            <span
+                                class="inline-flex items-center gap-1 rounded-full bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 px-2 py-0.5 text-xs font-semibold">
+                                {{ overview()!.completedRegistrations }} Απαντήθηκαν
+                            </span>
+                        </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Σύνολο Χρηστών -->
+                <div class="flex items-center gap-5 rounded-2xl border bg-card px-6 py-7 shadow-sm min-h-[120px]">
+                    <div class="flex items-center justify-center w-20 h-20 rounded-2xl bg-blue-500/10 shrink-0">
+                        <mat-icon class="text-blue-500" style="font-size:44px;width:44px;height:44px;">people</mat-icon>
+                    </div>
+                    <div class="min-w-0">
+                        <div class="text-4xl font-extrabold leading-none">
+                            {{ loading() ? '—' : (overview()?.totalUsers | number) ?? '—' }}
+                        </div>
+                        <div class="text-secondary text-sm mt-2 font-medium">Σύνολο Χρηστών</div>
+                        <div class="text-secondary text-xs mt-1">Εγγεγραμμένοι χρήστες</div>
+                    </div>
+                </div>
+
+                <!-- Συνολικές Λήψεις -->
+                <div class="flex items-center gap-5 rounded-2xl border bg-card px-6 py-7 shadow-sm min-h-[120px]">
+                    <div class="flex items-center justify-center w-20 h-20 rounded-2xl bg-violet-500/10 shrink-0">
+                        <mat-icon class="text-violet-500"
+                            style="font-size:44px;width:44px;height:44px;">download</mat-icon>
+                    </div>
+                    <div class="min-w-0">
+                        <div class="text-4xl font-extrabold leading-none">
+                            {{ loading() ? '—' : (overview()?.downloads?.total | number) ?? '—' }}
+                        </div>
+                        <div class="text-secondary text-sm mt-2 font-medium">Συνολικές Λήψεις</div>
+                        @if (!loading() && overview()?.downloads) {
+                        <div class="flex gap-3 mt-1.5">
+                            <span class="flex items-center gap-1 text-xs text-secondary">
+                                <mat-icon style="font-size:14px;width:14px;height:14px;">android</mat-icon>
+                                {{ overview()!.downloads.googlePlay | number }}
+                            </span>
+                            <span class="flex items-center gap-1 text-xs text-secondary">
+                                <mat-icon style="font-size:14px;width:14px;height:14px;">phone_iphone</mat-icon>
+                                {{ overview()!.downloads.appStore | number }}
+                            </span>
+                        </div>
+                        }
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ── Two-column section ──────────────────────────────────────────── -->
+        <div class="px-6 md:px-8 pt-6 pb-8">
+            <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+
+                <!-- ── Online Συνεδρίες ─────────────────────────────────── -->
+                <div class="rounded-2xl border bg-card shadow-sm overflow-hidden flex flex-col">
+                    <div class="flex items-center justify-between px-5 py-4 border-b">
+                        <div>
+                            <div class="font-semibold text-base">Online Συνεδρίες</div>
+                            <div class="text-secondary text-xs mt-0.5">Χρήστες με ενεργές συνεδρίες (Keycloak)</div>
+                        </div>
+                        <button mat-stroked-button color="primary" (click)="openConnectionsDialog()"
+                            [disabled]="loading()">
+                            <mat-icon>open_in_full</mat-icon>
+                            <span class="ml-1">Όλες</span>
+                        </button>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table mat-table [dataSource]="connections()" class="w-full">
+
+                            <!-- User column (avatar + name + code) -->
+                            <ng-container matColumnDef="user">
+                                <th mat-header-cell *matHeaderCellDef class="!pl-4">Χρήστης</th>
+                                <td mat-cell *matCellDef="let row" class="!pl-4">
+                                    <div class="flex items-center gap-3 py-1.5">
+                                        <div
+                                            class="w-9 h-9 rounded-full overflow-hidden shrink-0 bg-primary/10 flex items-center justify-center">
+                                            @if (row.image) {
+                                            <img [src]="row.image" [alt]="row.fullname"
+                                                class="w-full h-full object-cover">
+                                            } @else {
+                                            <mat-icon class="text-primary"
+                                                style="font-size:20px;width:20px;height:20px;">person</mat-icon>
+                                            }
+                                        </div>
+                                        <div class="min-w-0">
+                                            <div class="font-medium text-sm leading-tight truncate">{{ row.fullname }}
+                                            </div>
+                                            <div class="text-secondary text-xs font-mono mt-0.5">{{ row.code ?? '—' }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </ng-container>
+
+                            <!-- Login time -->
+                            <ng-container matColumnDef="loginTime">
+                                <th mat-header-cell *matHeaderCellDef>Σύνδεση</th>
+                                <td mat-cell *matCellDef="let row" class="text-sm">
+                                    {{ row.loginTime ? (row.loginTime | date:'dd/MM/yy HH:mm') : '—' }}
+                                </td>
+                            </ng-container>
+
+                            <!-- Last activity -->
+                            <ng-container matColumnDef="lastSeen">
+                                <th mat-header-cell *matHeaderCellDef class="!pr-4">Τελ. Ενέργεια</th>
+                                <td mat-cell *matCellDef="let row" class="text-sm !pr-4">
+                                    {{ row.lastSeen ? (row.lastSeen | date:'dd/MM/yy HH:mm') : '—' }}
+                                </td>
+                            </ng-container>
+
+                            <tr mat-header-row *matHeaderRowDef="connectionColumns"></tr>
+                            <tr mat-row *matRowDef="let row; columns: connectionColumns;"></tr>
+
+                            <!-- Empty state -->
+                            <tr class="mat-row" *matNoDataRow>
+                                <td class="mat-cell text-center py-8 text-secondary"
+                                    [attr.colspan]="connectionColumns.length">
+                                    @if (loading()) { Φόρτωση… } @else { Δεν υπάρχουν ενεργές συνεδρίες }
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- ── Χώρες Χρηστών ─────────────────────────────────────── -->
+                <div class="rounded-2xl border bg-card shadow-sm overflow-hidden flex flex-col">
+                    <div class="px-5 py-4 border-b">
+                        <div class="font-semibold text-base">Χώρες Χρηστών</div>
+                        <div class="text-secondary text-xs mt-0.5">Κατανομή ενεργών χρηστών ανά χώρα</div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table mat-table [dataSource]="countries()" class="w-full">
+
+                            <!-- Country -->
+                            <ng-container matColumnDef="country">
+                                <th mat-header-cell *matHeaderCellDef class="!pl-4">Χώρα</th>
+                                <td mat-cell *matCellDef="let row" class="font-medium text-sm !pl-4">{{ row.countryName
+                                    }}</td>
+                            </ng-container>
+
+                            <!-- Total -->
+                            <ng-container matColumnDef="total">
+                                <th mat-header-cell *matHeaderCellDef class="text-right">Σύνολο</th>
+                                <td mat-cell *matCellDef="let row" class="text-right text-sm font-semibold">
+                                    {{ row.totalUsers | number }}
+                                </td>
+                            </ng-container>
+
+                            <!-- Today -->
+                            <ng-container matColumnDef="today">
+                                <th mat-header-cell *matHeaderCellDef class="text-right !pr-4">Σήμερα</th>
+                                <td mat-cell *matCellDef="let row" class="text-right !pr-4">
+                                    @if (row.todayUsers > 0) {
+                                    <span
+                                        class="inline-flex items-center gap-1 rounded-full bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 px-2 py-0.5 text-xs font-semibold">
+                                        +{{ row.todayUsers }}
+                                    </span>
+                                    } @else {
+                                    <span class="text-secondary text-sm">0</span>
+                                    }
+                                </td>
+                            </ng-container>
+
+                            <tr mat-header-row *matHeaderRowDef="countryColumns"></tr>
+                            <tr mat-row *matRowDef="let row; columns: countryColumns;"></tr>
+
+                            <!-- Empty state -->
+                            <tr class="mat-row" *matNoDataRow>
+                                <td class="mat-cell text-center py-8 text-secondary"
+                                    [attr.colspan]="countryColumns.length">
+                                    @if (loading()) { Φόρτωση… } @else { Δεν υπάρχουν δεδομένα }
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</div>

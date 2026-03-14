@@ -87,4 +87,22 @@ export class ImageUploadService {
             filter(Boolean)
         );
     }
+
+    /**
+     * Upload audio file.
+     * Endpoint: POST /api/files/upload-audio?folder=...
+     */
+    uploadAudio(file: File, folder?: string): Observable<UploadImageResponse> {
+        const form = new FormData();
+        form.append('file', file, file.name);
+
+        let params = new HttpParams();
+        if (folder) params = params.set('folder', folder);
+
+        return this.http.post<UploadImageResponse>(
+            `${this.baseUrl}/files/upload-audio`,
+            form,
+            { params }
+        );
+    }
 }

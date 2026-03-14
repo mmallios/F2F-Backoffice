@@ -279,5 +279,6 @@ export interface RegistrationRequest {
     reviewedByAdminId?: number;
     reviewedAt?: string;
     reviewedByAdminName?: string;
+    reviewedByAdminImage?: string | null;
     reviewComment?: string | null;
 }

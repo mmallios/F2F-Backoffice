@@ -14,6 +14,7 @@ export interface BOCurrentUser {
     email?: string | null;
     image?: string | null;
     role?: string | null;
+    keycloakId?: string | null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -45,6 +46,7 @@ export class AuthService {
                             email: u.email ?? u.Email ?? null,
                             image: u.image ?? u.Image ?? null,
                             role: res.role ?? null,
+                            keycloakId: res.keycloakId ?? null,
                         };
                         localStorage.setItem('bo_current_user', JSON.stringify(userData));
                     }
@@ -71,6 +73,17 @@ export class AuthService {
 
     // ✅ Backoffice logout
     signOut(): Observable<boolean> {
+        const refreshToken = localStorage.getItem('bo_refresh_token');
+        const keycloakId = this.currentUser?.keycloakId;
+
+        // Fire-and-forget: terminate the Keycloak session server-side
+        if (refreshToken && keycloakId) {
+            this._http
+                .post(`${environment.apiUrl}/auth/logout`, { keycloakId, refreshToken })
+                .pipe(catchError(() => of(null)))
+                .subscribe();
+        }
+
         localStorage.removeItem('bo_access_token');
         localStorage.removeItem('bo_refresh_token');
         localStorage.removeItem('bo_current_user');

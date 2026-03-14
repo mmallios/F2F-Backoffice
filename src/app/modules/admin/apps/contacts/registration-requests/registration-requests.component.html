@@ -114,6 +114,14 @@
                             </td>
                         </ng-container>
 
+                        <!-- Created On -->
+                        <ng-container matColumnDef="createdOn">
+                            <th mat-header-cell *matHeaderCellDef mat-sort-header class="px-5">Ημ/νία Αιτήματος</th>
+                            <td mat-cell *matCellDef="let r" class="px-5 py-3 text-sm">
+                                {{ r.createdOn ? (r.createdOn | date:'dd/MM/yyyy HH:mm') : '—' }}
+                            </td>
+                        </ng-container>
+
                         <!-- Email -->
                         <ng-container matColumnDef="email">
                             <th mat-header-cell *matHeaderCellDef mat-sort-header class="px-5">Email</th>
@@ -264,7 +272,7 @@
                         <ng-container matColumnDef="createdOn">
                             <th mat-header-cell *matHeaderCellDef mat-sort-header class="px-5">Ημ/νία Αίτησης</th>
                             <td mat-cell *matCellDef="let r" class="px-5 py-3 text-sm text-secondary">
-                                {{ r.createdOn ? (r.createdOn | date:'dd/MM/yyyy') : '—' }}
+                                {{ r.createdOn ? (r.createdOn | date:'dd/MM/yyyy HH:mm') : '—' }}
                             </td>
                         </ng-container>
 
@@ -311,8 +319,17 @@
                         <ng-container matColumnDef="reviewedBy">
                             <th mat-header-cell *matHeaderCellDef class="px-5">Admin</th>
                             <td mat-cell *matCellDef="let r" class="px-5 py-3 text-sm">
-                                <span *ngIf="r.reviewedByAdminName" class="font-medium">{{ r.reviewedByAdminName
-                                    }}</span>
+                                <div *ngIf="r.reviewedByAdminName" class="flex items-center gap-2">
+                                    <div
+                                        class="h-7 w-7 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-800 flex items-center justify-center shrink-0">
+                                        <img *ngIf="r.reviewedByAdminImage" [src]="r.reviewedByAdminImage"
+                                            class="h-full w-full object-cover" />
+                                        <span *ngIf="!r.reviewedByAdminImage"
+                                            class="text-xs font-bold uppercase text-gray-600 dark:text-gray-300">{{
+                                            r.reviewedByAdminName?.charAt(0) || '?' }}</span>
+                                    </div>
+                                    <span class="font-medium">{{ r.reviewedByAdminName }}</span>
+                                </div>
                                 <span *ngIf="!r.reviewedByAdminName" class="text-secondary">—</span>
                             </td>
                         </ng-container>

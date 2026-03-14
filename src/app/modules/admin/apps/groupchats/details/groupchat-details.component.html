@@ -13,7 +13,28 @@
                     </div>
                 </div>
 
+                @if (!loading) {
+                <div class="flex items-center gap-2 shrink-0">
 
+                    <!-- Pause / Unpause button -->
+                    <button mat-flat-button type="button" [class]="isPaused
+                            ? '!rounded-xl bg-green-600 text-white hover:bg-green-700'
+                            : '!rounded-xl bg-orange-500 text-white hover:bg-orange-600'" [disabled]="pauseToggling"
+                        (click)="openPauseConfirm()"
+                        matTooltip="{{ isPaused ? 'Άρση παύσης συνομιλίας' : 'Παύση συνομιλίας για χρήστες' }}">
+                        <mat-icon class="icon-size-4 mr-1">{{ isPaused ? 'play_circle' : 'pause_circle' }}</mat-icon>
+                        {{ isPaused ? 'ΑΡΣΗ ΠΑΥΣΗΣ' : 'ΠΑΥΣΗ ΣΥΝΟΜΙΛΙΑΣ' }}
+                    </button>
+
+                    <!-- Edit toggle -->
+                    <button mat-stroked-button type="button" class="!rounded-xl" (click)="toggleEditMode()"
+                        matTooltip="{{ editMode ? 'Ακύρωση επεξεργασίας' : 'Επεξεργασία στοιχείων' }}">
+                        <mat-icon class="icon-size-4 mr-1">{{ editMode ? 'close' : 'edit' }}</mat-icon>
+                        {{ editMode ? 'Ακύρωση' : 'Επεξεργασία' }}
+                    </button>
+
+                </div>
+                }
             </div>
         </div>
 
@@ -44,16 +65,25 @@
                                 </div>
                             </div>
 
-                            <mat-chip class="!rounded-full !px-3 !text-xs !font-semibold" [ngClass]="form.value.isActive
-                                ? 'bg-green-100 text-green-800 dark:bg-green-500/10 dark:text-green-300'
-                                : 'bg-gray-100 text-gray-800 dark:bg-white/5 dark:text-gray-200'">
-                                {{ form.value.isActive ? 'Ενεργό' : 'Ανενεργό' }}
-                            </mat-chip>
+                            <div class="flex items-center gap-2">
+                                @if (isPaused) {
+                                <span
+                                    class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-700 dark:bg-orange-500/10 dark:text-orange-300">
+                                    <mat-icon class="icon-size-3.5">pause_circle</mat-icon> Σε παύση
+                                </span>
+                                }
+                                <mat-chip class="!rounded-full !px-3 !text-xs !font-semibold" [ngClass]="form.value.isActive
+                                    ? 'bg-green-100 text-green-800 dark:bg-green-500/10 dark:text-green-300'
+                                    : 'bg-gray-100 text-gray-800 dark:bg-white/5 dark:text-gray-200'">
+                                    {{ form.value.isActive ? 'Ενεργό' : 'Ανενεργό' }}
+                                </mat-chip>
+                            </div>
                         </div>
                     </div>
 
                     <!-- Image uploader -->
-                    <div class="rounded-2xl border p-5 bg-gray-50 dark:bg-white/5">
+                    <div class="rounded-2xl border p-5 bg-gray-50 dark:bg-white/5" [class.opacity-60]="!editMode"
+                        [class.pointer-events-none]="!editMode">
                         <div class="flex items-center justify-between gap-4">
                             <div class="flex items-center gap-3 min-w-0">
                                 <div
@@ -97,21 +127,21 @@
                         <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full" subscriptSizing="dynamic">
                             <mat-icon matPrefix class="icon-size-5" [svgIcon]="'heroicons_outline:hashtag'"></mat-icon>
                             <mat-label>Κωδικός</mat-label>
-                            <input matInput formControlName="code" />
+                            <input matInput formControlName="code" [readonly]="!editMode" />
                         </mat-form-field>
 
                         <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full" subscriptSizing="dynamic">
                             <mat-icon matPrefix class="icon-size-5"
                                 [svgIcon]="'heroicons_outline:chat-bubble-oval-left'"></mat-icon>
                             <mat-label>Όνομα</mat-label>
-                            <input matInput formControlName="name" />
+                            <input matInput formControlName="name" [readonly]="!editMode" />
                         </mat-form-field>
 
                         <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full" subscriptSizing="dynamic">
                             <mat-icon matPrefix class="icon-size-5"
                                 [svgIcon]="'heroicons_outline:document-text'"></mat-icon>
                             <mat-label>Περιγραφή</mat-label>
-                            <textarea matInput rows="1" formControlName="description"></textarea>
+                            <textarea matInput rows="1" formControlName="description" [readonly]="!editMode"></textarea>
                         </mat-form-field>
 
                         <!-- keep eventId but no event details -->
@@ -120,7 +150,7 @@
                                 [svgIcon]="'heroicons_outline:calendar-days'"></mat-icon>
                             <mat-label>Event</mat-label>
 
-                            <mat-select formControlName="eventId">
+                            <mat-select formControlName="eventId" [disabled]="!editMode">
                                 <mat-option [value]="null">— Χωρίς event —</mat-option>
 
                                 <mat-option *ngFor="let ev of events" [value]="ev.id">
@@ -135,23 +165,13 @@
                                     </div>
                                 </mat-option>
                             </mat-select>
-
-                            <!-- <mat-hint *ngIf="form.value.eventId">
-                                <span class="text-secondary">
-                                    {{ eventTitleById(form.value.eventId) }}
-                                </span>
-                                <br />
-                                <span class="text-secondary text-sm">
-                                    {{ eventMetaById(form.value.eventId) }}
-                                </span>
-                            </mat-hint> -->
                         </mat-form-field>
 
                         <div class="grid grid-cols-2 gap-3">
                             <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full" subscriptSizing="dynamic">
                                 <mat-icon matPrefix class="icon-size-5" [svgIcon]="'heroicons_outline:star'"></mat-icon>
                                 <mat-label>Κύριο Group</mat-label>
-                                <mat-select formControlName="isMain">
+                                <mat-select formControlName="isMain" [disabled]="!editMode">
                                     <mat-option [value]="true">Ναι</mat-option>
                                     <mat-option [value]="false">Όχι</mat-option>
                                 </mat-select>
@@ -161,13 +181,14 @@
                                 <mat-icon matPrefix class="icon-size-5"
                                     [svgIcon]="'heroicons_outline:check-badge'"></mat-icon>
                                 <mat-label>Κατάσταση</mat-label>
-                                <mat-select formControlName="isActive">
+                                <mat-select formControlName="isActive" [disabled]="!editMode">
                                     <mat-option [value]="true">Ενεργό</mat-option>
                                     <mat-option [value]="false">Ανενεργό</mat-option>
                                 </mat-select>
                             </mat-form-field>
                         </div>
 
+                        @if (editMode) {
                         <div class="pt-2 flex items-center justify-end gap-2">
                             @if (saveError) {
                             <div class="mr-auto text-sm text-red-600 dark:text-red-400">
@@ -184,6 +205,7 @@
                                 }
                             </button>
                         </div>
+                        }
 
                     </form>
 
@@ -247,7 +269,7 @@
 
 
                                 <!-- Conversation -->
-                                <div class="flex flex-col-reverse overflow-y-auto">
+                                <div #chatScroll class="flex flex-col-reverse overflow-y-auto">
                                     <div class="bg-gray-50/80 dark:bg-white/5 flex flex-auto shrink flex-col p-6
             dark:bg-gray-950">
 
@@ -297,7 +319,30 @@
 
                                             <div
                                                 class="relative max-w-3/4 rounded-lg px-3 py-2 bg-gray-500 text-gray-50">
+                                                @if (message.value) {
                                                 <div class="min-w-4 leading-5" [innerHTML]="message.value"></div>
+                                                }
+                                                @if (message.images?.length) {
+                                                <div class="mt-1 flex flex-wrap gap-1">
+                                                    @for (img of message.images; track $index) {
+                                                    <button type="button"
+                                                        class="block rounded overflow-hidden focus:outline-none"
+                                                        (click)="openLightbox(img.url)">
+                                                        <img [src]="img.url" [alt]="img.fileName || 'image'"
+                                                            class="max-h-40 max-w-xs object-cover rounded hover:opacity-90 transition-opacity cursor-zoom-in" />
+                                                    </button>
+                                                    }
+                                                </div>
+                                                }
+                                                @if (message.audios?.length) {
+                                                <div class="mt-1 flex flex-col gap-1">
+                                                    @for (aud of message.audios; track $index) {
+                                                    <audio controls preload="metadata" class="w-full min-w-48">
+                                                        <source [src]="aud.url" type="audio/webm" />
+                                                    </audio>
+                                                    }
+                                                </div>
+                                                }
                                             </div>
 
                                             <div class="text-secondary my-0.5 text-sm font-medium ml-3">
@@ -309,19 +354,82 @@
                                     </div>
                                 </div>
 
+                                <!-- Paused notice -->
+                                @if (isPaused) {
+                                <div
+                                    class="flex items-start gap-3 border-t px-4 py-3 bg-orange-50 dark:bg-orange-500/5 text-orange-700 dark:text-orange-400 shrink-0">
+                                    <mat-icon class="icon-size-5 shrink-0 mt-0.5">pause_circle</mat-icon>
+                                    <div class="text-sm leading-snug">
+                                        <span class="font-semibold">Η συνομιλία είναι σε παύση.</span>
+                                        <span class="ml-1 opacity-80">Οι χρήστες δεν μπορούν να στέλνουν μηνύματα — η
+                                            αποστολή από το Backoffice παραμένει ενεργή.</span>
+                                    </div>
+                                </div>
+                                }
+
                                 <!-- Message field -->
-                                <div class="flex items-end border-t bg-gray-50 p-4 dark:bg-transparent">
-                                    <mat-form-field class="fuse-mat-dense fuse-mat-rounded fuse-mat-bold w-full"
-                                        subscriptSizing="dynamic">
-                                        <textarea matInput cdkTextareaAutosize [formControl]="messageInput"
-                                            placeholder="Γράψτε μήνυμα ως διαχειριστής..."
-                                            (keydown.enter)="onEnterSend($event)">
+                                <div class="border-t bg-gray-50 dark:bg-transparent">
+
+                                    <!-- hidden file inputs -->
+                                    <input #chatImageInput type="file"
+                                        accept="image/jpeg,image/png,image/gif,image/webp" multiple hidden
+                                        (change)="onImageFileSelected($event)" />
+
+                                    <!-- Image previews -->
+                                    @if (attachedImages.length) {
+                                    <div class="flex flex-wrap gap-2 px-4 pt-3">
+                                        @for (img of attachedImages; track img.id) {
+                                        <div class="relative">
+                                            <img [src]="img.previewUrl"
+                                                class="h-16 w-16 object-cover rounded-lg border" />
+                                            <button type="button"
+                                                class="absolute -top-1.5 -right-1.5 h-5 w-5 flex items-center justify-center rounded-full bg-red-500 text-white text-xs leading-none"
+                                                (click)="removeAttachedImage(img.id)">
+                                                <mat-icon class="icon-size-3.5">close</mat-icon>
+                                            </button>
+                                        </div>
+                                        }
+                                    </div>
+                                    }
+
+                                    <!-- Audio preview -->
+                                    @if (recordedAudio) {
+                                    <div class="flex items-center gap-2 px-4 pt-3">
+                                        <audio controls preload="metadata" [src]="recordedAudio.previewUrl"
+                                            class="h-9 flex-1"></audio>
+                                        <button type="button" mat-icon-button matTooltip="Αφαίρεση ηχητικού"
+                                            (click)="cancelRecordedAudio()">
+                                            <mat-icon class="text-red-500">delete</mat-icon>
+                                        </button>
+                                    </div>
+                                    }
+
+                                    <!-- Input row -->
+                                    <div class="flex items-end p-4 gap-2">
+
+                                        <!-- Image picker button -->
+                                        <button type="button" mat-icon-button matTooltip="Επισύναψη εικόνας"
+                                            (click)="triggerImageInput(chatImageInput)">
+                                            <mat-icon>image</mat-icon>
+                                        </button>
+
+                                        <!-- Audio record button -->
+                                        <button type="button" mat-icon-button
+                                            [matTooltip]="isRecording ? 'Διακοπή εγγραφής' : 'Ηχογράφηση'"
+                                            [class.text-red-500]="isRecording" (click)="toggleAudioRecording()">
+                                            <mat-icon>{{ isRecording ? 'stop_circle' : 'mic' }}</mat-icon>
+                                        </button>
+
+                                        <mat-form-field class="fuse-mat-dense fuse-mat-rounded fuse-mat-bold flex-1"
+                                            subscriptSizing="dynamic">
+                                            <textarea matInput cdkTextareaAutosize [formControl]="messageInput"
+                                                placeholder="Γράψτε μήνυμα ως διαχειριστής..." [disabled]="isRecording"
+                                                (keydown.enter)="onEnterSend($event)">
 </textarea>
+                                        </mat-form-field>
 
-                                    </mat-form-field>
-
-                                    <div class="my-px ml-4 flex h-11 items-center">
-                                        <button mat-icon-button (click)="sendMessage()" matTooltip="Αποστολή">
+                                        <button mat-icon-button (click)="sendMessage()" matTooltip="Αποστολή"
+                                            [disabled]="isRecording">
                                             <mat-icon [svgIcon]="'heroicons_outline:paper-airplane'"></mat-icon>
                                         </button>
                                     </div>
@@ -336,9 +444,9 @@
                         <div class="p-6">
                             <div class="bg-card rounded-2xl border shadow-sm overflow-hidden">
                                 <div class="border-b px-6 py-4">
-                                    <div class="text-xl font-extrabold">Χρήστες που έστειλαν μήνυμα</div>
+                                    <div class="text-xl font-extrabold">Μέλη Ομαδικής Συνομιλίας</div>
                                     <div class="text-secondary mt-1 text-sm">
-                                        {{ usersWhoMessaged.length }} χρήστες
+                                        {{ membersView.length }} μέλη
                                     </div>
                                 </div>
 
@@ -347,13 +455,14 @@
                                         <thead class="border-b">
                                             <tr class="text-left text-secondary font-semibold">
                                                 <th class="px-6 py-3">Χρήστης</th>
+                                                <th class="px-6 py-3">Ρόλος</th>
                                                 <th class="px-6 py-3">Μηνύματα</th>
                                                 <th class="px-6 py-3">Τελευταίο μήνυμα</th>
                                             </tr>
                                         </thead>
 
                                         <tbody class="divide-y">
-                                            @for (x of usersWhoMessaged; track x.userId) {
+                                            @for (x of membersView; track x.userId) {
                                             <tr class="hover:bg-gray-50 dark:hover:bg-white/5 transition">
                                                 <td class="px-6 py-3">
                                                     <div class="flex items-center gap-3">
@@ -381,18 +490,33 @@
                                                     </div>
                                                 </td>
 
-                                                <td class="px-6 py-3 font-semibold">{{ x.count }}</td>
+                                                <td class="px-6 py-3">
+                                                    @if (x.isAdmin) {
+                                                    <span
+                                                        class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300 text-xs font-semibold">Admin</span>
+                                                    } @else {
+                                                    <span class="text-secondary text-xs">Μέλος</span>
+                                                    }
+                                                </td>
 
                                                 <td class="px-6 py-3">
-                                                    {{ x.lastAt ? (x.lastAt | date:'dd/MM/yy HH:mm') : '-' }}
+                                                    @if (x.msgCount > 0) {
+                                                    <span class="font-semibold">{{ x.msgCount }}</span>
+                                                    } @else {
+                                                    <span class="text-secondary">—</span>
+                                                    }
+                                                </td>
+
+                                                <td class="px-6 py-3 text-secondary">
+                                                    {{ x.lastAt ? (x.lastAt | date:'dd/MM/yy HH:mm') : '—' }}
                                                 </td>
                                             </tr>
                                             }
 
-                                            @if (usersWhoMessaged.length === 0) {
+                                            @if (membersView.length === 0) {
                                             <tr>
-                                                <td colspan="3" class="px-6 py-10 text-center text-secondary">
-                                                    Δεν έχει στείλει κανείς μήνυμα ακόμα.
+                                                <td colspan="4" class="px-6 py-10 text-center text-secondary">
+                                                    Δεν βρέθηκαν μέλη.
                                                 </td>
                                             </tr>
                                             }
@@ -410,3 +534,53 @@
         }
     </div>
 </div>
+
+<!-- Pause Confirmation Modal -->
+@if (showPauseConfirm) {
+<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+    <div class="bg-card rounded-2xl border shadow-2xl w-full max-w-sm p-6 space-y-5">
+        <div class="flex items-center gap-3">
+            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full"
+                [class]="isPaused ? 'bg-green-100 dark:bg-green-500/10' : 'bg-orange-100 dark:bg-orange-500/10'">
+                <mat-icon
+                    [class]="isPaused ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400'">
+                    {{ isPaused ? 'play_circle' : 'pause_circle' }}
+                </mat-icon>
+            </div>
+            <div>
+                <div class="font-extrabold text-lg">{{ isPaused ? 'Άρση Παύσης;' : 'Παύση Συνομιλίας;' }}</div>
+                <div class="text-secondary text-sm mt-0.5">
+                    @if (isPaused) {
+                    Η συνομιλία θα ξαναγίνει διαθέσιμη στους χρήστες.
+                    } @else {
+                    Οι χρήστες δεν θα μπορούν να στείλουν μήνυμα. Η αποστολή από το Backoffice παραμένει ενεργή.
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="flex justify-end gap-3">
+            <button mat-stroked-button class="!rounded-xl" type="button" (click)="closePauseConfirm()">
+                Ακύρωση
+            </button>
+            <button mat-flat-button type="button" class="!rounded-xl"
+                [class]="isPaused ? 'bg-green-600 text-white' : 'bg-orange-500 text-white'"
+                (click)="confirmPauseToggle()">
+                {{ isPaused ? 'Άρση Παύσης' : 'Παύση' }}
+            </button>
+        </div>
+    </div>
+</div>
+}
+
+<!-- Image Lightbox Modal -->
+@if (lightboxUrl) {
+<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" (click)="closeLightbox()">
+    <button type="button"
+        class="absolute top-4 right-4 h-10 w-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white"
+        (click)="closeLightbox()">
+        <mat-icon>close</mat-icon>
+    </button>
+    <img [src]="lightboxUrl" alt="image" class="max-h-[90vh] max-w-[90vw] rounded-lg shadow-2xl object-contain"
+        (click)="$event.stopPropagation()" />
+</div>
+}

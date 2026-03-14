@@ -24,6 +24,11 @@ export interface BOGroupChatMessageSignalRDto {
     message: any;
 }
 
+export interface BOGroupChatPauseChangedDto {
+    groupChatId: number;
+    isPaused: boolean;
+}
+
 @Injectable({ providedIn: 'root' })
 export class BOHubService {
     private _connection: signalR.HubConnection | null = null;
@@ -42,6 +47,9 @@ export class BOHubService {
 
     /** Emits when a new group chat message arrives via SignalR. */
     readonly boGroupChatMessage$ = new Subject<BOGroupChatMessageSignalRDto>();
+
+    /** Emits when a group chat is paused or unpaused. */
+    readonly groupChatPauseChanged$ = new Subject<BOGroupChatPauseChangedDto>();
 
     /** Emits when the user is added to a new BO group chat. */
     readonly boNewGroupChat$ = new Subject<void>();
@@ -92,6 +100,10 @@ export class BOHubService {
             this.boGroupChatMessage$.next(dto);
         });
 
+        this._connection.on('GroupChatPauseChanged', (dto: BOGroupChatPauseChangedDto) => {
+            this.groupChatPauseChanged$.next(dto);
+        });
+
         this._connection.on('NewBOGroupChat', () => {
             this.boNewGroupChat$.next();
         });
@@ -116,6 +128,7 @@ export class BOHubService {
             this._connection.off('BOAnnouncementRead');
             this._connection.off('NewBOChatMessage');
             this._connection.off('NewBOGroupChatMessage');
+            this._connection.off('GroupChatPauseChanged');
             this._connection.off('NewBOGroupChat');
             this._connection.stop();
             this._connection = null;
@@ -128,5 +141,21 @@ export class BOHubService {
         this._connection
             .invoke('JoinAnnouncementGroup', announcementId)
             .catch((err) => console.error('[BOHub] JoinAnnouncementGroup failed:', err));
+    }
+
+    /** Join the SignalR group for a specific group chat to receive pause/unpause events. */
+    joinGroupChatGroup(groupChatId: number): void {
+        if (!this._connection || groupChatId <= 0) return;
+        this._connection
+            .invoke('JoinGroupChatGroup', groupChatId)
+            .catch((err) => console.error('[BOHub] JoinGroupChatGroup failed:', err));
+    }
+
+    /** Leave the SignalR group for a specific group chat. */
+    leaveGroupChatGroup(groupChatId: number): void {
+        if (!this._connection || groupChatId <= 0) return;
+        this._connection
+            .invoke('LeaveGroupChatGroup', groupChatId)
+            .catch((err) => console.error('[BOHub] LeaveGroupChatGroup failed:', err));
     }
 }

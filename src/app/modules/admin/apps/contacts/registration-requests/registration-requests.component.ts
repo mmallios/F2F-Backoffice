@@ -90,10 +90,10 @@ export class RegistrationRequestsComponent implements OnInit, AfterViewInit, OnD
     stats: RegistrationStats | null = null;
 
     dataSource = new MatTableDataSource<RegistrationRequest>([]);
-    columns = ['name', 'email', 'mobile', 'linkedUser', 'social', 'actions'];
+    columns = ['name', 'createdOn', 'linkedUser', 'social', 'actions'];
 
     completedDataSource = new MatTableDataSource<RegistrationRequest>([]);
-    completedColumns = ['name', 'createdOn', 'email', 'mobile', 'result', 'reviewedBy', 'reviewedAt', 'actions'];
+    completedColumns = ['name', 'createdOn', 'result', 'reviewedBy', 'reviewedAt', 'actions'];
 
     private readonly _dialToIso2: Record<string, string> = {
         '1': 'us', '7': 'ru', '20': 'eg', '27': 'za', '30': 'gr', '31': 'nl', '32': 'be', '33': 'fr',
