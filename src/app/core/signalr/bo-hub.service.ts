@@ -54,6 +54,9 @@ export class BOHubService {
     /** Emits when the user is added to a new BO group chat. */
     readonly boNewGroupChat$ = new Subject<void>();
 
+    /** Emits when an admin comes online or goes offline. */
+    readonly adminPresenceChanged$ = new Subject<{ boUserId: number; isOnline: boolean }>();
+
     /**
      * Start the SignalR connection to /api/hubs/bo-notifications.
      * Safe to call multiple times — connects only once.
@@ -108,6 +111,10 @@ export class BOHubService {
             this.boNewGroupChat$.next();
         });
 
+        this._connection.on('AdminPresenceChanged', (dto: { boUserId: number; isOnline: boolean }) => {
+            this.adminPresenceChanged$.next(dto);
+        });
+
         this._connection
             .start()
             .then(() => {
@@ -130,6 +137,7 @@ export class BOHubService {
             this._connection.off('NewBOGroupChatMessage');
             this._connection.off('GroupChatPauseChanged');
             this._connection.off('NewBOGroupChat');
+            this._connection.off('AdminPresenceChanged');
             this._connection.stop();
             this._connection = null;
         }

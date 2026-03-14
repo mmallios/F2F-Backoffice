@@ -120,4 +120,8 @@ export class AdminActivityService {
     getSessions(boUserId: number): Observable<AdminLoginSessionDto[]> {
         return this.http.get<AdminLoginSessionDto[]>(`${this.baseUrl}/${boUserId}/sessions`);
     }
+
+    getOnlineAdmins(): Observable<number[]> {
+        return this.http.get<number[]>(`${this.baseUrl}/online`);
+    }
 }

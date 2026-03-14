@@ -20,7 +20,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSortModule } from '@angular/material/sort';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { Subject, finalize, takeUntil } from 'rxjs';
+import { Subject, finalize, forkJoin, takeUntil } from 'rxjs';
 
 import {
     AdminActivityService,
@@ -28,6 +28,8 @@ import {
     AdminActivityResponse,
     AdminActivityRowDto,
 } from '@fuse/services/admin-activity/admin-activity.service';
+
+import { BOHubService } from 'app/core/signalr/bo-hub.service';
 
 import {
     AdminActionsDialogComponent,
@@ -61,6 +63,7 @@ import {
 })
 export class AdminActivityComponent implements OnInit, OnDestroy {
     private api = inject(AdminActivityService);
+    private hub = inject(BOHubService);
     private dialog = inject(MatDialog);
     private fb = inject(FormBuilder);
     private cdr = inject(ChangeDetectorRef);
@@ -69,6 +72,7 @@ export class AdminActivityComponent implements OnInit, OnDestroy {
     loading = signal(false);
     error = signal<string | null>(null);
     overview = signal<AdminActivityOverviewDto | null>(null);
+    onlineAdminIds = signal(new Set<number>());
 
     allAdmins: AdminActivityRowDto[] = [];
 
@@ -114,6 +118,16 @@ export class AdminActivityComponent implements OnInit, OnDestroy {
         this.filters.valueChanges
             .pipe(takeUntil(this.destroy$))
             .subscribe(() => this.applyFilters());
+
+        this.hub.adminPresenceChanged$
+            .pipe(takeUntil(this.destroy$))
+            .subscribe(({ boUserId, isOnline }) => {
+                const current = new Set(this.onlineAdminIds());
+                if (isOnline) current.add(boUserId);
+                else current.delete(boUserId);
+                this.onlineAdminIds.set(current);
+                this.cdr.markForCheck();
+            });
     }
 
     ngOnDestroy(): void {
@@ -125,12 +139,16 @@ export class AdminActivityComponent implements OnInit, OnDestroy {
         this.loading.set(true);
         this.error.set(null);
 
-        this.api.getActivitySummary()
+        forkJoin({
+            summary: this.api.getActivitySummary(),
+            online: this.api.getOnlineAdmins(),
+        })
             .pipe(finalize(() => this.loading.set(false)))
             .subscribe({
-                next: (res: AdminActivityResponse) => {
-                    this.overview.set(res.overview);
-                    this.allAdmins = res.admins;
+                next: ({ summary, online }) => {
+                    this.overview.set(summary.overview);
+                    this.allAdmins = summary.admins;
+                    this.onlineAdminIds.set(new Set(online));
                     this.applyFilters();
                     this.cdr.markForCheck();
                 },
@@ -212,5 +230,9 @@ export class AdminActivityComponent implements OnInit, OnDestroy {
             panelClass: ['fuse-dialog', 'p-0'],
             autoFocus: false,
         });
+    }
+
+    isOnline(boUserId: number): boolean {
+        return this.onlineAdminIds().has(boUserId);
     }
 }

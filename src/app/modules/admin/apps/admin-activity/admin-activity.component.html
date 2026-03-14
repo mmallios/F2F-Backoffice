@@ -163,6 +163,18 @@
                                     <div class="min-w-0">
                                         <div class="font-semibold truncate flex items-center gap-1.5">
                                             {{ row.fullName }}
+                                            @if (isOnline(row.boUserId)) {
+                                            <span
+                                                class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">
+                                                <span class="relative flex h-1.5 w-1.5">
+                                                    <span
+                                                        class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                                    <span
+                                                        class="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-500"></span>
+                                                </span>
+                                                ΕΝΕΡΓΟΣ ΤΩΡΑ
+                                            </span>
+                                            }
                                             @if (!row.isActive) {
                                             <span
                                                 class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">

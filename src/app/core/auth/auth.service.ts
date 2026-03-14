@@ -75,11 +75,12 @@ export class AuthService {
     signOut(): Observable<boolean> {
         const refreshToken = localStorage.getItem('bo_refresh_token');
         const keycloakId = this.currentUser?.keycloakId;
+        const boUserId = this.currentUser?.id ?? 0;
 
         // Fire-and-forget: terminate the Keycloak session server-side
         if (refreshToken && keycloakId) {
             this._http
-                .post(`${environment.apiUrl}/auth/logout`, { keycloakId, refreshToken })
+                .post(`${environment.apiUrl}/auth/logout`, { keycloakId, refreshToken, boUserId })
                 .pipe(catchError(() => of(null)))
                 .subscribe();
         }

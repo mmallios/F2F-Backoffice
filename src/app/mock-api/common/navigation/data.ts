@@ -163,13 +163,7 @@ export const defaultNavigation: FuseNavigationItem[] = [
 
             // ── Υποστήριξη ───────────────────────────────────────
             // ── Στατιστικά FAN2FAN ───────────────────────────────
-            {
-                id: 'apps.fan2fan-stats',
-                title: 'Στατιστικά FAN2FAN',
-                type: 'basic',
-                icon: 'heroicons_outline:chart-pie',
-                link: '/apps/fan2fan-stats',
-            },
+
 
             {
                 id: 'apps.support',
@@ -247,6 +241,13 @@ export const defaultNavigation: FuseNavigationItem[] = [
                 type: 'basic',
                 icon: 'heroicons_outline:megaphone',
                 link: '/apps/announcements',
+            },
+            {
+                id: 'apps.fan2fan-stats',
+                title: 'Στατιστικά FAN2FAN',
+                type: 'basic',
+                icon: 'heroicons_outline:chart-pie',
+                link: '/apps/fan2fan-stats',
             },
         ],
     },
