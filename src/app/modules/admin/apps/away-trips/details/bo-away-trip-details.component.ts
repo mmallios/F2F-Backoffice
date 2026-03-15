@@ -32,6 +32,7 @@ import {
     AwayTripCategoryDto,
     AwayTripInterestDto,
     AwayTripNotificationDto,
+    AwayTripBookingDto,
     SendAwayTripNotificationRequest,
 } from '@fuse/services/away-trips/bo-away-trips.service';
 import { EventItem, EventsService } from '@fuse/services/events/events.service';
@@ -92,15 +93,22 @@ export class BOAwayTripDetailsComponent implements OnInit, OnDestroy {
     // Categories
     categories: AwayTripCategoryDto[] = [];
     catDS = new MatTableDataSource<AwayTripCategoryDto>([]);
-    catColumns = ['seatView', 'name', 'price', 'maxPerUser', 'totalAvailable', 'booked', 'actions'];
+    catColumns = ['seatView', 'name', 'price', 'totalAvailable', 'booked', 'actions'];
     catModalOpen = false;
     editingCatId: number | null = null;
     catImagePreview: string | null = null;
     catUploading = signal(false);
 
-    // Category interests modal (shows all trip interests contextualised for the category)
+    // Category interests modal
     catInterestsModalOpen = false;
     catInterestsCat: AwayTripCategoryDto | null = null;
+
+    // Bookings
+    bookings: AwayTripBookingDto[] = [];
+    bookingDS = new MatTableDataSource<AwayTripBookingDto>([]);
+    bookingColumns = ['avatar', 'name', 'code', 'category', 'quantity', 'notes', 'bookedAt', 'actions'];
+    bookingModalOpen = false;
+    editingBookingId: number | null = null;
 
     // Interests
     interests: AwayTripInterestDto[] = [];
@@ -111,6 +119,10 @@ export class BOAwayTripDetailsComponent implements OnInit, OnDestroy {
     userDetailsModalOpen = false;
     selectedUser: AwayTripInterestDto | null = null;
 
+    // Notification details modal
+    notifDetailsModalOpen = false;
+    selectedNotif: AwayTripNotificationDto | null = null;
+
     // Notifications
     notifications: AwayTripNotificationDto[] = [];
 
@@ -120,21 +132,32 @@ export class BOAwayTripDetailsComponent implements OnInit, OnDestroy {
         description: [''],
         imageUrl: [''],
         eventId: [null as number | null],
+        maxTicketsPerUser: [1, [Validators.required, Validators.min(1)]],
         isActive: [false],
     });
 
     catForm = this.fb.group({
         name: ['', Validators.required],
         price: [0, [Validators.required, Validators.min(0)]],
-        maxPerUser: [1, [Validators.required, Validators.min(1)]],
         totalAvailable: [0, [Validators.required, Validators.min(0)]],
         seatViewImageUrl: [''],
         order: [0],
     });
 
+    bookingForm = this.fb.group({
+        userId: [null as number | null, Validators.required],
+        categoryId: [null as number | null, Validators.required],
+        quantity: [1, [Validators.required, Validators.min(1)]],
+        notes: [''],
+    });
+
     // ── Derived stats ────────────────────────────────────────────────────────
     get totalAvailableTickets(): number {
         return this.categories.reduce((s, c) => s + (c.totalAvailable ?? 0), 0);
+    }
+
+    get totalBookedTickets(): number {
+        return this.categories.reduce((s, c) => s + (c.bookedCount ?? 0), 0);
     }
 
     // ── Lifecycle ────────────────────────────────────────────────────────────
@@ -168,12 +191,14 @@ export class BOAwayTripDetailsComponent implements OnInit, OnDestroy {
                         description: trip.description ?? '',
                         imageUrl: trip.imageUrl ?? '',
                         eventId: trip.event?.eventId ?? null,
+                        maxTicketsPerUser: trip.maxTicketsPerUser ?? 1,
                         isActive: trip.isActive,
                     });
                     this.imagePreview = trip.imageUrl ?? null;
                     this.infoEditMode = false;
 
                     this._loadInterests();
+                    this._loadBookings();
                     this.loading.set(false);
                     this.cdr.markForCheck();
                 },
@@ -194,6 +219,19 @@ export class BOAwayTripDetailsComponent implements OnInit, OnDestroy {
             });
     }
 
+    private _loadBookings(): void {
+        if (!this.tripId) return;
+        this.api.getBookings(this.tripId)
+            .pipe(takeUntil(this.destroy$))
+            .subscribe({
+                next: (bookings) => {
+                    this.bookings = bookings;
+                    this.bookingDS.data = bookings;
+                    this.cdr.markForCheck();
+                },
+            });
+    }
+
     // ── Info tab ─────────────────────────────────────────────────────────────
     enterEditMode(): void {
         this.infoEditMode = true;
@@ -207,6 +245,7 @@ export class BOAwayTripDetailsComponent implements OnInit, OnDestroy {
                 description: this.trip.description ?? '',
                 imageUrl: this.trip.imageUrl ?? '',
                 eventId: this.trip.event?.eventId ?? null,
+                maxTicketsPerUser: this.trip.maxTicketsPerUser ?? 1,
                 isActive: this.trip.isActive,
             });
             this.imagePreview = this.trip.imageUrl ?? null;
@@ -225,13 +264,19 @@ export class BOAwayTripDetailsComponent implements OnInit, OnDestroy {
             description: v.description || null,
             imageUrl: v.imageUrl || null,
             eventId: v.eventId || null,
+            maxTicketsPerUser: v.maxTicketsPerUser ?? 1,
             isActive: v.isActive ?? false,
         })
             .pipe(takeUntil(this.destroy$))
             .subscribe({
                 next: () => {
                     if (this.trip) {
-                        this.trip = { ...this.trip, title: v.title!, isActive: v.isActive ?? false };
+                        this.trip = {
+                            ...this.trip,
+                            title: v.title!,
+                            maxTicketsPerUser: v.maxTicketsPerUser ?? 1,
+                            isActive: v.isActive ?? false,
+                        };
                     }
                     this.infoEditMode = false;
                     this.saving.set(false);
@@ -313,7 +358,7 @@ export class BOAwayTripDetailsComponent implements OnInit, OnDestroy {
     openNewCategory(): void {
         this.editingCatId = null;
         this.catImagePreview = null;
-        this.catForm.reset({ name: '', price: 0, maxPerUser: 1, totalAvailable: 0, seatViewImageUrl: '', order: 0 });
+        this.catForm.reset({ name: '', price: 0, totalAvailable: 0, seatViewImageUrl: '', order: 0 });
         this.catModalOpen = true;
         this.cdr.markForCheck();
     }
@@ -324,7 +369,6 @@ export class BOAwayTripDetailsComponent implements OnInit, OnDestroy {
         this.catForm.setValue({
             name: cat.name,
             price: cat.price,
-            maxPerUser: cat.maxPerUser,
             totalAvailable: cat.totalAvailable ?? 0,
             seatViewImageUrl: cat.seatViewImageUrl ?? '',
             order: cat.order,
@@ -346,7 +390,6 @@ export class BOAwayTripDetailsComponent implements OnInit, OnDestroy {
         const req = {
             name: v.name!,
             price: v.price ?? 0,
-            maxPerUser: v.maxPerUser ?? 1,
             totalAvailable: v.totalAvailable ?? 0,
             seatViewImageUrl: v.seatViewImageUrl || null,
             order: v.order ?? 0,
@@ -370,7 +413,7 @@ export class BOAwayTripDetailsComponent implements OnInit, OnDestroy {
                 .subscribe({
                     next: () => {
                         this.categories = this.categories.map(c =>
-                            c.id === this.editingCatId ? { ...c, ...req, id: c.id } : c,
+                            c.id === this.editingCatId ? { ...c, ...req, id: c.id, bookedCount: c.bookedCount } : c,
                         );
                         this.catDS.data = this.categories;
                         this.closeCatModal();
@@ -447,6 +490,126 @@ export class BOAwayTripDetailsComponent implements OnInit, OnDestroy {
         this.cdr.markForCheck();
     }
 
+    // ── Bookings ─────────────────────────────────────────────────────────────
+    openNewBooking(): void {
+        this.editingBookingId = null;
+        this.bookingForm.reset({ userId: null, categoryId: null, quantity: 1, notes: '' });
+        this.bookingModalOpen = true;
+        this.cdr.markForCheck();
+    }
+
+    openEditBooking(booking: AwayTripBookingDto): void {
+        this.editingBookingId = booking.id;
+        this.bookingForm.setValue({
+            userId: booking.userId,
+            categoryId: booking.categoryId,
+            quantity: booking.quantity,
+            notes: booking.notes ?? '',
+        });
+        this.bookingModalOpen = true;
+        this.cdr.markForCheck();
+    }
+
+    closeBookingModal(): void {
+        this.bookingModalOpen = false;
+        this.editingBookingId = null;
+        this.cdr.markForCheck();
+    }
+
+    saveBooking(): void {
+        if (!this.tripId || this.bookingForm.invalid) return;
+        const v = this.bookingForm.value;
+        const req = {
+            userId: v.userId!,
+            categoryId: v.categoryId!,
+            quantity: v.quantity ?? 1,
+            notes: v.notes || null,
+        };
+
+        if (this.editingBookingId == null) {
+            this.api.createBooking(this.tripId, req)
+                .pipe(takeUntil(this.destroy$))
+                .subscribe({
+                    next: (b) => {
+                        this.bookings = [b, ...this.bookings];
+                        this.bookingDS.data = this.bookings;
+                        // Update bookedCount on the category
+                        this.categories = this.categories.map(c =>
+                            c.id === b.categoryId ? { ...c, bookedCount: c.bookedCount + b.quantity } : c,
+                        );
+                        this.catDS.data = this.categories;
+                        this.closeBookingModal();
+                        this.cdr.markForCheck();
+                    },
+                    error: () => this.cdr.markForCheck(),
+                });
+        } else {
+            this.api.updateBooking(this.tripId, this.editingBookingId, req)
+                .pipe(takeUntil(this.destroy$))
+                .subscribe({
+                    next: () => {
+                        const old = this.bookings.find(b => b.id === this.editingBookingId);
+                        this.bookings = this.bookings.map(b =>
+                            b.id === this.editingBookingId
+                                ? {
+                                    ...b,
+                                    userId: req.userId,
+                                    categoryId: req.categoryId,
+                                    categoryName: this.categories.find(c => c.id === req.categoryId)?.name ?? b.categoryName,
+                                    quantity: req.quantity,
+                                    notes: req.notes,
+                                }
+                                : b,
+                        );
+                        this.bookingDS.data = this.bookings;
+                        // Recalculate bookedCount per category
+                        if (old) {
+                            this.categories = this.categories.map(c => {
+                                let count = c.bookedCount;
+                                if (c.id === old.categoryId) count -= old.quantity;
+                                if (c.id === req.categoryId) count += req.quantity;
+                                return { ...c, bookedCount: Math.max(0, count) };
+                            });
+                            this.catDS.data = this.categories;
+                        }
+                        this.closeBookingModal();
+                        this.cdr.markForCheck();
+                    },
+                    error: () => this.cdr.markForCheck(),
+                });
+        }
+    }
+
+    deleteBooking(booking: AwayTripBookingDto): void {
+        if (!this.tripId) return;
+        this.confirmation.open({
+            title: 'Διαγραφή Κράτησης',
+            message: `Είστε σίγουροι ότι θέλετε να διαγράψετε την κράτηση για τον χρήστη <strong>${booking.userFullName}</strong>;`,
+            icon: { show: true, name: 'heroicons_outline:trash', color: 'warn' },
+            actions: { confirm: { label: 'Διαγραφή', color: 'warn' }, cancel: { label: 'Ακύρωση' } },
+        })
+            .afterClosed()
+            .pipe(takeUntil(this.destroy$))
+            .subscribe(result => {
+                if (result !== 'confirmed') return;
+                this.api.deleteBooking(this.tripId!, booking.id)
+                    .pipe(takeUntil(this.destroy$))
+                    .subscribe({
+                        next: () => {
+                            this.bookings = this.bookings.filter(b => b.id !== booking.id);
+                            this.bookingDS.data = this.bookings;
+                            this.categories = this.categories.map(c =>
+                                c.id === booking.categoryId
+                                    ? { ...c, bookedCount: Math.max(0, c.bookedCount - booking.quantity) }
+                                    : c,
+                            );
+                            this.catDS.data = this.categories;
+                            this.cdr.markForCheck();
+                        },
+                    });
+            });
+    }
+
     // ── User details modal ───────────────────────────────────────────────────
     openUserDetails(user: AwayTripInterestDto): void {
         this.selectedUser = user;
@@ -460,11 +623,25 @@ export class BOAwayTripDetailsComponent implements OnInit, OnDestroy {
         this.cdr.markForCheck();
     }
 
+    // ── Notification details modal ───────────────────────────────────────────
+    openNotifDetails(notif: AwayTripNotificationDto): void {
+        this.selectedNotif = notif;
+        this.notifDetailsModalOpen = true;
+        this.cdr.markForCheck();
+    }
+
+    closeNotifDetails(): void {
+        this.notifDetailsModalOpen = false;
+        this.selectedNotif = null;
+        this.cdr.markForCheck();
+    }
+
     // ── Send Notification ────────────────────────────────────────────────────
     openSendNotification(): void {
         const ref = this.dialog.open(SendNotificationDialogComponent, {
-            width: '520px',
+            width: '600px',
             disableClose: false,
+            data: { interests: this.interests },
         });
 
         ref.afterClosed()

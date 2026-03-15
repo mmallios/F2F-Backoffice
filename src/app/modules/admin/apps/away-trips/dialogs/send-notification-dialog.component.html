@@ -3,13 +3,13 @@
     Αποστολή Ειδοποίησης
 </h2>
 
-<mat-dialog-content class="!pt-4">
-    <form [formGroup]="form" class="flex flex-col gap-4" style="min-width: 400px;">
+<mat-dialog-content class="!pt-4 !max-h-[70vh]">
+    <form [formGroup]="form" class="flex flex-col gap-4" style="min-width: 460px;">
 
         <!-- Image upload -->
         <div class="flex flex-col gap-2">
             <label class="text-sm font-medium">Εικόνα ειδοποίησης (προαιρετικό)</label>
-            <div class="relative w-full h-32 rounded-xl border-2 border-dashed flex items-center justify-center bg-gray-50/50 dark:bg-gray-800/30 overflow-hidden cursor-pointer"
+            <div class="relative w-full h-28 rounded-xl border-2 border-dashed flex items-center justify-center bg-gray-50/50 dark:bg-gray-800/30 overflow-hidden cursor-pointer"
                 (click)="triggerFileInput(fileInput)">
                 @if (imagePreview) {
                 <img [src]="imagePreview" class="w-full h-full object-cover" />
@@ -44,12 +44,73 @@
                 placeholder="Το περιεχόμενο της ειδοποίησης..."></textarea>
         </mat-form-field>
 
+        <!-- User selection -->
+        <div class="flex flex-col gap-2">
+            <div class="flex items-center justify-between">
+                <label class="text-sm font-medium">Παραλήπτες</label>
+                <span class="text-xs text-secondary">
+                    {{ selectedUserIds.size }} / {{ interests.length }} επιλεγμένοι
+                </span>
+            </div>
+
+            @if (interests.length === 0) {
+            <div class="rounded-xl border p-4 text-center">
+                <mat-icon class="text-secondary opacity-40">people_outline</mat-icon>
+                <div class="mt-1 text-secondary text-sm">Δεν υπάρχουν ενδιαφερόμενοι χρήστες</div>
+            </div>
+            } @else {
+            <div class="rounded-xl border overflow-hidden">
+                <!-- Select all + search header -->
+                <div class="flex items-center gap-3 px-3 py-2.5 bg-gray-50/80 dark:bg-white/5 border-b">
+                    <mat-checkbox [checked]="allSelected" [indeterminate]="someSelected" (change)="toggleSelectAll()"
+                        color="primary">
+                        <span class="text-sm font-medium">Επιλογή όλων</span>
+                    </mat-checkbox>
+                    <div
+                        class="flex-1 flex items-center gap-1.5 rounded-lg border bg-white dark:bg-gray-900 px-2.5 py-1.5">
+                        <mat-icon class="!text-sm text-secondary shrink-0">search</mat-icon>
+                        <input class="flex-1 bg-transparent text-sm outline-none min-w-0"
+                            placeholder="Αναζήτηση χρήστη..." [value]="userSearch"
+                            (input)="onSearchChange($any($event.target).value)" />
+                    </div>
+                </div>
+
+                <!-- User list -->
+                <div class="max-h-44 overflow-y-auto">
+                    @for (user of filteredInterests; track user.userId) {
+                    <div class="flex items-center gap-3 px-3 py-2 hover:bg-gray-50/60 dark:hover:bg-white/5 transition-colors cursor-pointer border-b last:border-0"
+                        (click)="toggleUser(user.userId)">
+                        <mat-checkbox [checked]="selectedUserIds.has(user.userId)" (change)="toggleUser(user.userId)"
+                            (click)="$event.stopPropagation()" color="primary">
+                        </mat-checkbox>
+                        @if (user.userImageUrl) {
+                        <img [src]="user.userImageUrl" class="w-8 h-8 rounded-lg object-cover shrink-0" />
+                        } @else {
+                        <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                            <mat-icon class="text-primary !text-sm">person</mat-icon>
+                        </div>
+                        }
+                        <div class="flex-1 min-w-0">
+                            <div class="text-sm font-medium truncate">{{ user.userFullName }}</div>
+                            <div class="text-xs text-secondary truncate">{{ user.userEmail }}</div>
+                        </div>
+                        <code
+                            class="text-xs bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded shrink-0">{{ user.userCode }}</code>
+                    </div>
+                    } @empty {
+                    <div class="py-6 text-center text-secondary text-sm">Δεν βρέθηκαν χρήστες</div>
+                    }
+                </div>
+            </div>
+            }
+        </div>
+
         <!-- Email toggle -->
         <div class="flex items-center gap-3 rounded-xl border p-3">
             <mat-slide-toggle formControlName="sendEmailNotification" color="primary"></mat-slide-toggle>
             <div>
                 <div class="font-medium text-sm">Αποστολή Email</div>
-                <div class="text-secondary text-xs">Αποστολή και email ειδοποίησης σε όλους τους ενδιαφερόμενους</div>
+                <div class="text-secondary text-xs">Αποστολή email ειδοποίησης στους επιλεγμένους χρήστες</div>
             </div>
         </div>
     </form>
@@ -57,9 +118,12 @@
 
 <mat-dialog-actions align="end" class="!px-6 !pb-4 gap-2">
     <button mat-stroked-button (click)="cancel()">Ακύρωση</button>
-    <button mat-flat-button color="primary" (click)="send()" [disabled]="form.invalid || uploading()"
-        class="!rounded-full !font-semibold">
+    <button mat-flat-button color="primary" (click)="send()"
+        [disabled]="form.invalid || uploading() || selectedUserIds.size === 0" class="!rounded-full !font-semibold">
         <mat-icon class="mr-1">send</mat-icon>
         Αποστολή
+        @if (selectedUserIds.size > 0) {
+        <span class="ml-1 opacity-70">({{ selectedUserIds.size }})</span>
+        }
     </button>
 </mat-dialog-actions>

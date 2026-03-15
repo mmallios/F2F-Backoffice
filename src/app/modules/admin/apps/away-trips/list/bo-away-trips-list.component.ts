@@ -76,7 +76,7 @@ export class BOAwayTripsListComponent implements OnInit, OnDestroy {
     @ViewChild(MatSort, { static: false }) sort?: MatSort;
     @ViewChild(MatPaginator, { static: false }) paginator?: MatPaginator;
 
-    displayedColumns = ['image', 'title', 'event', 'isActive', 'interestCount', 'actions'];
+    displayedColumns = ['image', 'title', 'event', 'eventDate', 'isActive', 'booked', 'interestCount', 'actions'];
 
     totalTrips = signal(0);
     activeTrips = signal(0);
@@ -86,6 +86,7 @@ export class BOAwayTripsListComponent implements OnInit, OnDestroy {
     filters = this.fb.group({
         search: [''],
         statusFilter: ['all'],
+        eventFilter: [null as number | null],
     });
 
     // ── Modal ────────────────────────────────────────────────────────────────
@@ -136,7 +137,7 @@ export class BOAwayTripsListComponent implements OnInit, OnDestroy {
     }
 
     private _applyFilters(): void {
-        const { search, statusFilter } = this.filters.value;
+        const { search, statusFilter, eventFilter } = this.filters.value;
         let filtered = [...this.all];
 
         if (search?.trim()) {
@@ -150,14 +151,31 @@ export class BOAwayTripsListComponent implements OnInit, OnDestroy {
         if (statusFilter === 'active') filtered = filtered.filter(t => t.isActive);
         else if (statusFilter === 'inactive') filtered = filtered.filter(t => !t.isActive);
 
+        if (eventFilter) filtered = filtered.filter(t => t.event?.eventId === +eventFilter);
+
         this.dataSource.data = filtered;
         if (this.sort) this.dataSource.sort = this.sort;
         if (this.paginator) this.dataSource.paginator = this.paginator;
         this.cdr.markForCheck();
     }
 
+    get uniqueFilterEvents(): Array<{ eventId: number; label: string }> {
+        const seen = new Set<number>();
+        return this.all
+            .filter(t => t.event?.eventId != null)
+            .filter(t => {
+                if (seen.has(t.event!.eventId)) return false;
+                seen.add(t.event!.eventId);
+                return true;
+            })
+            .map(t => ({
+                eventId: t.event!.eventId,
+                label: `${t.event!.homeTeamName ?? ''} vs ${t.event!.awayTeamName ?? ''}`,
+            }));
+    }
+
     resetFilters(): void {
-        this.filters.setValue({ search: '', statusFilter: 'all' });
+        this.filters.setValue({ search: '', statusFilter: 'all', eventFilter: null });
     }
 
     // ── Modal ────────────────────────────────────────────────────────────────

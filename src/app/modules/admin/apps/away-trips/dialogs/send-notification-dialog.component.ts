@@ -9,14 +9,15 @@ import {
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
-import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { finalize } from 'rxjs/operators';
 import { ImageUploadService } from '@fuse/services/general/image-upload.service';
-import { SendAwayTripNotificationRequest } from '@fuse/services/away-trips/bo-away-trips.service';
+import { AwayTripInterestDto, SendAwayTripNotificationRequest } from '@fuse/services/away-trips/bo-away-trips.service';
 
 @Component({
     selector: 'send-notification-dialog',
@@ -25,6 +26,7 @@ import { SendAwayTripNotificationRequest } from '@fuse/services/away-trips/bo-aw
         CommonModule,
         ReactiveFormsModule,
         MatButtonModule,
+        MatCheckboxModule,
         MatDialogModule,
         MatFormFieldModule,
         MatIconModule,
@@ -39,9 +41,30 @@ export class SendNotificationDialogComponent implements OnInit {
     private cdr = inject(ChangeDetectorRef);
     private dialogRef = inject(MatDialogRef<SendNotificationDialogComponent>);
     private imageUpload = inject(ImageUploadService);
+    data = inject<{ interests: AwayTripInterestDto[] }>(MAT_DIALOG_DATA);
 
     uploading = signal(false);
     imagePreview: string | null = null;
+
+    // User selection
+    userSearch = '';
+    selectedUserIds = new Set<number>();
+    get interests(): AwayTripInterestDto[] { return this.data?.interests ?? []; }
+    get filteredInterests(): AwayTripInterestDto[] {
+        const q = this.userSearch.toLowerCase().trim();
+        if (!q) return this.interests;
+        return this.interests.filter(u =>
+            u.userFullName.toLowerCase().includes(q) ||
+            u.userCode.toLowerCase().includes(q) ||
+            u.userEmail.toLowerCase().includes(q),
+        );
+    }
+    get allSelected(): boolean {
+        return this.interests.length > 0 && this.interests.every(u => this.selectedUserIds.has(u.userId));
+    }
+    get someSelected(): boolean {
+        return this.selectedUserIds.size > 0 && !this.allSelected;
+    }
 
     form = this.fb.group({
         title: ['', Validators.required],
@@ -50,7 +73,33 @@ export class SendNotificationDialogComponent implements OnInit {
         sendEmailNotification: [true],
     });
 
-    ngOnInit(): void { }
+    ngOnInit(): void {
+        // Select all users by default
+        this.interests.forEach(u => this.selectedUserIds.add(u.userId));
+    }
+
+    toggleSelectAll(): void {
+        if (this.allSelected) {
+            this.selectedUserIds.clear();
+        } else {
+            this.interests.forEach(u => this.selectedUserIds.add(u.userId));
+        }
+        this.cdr.markForCheck();
+    }
+
+    toggleUser(userId: number): void {
+        if (this.selectedUserIds.has(userId)) {
+            this.selectedUserIds.delete(userId);
+        } else {
+            this.selectedUserIds.add(userId);
+        }
+        this.cdr.markForCheck();
+    }
+
+    onSearchChange(value: string): void {
+        this.userSearch = value;
+        this.cdr.markForCheck();
+    }
 
     triggerFileInput(input: HTMLInputElement): void {
         input.click();
@@ -86,13 +135,20 @@ export class SendNotificationDialogComponent implements OnInit {
     }
 
     send(): void {
-        if (this.form.invalid) return;
+        if (this.form.invalid || this.selectedUserIds.size === 0) return;
         const v = this.form.value;
+
+        // null targetUserIds = all users; otherwise pass specific IDs
+        const targetUserIds = this.allSelected
+            ? null
+            : Array.from(this.selectedUserIds);
+
         const req: SendAwayTripNotificationRequest = {
             title: v.title!,
             description: v.description || null,
             imageUrl: v.imageUrl || null,
             sendEmailNotification: v.sendEmailNotification ?? true,
+            targetUserIds,
         };
         this.dialogRef.close(req);
     }

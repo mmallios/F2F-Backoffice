@@ -64,25 +64,37 @@
 
         <!-- Filters -->
         <div class="px-6 md:px-8 py-4">
-            <div class="flex flex-col sm:flex-row gap-3 rounded-2xl border bg-card px-4 py-3 shadow-sm items-center"
-                [formGroup]="filters">
-                <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full sm:w-72 shrink-0">
-                    <mat-icon matPrefix>search</mat-icon>
-                    <input matInput formControlName="search" placeholder="Αναζήτηση τίτλου..." />
-                </mat-form-field>
-                <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full sm:w-48 shrink-0">
-                    <mat-label>Κατάσταση</mat-label>
-                    <mat-select formControlName="statusFilter">
-                        <mat-option value="all">Όλα</mat-option>
-                        <mat-option value="active">Ενεργά</mat-option>
-                        <mat-option value="inactive">Ανενεργά</mat-option>
-                    </mat-select>
-                </mat-form-field>
-                <button mat-stroked-button (click)="resetFilters()" class="shrink-0 !rounded-full"
-                    matTooltip="Καθαρισμός φίλτρων">
-                    <mat-icon class="mr-1">filter_alt_off</mat-icon>
-                    Καθαρισμός
-                </button>
+            <div class="rounded-2xl border bg-card px-4 py-3 shadow-sm" [formGroup]="filters">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-center">
+                    <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full">
+                        <mat-icon matPrefix>search</mat-icon>
+                        <input matInput formControlName="search" placeholder="Αναζήτηση τίτλου..." />
+                    </mat-form-field>
+                    <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full">
+                        <mat-label>Κατάσταση</mat-label>
+                        <mat-select formControlName="statusFilter">
+                            <mat-option value="all">Όλα</mat-option>
+                            <mat-option value="active">Ενεργά</mat-option>
+                            <mat-option value="inactive">Ανενεργά</mat-option>
+                        </mat-select>
+                    </mat-form-field>
+                    <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full">
+                        <mat-label>Αγώνας</mat-label>
+                        <mat-select formControlName="eventFilter">
+                            <mat-option [value]="null">Όλοι</mat-option>
+                            @for (ev of uniqueFilterEvents; track ev.eventId) {
+                            <mat-option [value]="ev.eventId">{{ ev.label }}</mat-option>
+                            }
+                        </mat-select>
+                    </mat-form-field>
+                    <div class="flex justify-end">
+                        <button mat-stroked-button (click)="resetFilters()" class="!rounded-full w-full sm:w-auto"
+                            matTooltip="Καθαρισμός φίλτρων">
+                            <mat-icon class="mr-1">filter_alt_off</mat-icon>
+                            Καθαρισμός
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -107,13 +119,13 @@
                         <ng-container matColumnDef="image">
                             <th mat-header-cell *matHeaderCellDef
                                 class="!text-xs !font-semibold !uppercase !tracking-wider !text-secondary">Εικόνα</th>
-                            <td mat-cell *matCellDef="let row">
+                            <td mat-cell *matCellDef="let row" class="!py-2">
                                 @if (row.imageUrl) {
-                                <img [src]="row.imageUrl" class="w-12 h-12 rounded-lg object-cover" />
+                                <img [src]="row.imageUrl" class="w-28 h-20 rounded-xl object-cover" />
                                 } @else {
                                 <div
-                                    class="w-12 h-12 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                                    <mat-icon class="text-secondary text-xl">flight</mat-icon>
+                                    class="w-28 h-20 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                                    <mat-icon class="text-secondary text-3xl">flight</mat-icon>
                                 </div>
                                 }
                             </td>
@@ -137,14 +149,43 @@
                                 class="!text-xs !font-semibold !uppercase !tracking-wider !text-secondary">Αγώνας</th>
                             <td mat-cell *matCellDef="let row">
                                 @if (row.event) {
-                                <div class="flex items-center gap-2">
+                                <div class="flex items-center gap-2 min-w-[180px]">
+                                    <span class="text-xs font-medium">{{ row.event.homeTeamName }}</span>
                                     @if (row.event.homeTeamLogoUrl) {
-                                    <img [src]="row.event.homeTeamLogoUrl" class="w-5 h-5 object-contain" />
+                                    <img [src]="row.event.homeTeamLogoUrl" class="w-7 h-7 object-contain shrink-0" />
                                     }
-                                    <span class="text-xs">{{ row.event.homeTeamName }} vs {{ row.event.awayTeamName
-                                        }}</span>
+                                    <span class="text-secondary text-xs">vs</span>
+                                    @if (row.event.awayTeamLogoUrl) {
+                                    <img [src]="row.event.awayTeamLogoUrl" class="w-7 h-7 object-contain shrink-0" />
+                                    }
+                                    <span class="text-xs font-medium">{{ row.event.awayTeamName }}</span>
                                 </div>
-                                <div class="text-secondary text-xs">{{ formatDate(row.event.eventDate) }}</div>
+                                @if (row.event.competitionName || row.event.matchday) {
+                                <div class="text-secondary text-xs mt-1 flex items-center gap-1">
+                                    @if (row.event.competitionName) {
+                                    <span>{{ row.event.competitionName }}</span>
+                                    }
+                                    @if (row.event.competitionName && row.event.matchday) {
+                                    <span>·</span>
+                                    }
+                                    @if (row.event.matchday) {
+                                    <span>{{ row.event.matchday }}</span>
+                                    }
+                                </div>
+                                }
+                                } @else {
+                                <span class="text-secondary text-xs">—</span>
+                                }
+                            </td>
+                        </ng-container>
+
+                        <!-- Event Date -->
+                        <ng-container matColumnDef="eventDate">
+                            <th mat-header-cell *matHeaderCellDef mat-sort-header
+                                class="!text-xs !font-semibold !uppercase !tracking-wider !text-secondary">Ημερομηνία</th>
+                            <td mat-cell *matCellDef="let row">
+                                @if (row.event?.eventDate) {
+                                <span class="text-sm font-medium whitespace-nowrap">{{ formatDate(row.event.eventDate) }}</span>
                                 } @else {
                                 <span class="text-secondary text-xs">—</span>
                                 }
@@ -168,6 +209,19 @@
                             </td>
                         </ng-container>
 
+                        <!-- Booked tickets -->
+                        <ng-container matColumnDef="booked">
+                            <th mat-header-cell *matHeaderCellDef mat-sort-header
+                                class="!text-xs !font-semibold !uppercase !tracking-wider !text-secondary">Εισιτήρια</th>
+                            <td mat-cell *matCellDef="let row">
+                                <div class="flex items-center gap-1">
+                                    <mat-icon class="text-blue-400 !text-base">confirmation_number</mat-icon>
+                                    <span class="font-semibold">{{ row.totalBookedTickets }}</span>
+                                    <span class="text-secondary text-xs">/{{ row.totalAvailableTickets }}</span>
+                                </div>
+                            </td>
+                        </ng-container>
+
                         <!-- Interest count -->
                         <ng-container matColumnDef="interestCount">
                             <th mat-header-cell *matHeaderCellDef mat-sort-header
@@ -187,16 +241,14 @@
                                 class="!text-xs !font-semibold !uppercase !tracking-wider !text-secondary !text-right">
                                 Ενέργειες</th>
                             <td mat-cell *matCellDef="let row" class="!text-right">
-                                <button mat-icon-button (click)="openDetails(row); $event.stopPropagation()"
-                                    matTooltip="Λεπτομέρειες">
-                                    <mat-icon>open_in_new</mat-icon>
-                                </button>
-                                <button mat-icon-button (click)="openEdit(row); $event.stopPropagation()"
-                                    matTooltip="Επεξεργασία">
-                                    <mat-icon>edit</mat-icon>
+                                <button mat-flat-button color="primary"
+                                    (click)="openDetails(row); $event.stopPropagation()"
+                                    class="!rounded-full !text-xs !font-semibold !h-8 !px-3">
+                                    <mat-icon class="!text-sm mr-1">open_in_new</mat-icon>
+                                    VIEW DETAILS
                                 </button>
                                 <button mat-icon-button color="warn" (click)="deleteTrip(row); $event.stopPropagation()"
-                                    matTooltip="Διαγραφή">
+                                    matTooltip="Διαγραφή" class="ml-1">
                                     <mat-icon>delete</mat-icon>
                                 </button>
                             </td>

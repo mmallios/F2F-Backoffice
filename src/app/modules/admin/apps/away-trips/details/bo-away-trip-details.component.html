@@ -60,34 +60,14 @@
                 </div>
             </div>
 
-            <!-- Stats row -->
+            <!-- Stats row — event first, then date, available, interests -->
             <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 px-6 md:px-8 pb-5">
 
-                <!-- Event date -->
-                <div class="flex items-center gap-3 rounded-2xl border bg-gray-50/50 dark:bg-white/5 p-4">
-                    <div
-                        class="w-11 h-11 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shrink-0">
-                        <mat-icon class="text-blue-600 dark:text-blue-400 !text-xl">calendar_today</mat-icon>
-                    </div>
-                    <div class="min-w-0">
-                        <div class="text-xs text-secondary uppercase tracking-wider font-semibold mb-0.5">Ημερομηνία
-                        </div>
-                        <div class="font-bold text-sm truncate">
-                            @if (trip.event?.eventDate) {
-                            {{ formatDateShort(trip.event!.eventDate) }}
-                            } @else {
-                            <span class="text-secondary font-normal text-xs">Χωρίς ημερομηνία</span>
-                            }
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Match card (spans 2 cols) -->
+                <!-- Match card (spans 2 cols) — FIRST -->
                 <div
                     class="col-span-2 lg:col-span-2 flex items-center gap-2 rounded-2xl border bg-gray-50/50 dark:bg-white/5 p-4">
                     @if (trip.event) {
                     <div class="flex-1 flex items-center gap-2 min-w-0">
-                        <!-- Home team -->
                         <div class="flex flex-col items-center gap-1 shrink-0 w-16">
                             @if (trip.event.homeTeamLogoUrl) {
                             <img [src]="trip.event.homeTeamLogoUrl" class="w-10 h-10 object-contain"
@@ -100,7 +80,6 @@
                             <span class="text-[11px] font-semibold leading-tight text-center line-clamp-2">{{
                                 trip.event.homeTeamName }}</span>
                         </div>
-                        <!-- Middle -->
                         <div class="flex-1 min-w-0 text-center">
                             <div class="text-sm font-black text-secondary">VS</div>
                             @if (trip.event.competitionName) {
@@ -111,7 +90,6 @@
                             <div class="text-[10px] text-secondary">Αγ. {{ trip.event.matchday }}</div>
                             }
                         </div>
-                        <!-- Away team -->
                         <div class="flex flex-col items-center gap-1 shrink-0 w-16">
                             @if (trip.event.awayTeamLogoUrl) {
                             <img [src]="trip.event.awayTeamLogoUrl" class="w-10 h-10 object-contain"
@@ -137,17 +115,38 @@
                     }
                 </div>
 
-                <!-- Available tickets -->
+                <!-- Event date -->
+                <div class="flex items-center gap-3 rounded-2xl border bg-gray-50/50 dark:bg-white/5 p-4">
+                    <div
+                        class="w-11 h-11 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shrink-0">
+                        <mat-icon class="text-blue-600 dark:text-blue-400 !text-xl">calendar_today</mat-icon>
+                    </div>
+                    <div class="min-w-0">
+                        <div class="text-xs text-secondary uppercase tracking-wider font-semibold mb-0.5">Ημερομηνία
+                        </div>
+                        <div class="font-bold text-sm truncate">
+                            @if (trip.event?.eventDate) {
+                            {{ formatDateShort(trip.event!.eventDate) }}
+                            } @else {
+                            <span class="text-secondary font-normal text-xs">Χωρίς ημερομηνία</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Available / Booked tickets -->
                 <div class="flex items-center gap-3 rounded-2xl border bg-gray-50/50 dark:bg-white/5 p-4">
                     <div
                         class="w-11 h-11 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0">
                         <mat-icon class="text-emerald-600 dark:text-emerald-400 !text-xl">confirmation_number</mat-icon>
                     </div>
                     <div>
-                        <div class="text-xs text-secondary uppercase tracking-wider font-semibold mb-0.5">Διαθέσιμα
+                        <div class="text-xs text-secondary uppercase tracking-wider font-semibold mb-0.5">Κρατήσεις
                         </div>
-                        <div class="font-bold text-xl tabular-nums">{{ totalAvailableTickets > 0 ? totalAvailableTickets
-                            : '∞' }}</div>
+                        <div class="font-bold text-xl tabular-nums">
+                            {{ totalBookedTickets }}<span class="text-sm font-normal text-secondary">/{{
+                                totalAvailableTickets }}</span>
+                        </div>
                     </div>
                 </div>
 
@@ -158,7 +157,7 @@
                         <mat-icon class="text-rose-600 dark:text-rose-400 !text-xl">favorite</mat-icon>
                     </div>
                     <div>
-                        <div class="text-xs text-secondary uppercase tracking-wider font-semibold mb-0.5">Ενδιαφέροντα
+                        <div class="text-xs text-secondary uppercase tracking-wider font-semibold mb-0.5">Ενδιαφέρον
                         </div>
                         <div class="font-bold text-xl tabular-nums">{{ trip.interestCount }}</div>
                     </div>
@@ -230,6 +229,12 @@
                                 </span>
                             </div>
 
+                            <div class="rounded-xl bg-gray-50/50 dark:bg-white/5 p-4">
+                                <div class="text-xs text-secondary uppercase tracking-wider font-semibold mb-1">Max
+                                    Εισιτήρια / Χρήστη</div>
+                                <div class="font-bold text-lg">{{ trip.maxTicketsPerUser }}</div>
+                            </div>
+
                             @if (trip.event) {
                             <div class="md:col-span-2 rounded-xl bg-gray-50/50 dark:bg-white/5 p-4">
                                 <div class="text-xs text-secondary uppercase tracking-wider font-semibold mb-1">Αγώνας
@@ -299,6 +304,12 @@
                                 </mat-form-field>
 
                                 <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full">
+                                    <mat-label>Max Εισιτήρια / Χρήστη *</mat-label>
+                                    <input matInput type="number" formControlName="maxTicketsPerUser" min="1" />
+                                    <mat-icon matSuffix class="text-secondary !text-base">confirmation_number</mat-icon>
+                                </mat-form-field>
+
+                                <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full md:col-span-2">
                                     <mat-label>Συνδεδεμένος Αγώνας (προαιρετικό)</mat-label>
                                     <mat-select formControlName="eventId">
                                         <mat-option [value]="null">— Κανένας —</mat-option>
@@ -341,140 +352,254 @@
                      Tab 2: Κατηγορίες Εισιτηρίων
                      ───────────────────────────────────────────────────────── -->
                 <mat-tab label="Κατηγορίες Εισιτηρίων">
-                    <div class="p-6">
-                        <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-base font-bold">
-                                Κατηγορίες Εισιτηρίων
-                                <span
-                                    class="ml-1.5 px-1.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary">
-                                    {{ categories.length }}
-                                </span>
-                            </h3>
-                            <button mat-flat-button color="primary" (click)="openNewCategory()"
-                                class="!rounded-full !font-semibold">
-                                <mat-icon class="mr-1">add</mat-icon>Νέα Κατηγορία
-                            </button>
+                    <div class="p-6 flex flex-col gap-8">
+
+                        <!-- Categories table -->
+                        <div>
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-base font-bold">
+                                    Κατηγορίες Εισιτηρίων
+                                    <span
+                                        class="ml-1.5 px-1.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary">
+                                        {{ categories.length }}
+                                    </span>
+                                </h3>
+                                <button mat-flat-button color="primary" (click)="openNewCategory()"
+                                    class="!rounded-full !font-semibold">
+                                    <mat-icon class="mr-1">add</mat-icon>Νέα Κατηγορία
+                                </button>
+                            </div>
+
+                            @if (categories.length === 0) {
+                            <div class="flex flex-col items-center justify-center py-14 gap-3">
+                                <mat-icon class="text-secondary opacity-30 text-[3rem]">confirmation_number</mat-icon>
+                                <span class="text-secondary text-sm">Δεν υπάρχουν κατηγορίες εισιτηρίων</span>
+                            </div>
+                            } @else {
+                            <div class="overflow-x-auto rounded-xl border">
+                                <table mat-table [dataSource]="catDS" class="w-full min-w-max">
+
+                                    <ng-container matColumnDef="seatView">
+                                        <th mat-header-cell *matHeaderCellDef
+                                            class="!text-xs !font-semibold !uppercase !tracking-wider !text-secondary !w-16">
+                                            Θέση</th>
+                                        <td mat-cell *matCellDef="let row" class="!py-2.5">
+                                            @if (row.seatViewImageUrl) {
+                                            <img [src]="row.seatViewImageUrl" class="w-12 h-10 rounded-lg object-cover"
+                                                [alt]="row.name" />
+                                            } @else {
+                                            <div
+                                                class="w-12 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                                                <mat-icon
+                                                    class="text-secondary opacity-50 !text-base">event_seat</mat-icon>
+                                            </div>
+                                            }
+                                        </td>
+                                    </ng-container>
+
+                                    <ng-container matColumnDef="name">
+                                        <th mat-header-cell *matHeaderCellDef
+                                            class="!text-xs !font-semibold !uppercase !tracking-wider !text-secondary">
+                                            Κατηγορία</th>
+                                        <td mat-cell *matCellDef="let row" class="font-semibold">{{ row.name }}</td>
+                                    </ng-container>
+
+                                    <ng-container matColumnDef="price">
+                                        <th mat-header-cell *matHeaderCellDef
+                                            class="!text-xs !font-semibold !uppercase !tracking-wider !text-secondary">
+                                            Τιμή</th>
+                                        <td mat-cell *matCellDef="let row" class="font-bold text-primary tabular-nums">
+                                            €{{ row.price | number:'1.2-2' }}</td>
+                                    </ng-container>
+
+                                    <ng-container matColumnDef="totalAvailable">
+                                        <th mat-header-cell *matHeaderCellDef
+                                            class="!text-xs !font-semibold !uppercase !tracking-wider !text-secondary">
+                                            Κλεισμένα / Διαθέσιμα</th>
+                                        <td mat-cell *matCellDef="let row">
+                                            <span
+                                                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 tabular-nums">
+                                                {{ row.bookedCount }}<span class="opacity-60">/{{ row.totalAvailable
+                                                    }}</span>
+                                            </span>
+                                        </td>
+                                    </ng-container>
+
+                                    <ng-container matColumnDef="booked">
+                                        <th mat-header-cell *matHeaderCellDef
+                                            class="!text-xs !font-semibold !uppercase !tracking-wider !text-secondary">
+                                            Υπολειπόμενα</th>
+                                        <td mat-cell *matCellDef="let row">
+                                            <span
+                                                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold tabular-nums"
+                                                [class]="(row.totalAvailable - row.bookedCount) <= 0
+                                                    ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                                                    : 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'">
+                                                {{ row.totalAvailable - row.bookedCount }}
+                                            </span>
+                                        </td>
+                                    </ng-container>
+
+                                    <ng-container matColumnDef="actions">
+                                        <th mat-header-cell *matHeaderCellDef></th>
+                                        <td mat-cell *matCellDef="let row">
+                                            <div class="flex items-center gap-0.5">
+                                                <button mat-icon-button (click)="openCatInterests(row)"
+                                                    matTooltip="Ενδιαφερόμενοι χρήστες"
+                                                    class="!text-secondary hover:!text-primary">
+                                                    <mat-icon class="!text-base">people</mat-icon>
+                                                </button>
+                                                <button mat-icon-button (click)="openEditCategory(row)"
+                                                    matTooltip="Επεξεργασία"
+                                                    class="!text-secondary hover:!text-primary">
+                                                    <mat-icon class="!text-base">edit</mat-icon>
+                                                </button>
+                                                <button mat-icon-button color="warn" (click)="deleteCategory(row)"
+                                                    matTooltip="Διαγραφή">
+                                                    <mat-icon class="!text-base">delete</mat-icon>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </ng-container>
+
+                                    <tr mat-header-row *matHeaderRowDef="catColumns"
+                                        class="bg-gray-50/80 dark:bg-white/5"></tr>
+                                    <tr mat-row *matRowDef="let row; columns: catColumns;"
+                                        class="hover:bg-gray-50/60 dark:hover:bg-white/5 transition-colors"></tr>
+                                </table>
+                            </div>
+                            }
                         </div>
 
-                        @if (categories.length === 0) {
-                        <div class="flex flex-col items-center justify-center py-14 gap-3">
-                            <mat-icon class="text-secondary opacity-30 text-[3rem]">confirmation_number</mat-icon>
-                            <span class="text-secondary text-sm">Δεν υπάρχουν κατηγορίες εισιτηρίων</span>
+                        <!-- ── Bookings table ── -->
+                        <div>
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-base font-bold">
+                                    Κρατήσεις Εισιτηρίων
+                                    <span
+                                        class="ml-1.5 px-1.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                                        {{ bookings.length }}
+                                    </span>
+                                </h3>
+                                <button mat-flat-button color="primary" (click)="openNewBooking()"
+                                    [disabled]="categories.length === 0" class="!rounded-full !font-semibold">
+                                    <mat-icon class="mr-1">add</mat-icon>Νέα Κράτηση
+                                </button>
+                            </div>
+
+                            @if (bookings.length === 0) {
+                            <div class="flex flex-col items-center justify-center py-10 gap-3">
+                                <mat-icon class="text-secondary opacity-30 text-[3rem]">event_seat</mat-icon>
+                                <span class="text-secondary text-sm">Δεν υπάρχουν κρατήσεις</span>
+                            </div>
+                            } @else {
+                            <div class="overflow-x-auto rounded-xl border">
+                                <table mat-table [dataSource]="bookingDS" class="w-full min-w-max">
+
+                                    <ng-container matColumnDef="avatar">
+                                        <th mat-header-cell *matHeaderCellDef class="!w-14"></th>
+                                        <td mat-cell *matCellDef="let row" class="!py-2.5">
+                                            @if (row.userImageUrl) {
+                                            <img [src]="row.userImageUrl" class="w-9 h-9 rounded-lg object-cover" />
+                                            } @else {
+                                            <div
+                                                class="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                                                <mat-icon class="text-primary !text-base">person</mat-icon>
+                                            </div>
+                                            }
+                                        </td>
+                                    </ng-container>
+
+                                    <ng-container matColumnDef="name">
+                                        <th mat-header-cell *matHeaderCellDef
+                                            class="!text-xs !font-semibold !uppercase !tracking-wider !text-secondary">
+                                            Χρήστης</th>
+                                        <td mat-cell *matCellDef="let row" class="font-semibold">{{ row.userFullName }}
+                                        </td>
+                                    </ng-container>
+
+                                    <ng-container matColumnDef="code">
+                                        <th mat-header-cell *matHeaderCellDef
+                                            class="!text-xs !font-semibold !uppercase !tracking-wider !text-secondary">
+                                            Κωδικός</th>
+                                        <td mat-cell *matCellDef="let row">
+                                            <code
+                                                class="text-xs bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">{{ row.userCode }}</code>
+                                        </td>
+                                    </ng-container>
+
+                                    <ng-container matColumnDef="category">
+                                        <th mat-header-cell *matHeaderCellDef
+                                            class="!text-xs !font-semibold !uppercase !tracking-wider !text-secondary">
+                                            Κατηγορία</th>
+                                        <td mat-cell *matCellDef="let row" class="text-secondary text-sm">{{
+                                            row.categoryName }}</td>
+                                    </ng-container>
+
+                                    <ng-container matColumnDef="quantity">
+                                        <th mat-header-cell *matHeaderCellDef
+                                            class="!text-xs !font-semibold !uppercase !tracking-wider !text-secondary">
+                                            Εισιτήρια</th>
+                                        <td mat-cell *matCellDef="let row">
+                                            <span
+                                                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-primary/10 text-primary tabular-nums">
+                                                {{ row.quantity }}
+                                            </span>
+                                        </td>
+                                    </ng-container>
+
+                                    <ng-container matColumnDef="notes">
+                                        <th mat-header-cell *matHeaderCellDef
+                                            class="!text-xs !font-semibold !uppercase !tracking-wider !text-secondary">
+                                            Σημειώσεις</th>
+                                        <td mat-cell *matCellDef="let row"
+                                            class="text-secondary text-sm max-w-xs truncate">{{ row.notes || '—' }}</td>
+                                    </ng-container>
+
+                                    <ng-container matColumnDef="bookedAt">
+                                        <th mat-header-cell *matHeaderCellDef
+                                            class="!text-xs !font-semibold !uppercase !tracking-wider !text-secondary">
+                                            Ημερομηνία</th>
+                                        <td mat-cell *matCellDef="let row"
+                                            class="text-secondary text-sm whitespace-nowrap">{{ formatDate(row.bookedAt)
+                                            }}</td>
+                                    </ng-container>
+
+                                    <ng-container matColumnDef="actions">
+                                        <th mat-header-cell *matHeaderCellDef></th>
+                                        <td mat-cell *matCellDef="let row">
+                                            <div class="flex items-center gap-0.5">
+                                                <button mat-icon-button (click)="openEditBooking(row)"
+                                                    matTooltip="Επεξεργασία"
+                                                    class="!text-secondary hover:!text-primary">
+                                                    <mat-icon class="!text-base">edit</mat-icon>
+                                                </button>
+                                                <button mat-icon-button color="warn" (click)="deleteBooking(row)"
+                                                    matTooltip="Διαγραφή">
+                                                    <mat-icon class="!text-base">delete</mat-icon>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </ng-container>
+
+                                    <tr mat-header-row *matHeaderRowDef="bookingColumns"
+                                        class="bg-gray-50/80 dark:bg-white/5"></tr>
+                                    <tr mat-row *matRowDef="let row; columns: bookingColumns;"
+                                        class="hover:bg-gray-50/60 dark:hover:bg-white/5 transition-colors"></tr>
+                                </table>
+                            </div>
+                            }
                         </div>
-                        } @else {
-                        <div class="overflow-x-auto rounded-xl border">
-                            <table mat-table [dataSource]="catDS" class="w-full min-w-max">
 
-                                <!-- Seat view thumb -->
-                                <ng-container matColumnDef="seatView">
-                                    <th mat-header-cell *matHeaderCellDef
-                                        class="!text-xs !font-semibold !uppercase !tracking-wider !text-secondary !w-16">
-                                        Θέση</th>
-                                    <td mat-cell *matCellDef="let row" class="!py-2.5">
-                                        @if (row.seatViewImageUrl) {
-                                        <img [src]="row.seatViewImageUrl" class="w-12 h-10 rounded-lg object-cover"
-                                            [alt]="row.name" />
-                                        } @else {
-                                        <div
-                                            class="w-12 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                                            <mat-icon class="text-secondary opacity-50 !text-base">event_seat</mat-icon>
-                                        </div>
-                                        }
-                                    </td>
-                                </ng-container>
-
-                                <!-- Name -->
-                                <ng-container matColumnDef="name">
-                                    <th mat-header-cell *matHeaderCellDef
-                                        class="!text-xs !font-semibold !uppercase !tracking-wider !text-secondary">
-                                        Κατηγορία</th>
-                                    <td mat-cell *matCellDef="let row" class="font-semibold">{{ row.name }}</td>
-                                </ng-container>
-
-                                <!-- Price -->
-                                <ng-container matColumnDef="price">
-                                    <th mat-header-cell *matHeaderCellDef
-                                        class="!text-xs !font-semibold !uppercase !tracking-wider !text-secondary">Τιμή
-                                    </th>
-                                    <td mat-cell *matCellDef="let row" class="font-bold text-primary tabular-nums">€{{
-                                        row.price | number:'1.2-2' }}</td>
-                                </ng-container>
-
-                                <!-- Max per user -->
-                                <ng-container matColumnDef="maxPerUser">
-                                    <th mat-header-cell *matHeaderCellDef
-                                        class="!text-xs !font-semibold !uppercase !tracking-wider !text-secondary">
-                                        Max/Χρήστη</th>
-                                    <td mat-cell *matCellDef="let row" class="text-secondary tabular-nums text-center">
-                                        {{ row.maxPerUser }}</td>
-                                </ng-container>
-
-                                <!-- ΔΙΑΘΕΣΙΜΑ -->
-                                <ng-container matColumnDef="totalAvailable">
-                                    <th mat-header-cell *matHeaderCellDef
-                                        class="!text-xs !font-semibold !uppercase !tracking-wider !text-secondary">
-                                        Διαθέσιμα</th>
-                                    <td mat-cell *matCellDef="let row">
-                                        <span
-                                            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 tabular-nums">
-                                            <mat-icon class="!text-xs !w-3 !h-3">check_circle</mat-icon>
-                                            {{ row.totalAvailable > 0 ? row.totalAvailable : '∞' }}
-                                        </span>
-                                    </td>
-                                </ng-container>
-
-                                <!-- ΚΛΕΙΣΜΕΝΑ -->
-                                <ng-container matColumnDef="booked">
-                                    <th mat-header-cell *matHeaderCellDef
-                                        class="!text-xs !font-semibold !uppercase !tracking-wider !text-secondary">
-                                        Κλεισμένα</th>
-                                    <td mat-cell *matCellDef="let row">
-                                        <span
-                                            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 tabular-nums">
-                                            <mat-icon class="!text-xs !w-3 !h-3">local_activity</mat-icon>
-                                            0
-                                        </span>
-                                    </td>
-                                </ng-container>
-
-                                <!-- Actions -->
-                                <ng-container matColumnDef="actions">
-                                    <th mat-header-cell *matHeaderCellDef></th>
-                                    <td mat-cell *matCellDef="let row">
-                                        <div class="flex items-center gap-0.5">
-                                            <button mat-icon-button (click)="openCatInterests(row)"
-                                                matTooltip="Ενδιαφερόμενοι χρήστες"
-                                                class="!text-secondary hover:!text-primary">
-                                                <mat-icon class="!text-base">people</mat-icon>
-                                            </button>
-                                            <button mat-icon-button (click)="openEditCategory(row)"
-                                                matTooltip="Επεξεργασία" class="!text-secondary hover:!text-primary">
-                                                <mat-icon class="!text-base">edit</mat-icon>
-                                            </button>
-                                            <button mat-icon-button color="warn" (click)="deleteCategory(row)"
-                                                matTooltip="Διαγραφή">
-                                                <mat-icon class="!text-base">delete</mat-icon>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </ng-container>
-
-                                <tr mat-header-row *matHeaderRowDef="catColumns" class="bg-gray-50/80 dark:bg-white/5">
-                                </tr>
-                                <tr mat-row *matRowDef="let row; columns: catColumns;"
-                                    class="hover:bg-gray-50/60 dark:hover:bg-white/5 transition-colors"></tr>
-                            </table>
-                        </div>
-                        }
                     </div>
                 </mat-tab>
 
                 <!-- ─────────────────────────────────────────────────────────
-                     Tab 3: Ενδιαφέρον Χρηστών
+                     Tab 3: Χρήστες που ενδιαφέρονται
                      ───────────────────────────────────────────────────────── -->
                 <mat-tab>
                     <ng-template mat-tab-label>
-                        Ενδιαφέρον Χρηστών
+                        Χρήστες που Ενδιαφέρονται
                         <span
                             class="ml-1.5 px-1.5 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400">
                             {{ interests.length }}
@@ -494,10 +619,9 @@
                                     <th mat-header-cell *matHeaderCellDef class="!w-14"></th>
                                     <td mat-cell *matCellDef="let row" class="!py-2.5">
                                         @if (row.userImageUrl) {
-                                        <img [src]="row.userImageUrl" class="w-9 h-9 rounded-full object-cover" />
+                                        <img [src]="row.userImageUrl" class="w-9 h-9 rounded-lg object-cover" />
                                         } @else {
-                                        <div
-                                            class="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
+                                        <div class="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
                                             <mat-icon class="text-primary !text-base">person</mat-icon>
                                         </div>
                                         }
@@ -590,10 +714,10 @@
                             <div
                                 class="flex gap-4 rounded-2xl border p-4 hover:bg-gray-50/60 dark:hover:bg-white/5 transition-colors">
                                 @if (notif.imageUrl) {
-                                <img [src]="notif.imageUrl" class="w-16 h-16 rounded-xl object-cover shrink-0" />
+                                <img [src]="notif.imageUrl" class="w-14 h-14 rounded-xl object-cover shrink-0" />
                                 } @else {
                                 <div
-                                    class="w-16 h-16 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                                    class="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
                                     <mat-icon class="text-primary text-2xl">notifications</mat-icon>
                                 </div>
                                 }
@@ -603,11 +727,23 @@
                                     <div class="text-secondary text-sm mt-0.5 line-clamp-2">{{ notif.description }}
                                     </div>
                                     }
-                                    <div class="text-secondary text-xs mt-1.5 flex items-center gap-1">
-                                        <mat-icon class="!text-xs !w-3 !h-3">access_time</mat-icon>
-                                        {{ formatDate(notif.sentAt) }}
+                                    <div class="flex items-center gap-3 mt-1.5 flex-wrap">
+                                        <span class="text-secondary text-xs flex items-center gap-1">
+                                            <mat-icon class="!text-xs !w-3 !h-3">access_time</mat-icon>
+                                            {{ formatDate(notif.sentAt) }}
+                                        </span>
+                                        @if (notif.recipientCount > 0) {
+                                        <span class="text-secondary text-xs flex items-center gap-1">
+                                            <mat-icon class="!text-xs !w-3 !h-3">people</mat-icon>
+                                            {{ notif.recipientCount }} παραλήπτες
+                                        </span>
+                                        }
                                     </div>
                                 </div>
+                                <button mat-icon-button (click)="openNotifDetails(notif)" matTooltip="Λεπτομέρειες"
+                                    class="!text-secondary hover:!text-primary shrink-0">
+                                    <mat-icon class="!text-base">open_in_new</mat-icon>
+                                </button>
                             </div>
                             }
                         </div>
@@ -631,9 +767,7 @@
         (click)="$event.stopPropagation()">
 
         <div class="flex items-center justify-between px-6 py-4 border-b shrink-0">
-            <h2 class="text-lg font-bold">
-                {{ editingCatId == null ? 'Νέα Κατηγορία' : 'Επεξεργασία Κατηγορίας' }}
-            </h2>
+            <h2 class="text-lg font-bold">{{ editingCatId == null ? 'Νέα Κατηγορία' : 'Επεξεργασία Κατηγορίας' }}</h2>
             <button mat-icon-button (click)="closeCatModal()"><mat-icon>close</mat-icon></button>
         </div>
 
@@ -676,12 +810,7 @@
                 </mat-form-field>
 
                 <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full">
-                    <mat-label>Max ανά χρήστη *</mat-label>
-                    <input matInput type="number" formControlName="maxPerUser" min="1" />
-                </mat-form-field>
-
-                <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full">
-                    <mat-label>Διαθέσιμα εισιτήρια (0 = ∞)</mat-label>
+                    <mat-label>Διαθέσιμα εισιτήρια</mat-label>
                     <input matInput type="number" formControlName="totalAvailable" min="0" />
                     <mat-icon matSuffix class="text-secondary !text-base">confirmation_number</mat-icon>
                 </mat-form-field>
@@ -699,6 +828,66 @@
             <button mat-flat-button color="primary" (click)="saveCategory()"
                 [disabled]="catForm.invalid || catUploading()" class="!rounded-full !font-semibold">
                 {{ editingCatId == null ? 'Δημιουργία' : 'Αποθήκευση' }}
+            </button>
+        </div>
+    </div>
+</div>
+}
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     BOOKING CREATE / EDIT MODAL
+     ══════════════════════════════════════════════════════════════════════════ -->
+@if (bookingModalOpen) {
+<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" (click)="closeBookingModal()">
+    <div class="bg-card w-full max-w-md rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
+        (click)="$event.stopPropagation()">
+
+        <div class="flex items-center justify-between px-6 py-4 border-b shrink-0">
+            <h2 class="text-lg font-bold">{{ editingBookingId == null ? 'Νέα Κράτηση' : 'Επεξεργασία Κράτησης' }}</h2>
+            <button mat-icon-button (click)="closeBookingModal()"><mat-icon>close</mat-icon></button>
+        </div>
+
+        <div class="overflow-y-auto flex-1">
+            <form [formGroup]="bookingForm" class="flex flex-col gap-4 px-6 py-5">
+
+                <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full">
+                    <mat-label>Χρήστης *</mat-label>
+                    <mat-select formControlName="userId">
+                        @for (user of interests; track user.userId) {
+                        <mat-option [value]="user.userId">{{ user.userFullName }} ({{ user.userCode }})</mat-option>
+                        }
+                    </mat-select>
+                </mat-form-field>
+
+                <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full">
+                    <mat-label>Κατηγορία *</mat-label>
+                    <mat-select formControlName="categoryId">
+                        @for (cat of categories; track cat.id) {
+                        <mat-option [value]="cat.id">{{ cat.name }} — €{{ cat.price | number:'1.2-2' }}</mat-option>
+                        }
+                    </mat-select>
+                </mat-form-field>
+
+                <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full">
+                    <mat-label>Αριθμός Εισιτηρίων *</mat-label>
+                    <input matInput type="number" formControlName="quantity" min="1" />
+                    <mat-icon matSuffix class="text-secondary !text-base">confirmation_number</mat-icon>
+                </mat-form-field>
+
+                <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full">
+                    <mat-label>Σημειώσεις</mat-label>
+                    <textarea matInput formControlName="notes" rows="2"
+                        placeholder="Προαιρετικές σημειώσεις..."></textarea>
+                </mat-form-field>
+
+            </form>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 px-6 py-4 border-t bg-gray-50/50 dark:bg-white/5 shrink-0">
+            <button mat-stroked-button (click)="closeBookingModal()">Ακύρωση</button>
+            <button mat-flat-button color="primary" (click)="saveBooking()" [disabled]="bookingForm.invalid"
+                class="!rounded-full !font-semibold">
+                {{ editingBookingId == null ? 'Δημιουργία' : 'Αποθήκευση' }}
             </button>
         </div>
     </div>
@@ -736,9 +925,9 @@
                 <div
                     class="flex items-center gap-3 rounded-xl border p-3 hover:bg-gray-50/60 dark:hover:bg-white/5 transition-colors">
                     @if (user.userImageUrl) {
-                    <img [src]="user.userImageUrl" class="w-10 h-10 rounded-full object-cover shrink-0" />
+                    <img [src]="user.userImageUrl" class="w-10 h-10 rounded-lg object-cover shrink-0" />
                     } @else {
-                    <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                         <mat-icon class="text-primary !text-base">person</mat-icon>
                     </div>
                     }
@@ -780,14 +969,11 @@
         </div>
 
         <div class="p-6">
-            <!-- Avatar + name -->
             <div class="flex flex-col items-center gap-3 pb-6 mb-6 border-b">
                 @if (selectedUser.userImageUrl) {
-                <img [src]="selectedUser.userImageUrl"
-                    class="w-20 h-20 rounded-full object-cover shadow-md ring-4 ring-primary/10" />
+                <img [src]="selectedUser.userImageUrl" class="w-20 h-20 rounded-2xl object-cover shadow-md" />
                 } @else {
-                <div
-                    class="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center shadow-md ring-4 ring-primary/10">
+                <div class="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center shadow-md">
                     <mat-icon class="text-primary text-3xl">person</mat-icon>
                 </div>
                 }
@@ -819,6 +1005,57 @@
 
         <div class="flex justify-end px-6 py-4 border-t bg-gray-50/50 dark:bg-white/5">
             <button mat-stroked-button (click)="closeUserDetails()">Κλείσιμο</button>
+        </div>
+    </div>
+</div>
+}
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     NOTIFICATION DETAILS MODAL
+     ══════════════════════════════════════════════════════════════════════════ -->
+@if (notifDetailsModalOpen && selectedNotif) {
+<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" (click)="closeNotifDetails()">
+    <div class="bg-card w-full max-w-md rounded-2xl shadow-2xl overflow-hidden" (click)="$event.stopPropagation()">
+
+        <div class="flex items-center justify-between px-6 py-4 border-b">
+            <h2 class="text-base font-bold">Λεπτομέρειες Ειδοποίησης</h2>
+            <button mat-icon-button (click)="closeNotifDetails()"><mat-icon>close</mat-icon></button>
+        </div>
+
+        <div class="p-6 flex flex-col gap-4">
+            @if (selectedNotif.imageUrl) {
+            <img [src]="selectedNotif.imageUrl" class="w-full h-48 rounded-2xl object-cover" />
+            }
+
+            <div>
+                <div class="text-xs text-secondary font-semibold uppercase tracking-wider mb-1">Τίτλος</div>
+                <div class="font-bold text-lg">{{ selectedNotif.title }}</div>
+            </div>
+
+            @if (selectedNotif.description) {
+            <div>
+                <div class="text-xs text-secondary font-semibold uppercase tracking-wider mb-1">Μήνυμα</div>
+                <p class="text-sm text-secondary leading-relaxed whitespace-pre-line">{{ selectedNotif.description }}
+                </p>
+            </div>
+            }
+
+            <div class="grid grid-cols-2 gap-3">
+                <div class="rounded-xl bg-gray-50/50 dark:bg-white/5 p-3">
+                    <div class="text-[10px] text-secondary font-semibold uppercase tracking-wider mb-1">Αποστολή</div>
+                    <div class="text-sm font-medium">{{ formatDate(selectedNotif.sentAt) }}</div>
+                </div>
+                @if (selectedNotif.recipientCount > 0) {
+                <div class="rounded-xl bg-gray-50/50 dark:bg-white/5 p-3">
+                    <div class="text-[10px] text-secondary font-semibold uppercase tracking-wider mb-1">Παραλήπτες</div>
+                    <div class="text-sm font-bold">{{ selectedNotif.recipientCount }}</div>
+                </div>
+                }
+            </div>
+        </div>
+
+        <div class="flex justify-end px-6 py-4 border-t bg-gray-50/50 dark:bg-white/5">
+            <button mat-stroked-button (click)="closeNotifDetails()">Κλείσιμο</button>
         </div>
     </div>
 </div>

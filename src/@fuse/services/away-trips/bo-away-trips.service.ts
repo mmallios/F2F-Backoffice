@@ -20,8 +20,8 @@ export interface AwayTripCategoryDto {
     id: number;
     name: string;
     price: number;
-    maxPerUser: number;
     totalAvailable: number;
+    bookedCount: number;
     seatViewImageUrl?: string | null;
     order: number;
 }
@@ -32,6 +32,7 @@ export interface AwayTripNotificationDto {
     description?: string | null;
     imageUrl?: string | null;
     sentAt: string;
+    recipientCount: number;
 }
 
 export interface AwayTripListDto {
@@ -42,10 +43,13 @@ export interface AwayTripListDto {
     isActive: boolean;
     interestCount: number;
     userHasInterest: boolean;
+    totalBookedTickets: number;
+    totalAvailableTickets: number;
     event?: AwayTripEventDto | null;
 }
 
 export interface AwayTripDetailDto extends AwayTripListDto {
+    maxTicketsPerUser: number;
     categories: AwayTripCategoryDto[];
     notifications: AwayTripNotificationDto[];
 }
@@ -60,11 +64,26 @@ export interface AwayTripInterestDto {
     registeredAt: string;
 }
 
+export interface AwayTripBookingDto {
+    id: number;
+    userId: number;
+    userFullName: string;
+    userCode: string;
+    userImageUrl?: string | null;
+    userEmail: string;
+    categoryId: number;
+    categoryName: string;
+    quantity: number;
+    notes?: string | null;
+    bookedAt: string;
+}
+
 export interface CreateAwayTripRequest {
     title: string;
     description?: string | null;
     imageUrl?: string | null;
     eventId?: number | null;
+    maxTicketsPerUser?: number;
 }
 
 export interface UpdateAwayTripRequest extends CreateAwayTripRequest {
@@ -74,7 +93,6 @@ export interface UpdateAwayTripRequest extends CreateAwayTripRequest {
 export interface CreateCategoryRequest {
     name: string;
     price: number;
-    maxPerUser: number;
     totalAvailable: number;
     seatViewImageUrl?: string | null;
     order: number;
@@ -82,12 +100,22 @@ export interface CreateCategoryRequest {
 
 export type UpdateCategoryRequest = CreateCategoryRequest;
 
+export interface CreateAwayTripBookingRequest {
+    userId: number;
+    categoryId: number;
+    quantity: number;
+    notes?: string | null;
+}
+
+export type UpdateAwayTripBookingRequest = CreateAwayTripBookingRequest;
+
 export interface SendAwayTripNotificationRequest {
     title: string;
     description?: string | null;
     imageUrl?: string | null;
     sendEmailNotification: boolean;
     sentByBoUserId?: number | null;
+    targetUserIds?: number[] | null;
 }
 
 // ─── Service ─────────────────────────────────────────────────────────────────
@@ -140,6 +168,24 @@ export class BOAwayTripsService {
 
     deleteCategory(tripId: number, catId: number): Observable<void> {
         return this._http.delete<void>(`${this.base}/${tripId}/categories/${catId}`);
+    }
+
+    // ── Bookings ─────────────────────────────────────────────────────────────
+
+    getBookings(tripId: number): Observable<AwayTripBookingDto[]> {
+        return this._http.get<AwayTripBookingDto[]>(`${this.base}/${tripId}/bookings`);
+    }
+
+    createBooking(tripId: number, req: CreateAwayTripBookingRequest): Observable<AwayTripBookingDto> {
+        return this._http.post<AwayTripBookingDto>(`${this.base}/${tripId}/bookings`, req);
+    }
+
+    updateBooking(tripId: number, bookingId: number, req: UpdateAwayTripBookingRequest): Observable<void> {
+        return this._http.put<void>(`${this.base}/${tripId}/bookings/${bookingId}`, req);
+    }
+
+    deleteBooking(tripId: number, bookingId: number): Observable<void> {
+        return this._http.delete<void>(`${this.base}/${tripId}/bookings/${bookingId}`);
     }
 
     // ── Interests ────────────────────────────────────────────────────────────
