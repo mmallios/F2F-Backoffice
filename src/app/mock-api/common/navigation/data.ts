@@ -58,6 +58,13 @@ export const defaultNavigation: FuseNavigationItem[] = [
                 icon: 'heroicons_outline:newspaper',
                 children: [
                     {
+                        id: 'headquarters.announcements',
+                        title: 'Ανακοινώσεις F2F',
+                        type: 'basic',
+                        icon: 'heroicons_outline:megaphone',
+                        link: '/apps/announcements',
+                    },
+                    {
                         id: 'apps.events',
                         title: 'Αγώνες',
                         type: 'basic',
@@ -129,7 +136,7 @@ export const defaultNavigation: FuseNavigationItem[] = [
                     },
                     {
                         id: 'apps.away-trips',
-                        title: 'Away Trips',
+                        title: 'Εκτος Εδρας Εκδρομές',
                         type: 'basic',
                         icon: 'heroicons_outline:paper-airplane',
                         link: '/apps/away-trips',
@@ -209,13 +216,7 @@ export const defaultNavigation: FuseNavigationItem[] = [
                         icon: 'heroicons_outline:shield-check',
                         link: '/apps/settings/roles',
                     },
-                    {
-                        id: 'headquarters.announcements',
-                        title: 'Ανακοινώσεις F2F',
-                        type: 'basic',
-                        icon: 'heroicons_outline:megaphone',
-                        link: '/apps/announcements',
-                    },
+
                     {
                         id: 'apps.admin-activity',
                         title: 'Στατιστικά Διαχειριστών',
