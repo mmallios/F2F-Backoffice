@@ -48,6 +48,13 @@
                         <mat-icon class="mr-1">{{ trip.isActive ? 'lock' : 'lock_open' }}</mat-icon>
                         {{ trip.isActive ? 'Απενεργοποίηση' : 'Ενεργοποίηση' }}
                     </button>
+                    <button mat-stroked-button color="primary" (click)="openGroupChatModal()"
+                        [disabled]="hasGroupChat()"
+                        [matTooltip]="hasGroupChat() ? 'Έχει ήδη δημιουργηθεί ομαδική για αυτή την εκδρομή' : ''"
+                        class="!rounded-full !font-semibold hidden md:flex">
+                        <mat-icon class="mr-1">group</mat-icon>
+                        Δημιουργία Ομαδικής
+                    </button>
                     <button mat-flat-button color="accent" (click)="openSendNotification()" [disabled]="sendingNotif()"
                         class="!rounded-full !font-semibold">
                         @if (sendingNotif()) {
@@ -118,17 +125,17 @@
                 <!-- Event date -->
                 <div class="flex items-center gap-3 rounded-2xl border bg-gray-50/50 dark:bg-white/5 p-4">
                     <div
-                        class="w-11 h-11 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shrink-0">
-                        <mat-icon class="text-blue-600 dark:text-blue-400 !text-xl">calendar_today</mat-icon>
+                        class="w-14 h-14 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shrink-0">
+                        <mat-icon class="text-blue-600 dark:text-blue-400 !text-2xl">calendar_today</mat-icon>
                     </div>
                     <div class="min-w-0">
-                        <div class="text-xs text-secondary uppercase tracking-wider font-semibold mb-0.5">Ημερομηνία
+                        <div class="text-sm text-secondary uppercase tracking-wider font-semibold mb-0.5">Ημερομηνία
                         </div>
-                        <div class="font-bold text-sm truncate">
+                        <div class="font-bold text-base truncate">
                             @if (trip.event?.eventDate) {
                             {{ formatDateShort(trip.event!.eventDate) }}
                             } @else {
-                            <span class="text-secondary font-normal text-xs">Χωρίς ημερομηνία</span>
+                            <span class="text-secondary font-normal text-sm">Χωρίς ημερομηνία</span>
                             }
                         </div>
                     </div>
@@ -137,14 +144,15 @@
                 <!-- Available / Booked tickets -->
                 <div class="flex items-center gap-3 rounded-2xl border bg-gray-50/50 dark:bg-white/5 p-4">
                     <div
-                        class="w-11 h-11 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0">
-                        <mat-icon class="text-emerald-600 dark:text-emerald-400 !text-xl">confirmation_number</mat-icon>
+                        class="w-14 h-14 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0">
+                        <mat-icon
+                            class="text-emerald-600 dark:text-emerald-400 !text-2xl">confirmation_number</mat-icon>
                     </div>
                     <div>
-                        <div class="text-xs text-secondary uppercase tracking-wider font-semibold mb-0.5">Κρατήσεις
+                        <div class="text-sm text-secondary uppercase tracking-wider font-semibold mb-0.5">Κρατήσεις
                         </div>
-                        <div class="font-bold text-xl tabular-nums">
-                            {{ totalBookedTickets }}<span class="text-sm font-normal text-secondary">/{{
+                        <div class="font-bold text-2xl tabular-nums">
+                            {{ totalBookedTickets }}<span class="text-base font-normal text-secondary">/{{
                                 totalAvailableTickets }}</span>
                         </div>
                     </div>
@@ -153,13 +161,13 @@
                 <!-- Interests -->
                 <div class="flex items-center gap-3 rounded-2xl border bg-gray-50/50 dark:bg-white/5 p-4">
                     <div
-                        class="w-11 h-11 rounded-xl bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center shrink-0">
-                        <mat-icon class="text-rose-600 dark:text-rose-400 !text-xl">favorite</mat-icon>
+                        class="w-14 h-14 rounded-xl bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center shrink-0">
+                        <mat-icon class="text-rose-600 dark:text-rose-400 !text-2xl">favorite</mat-icon>
                     </div>
                     <div>
-                        <div class="text-xs text-secondary uppercase tracking-wider font-semibold mb-0.5">Ενδιαφέρον
+                        <div class="text-sm text-secondary uppercase tracking-wider font-semibold mb-0.5">Ενδιαφέρον
                         </div>
-                        <div class="font-bold text-xl tabular-nums">{{ trip.interestCount }}</div>
+                        <div class="font-bold text-2xl tabular-nums">{{ trip.interestCount }}</div>
                     </div>
                 </div>
 
@@ -197,18 +205,31 @@
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div class="md:col-span-2">
+
+                            <!-- Image (col 1) -->
+                            <div>
                                 @if (trip.imageUrl) {
-                                <img [src]="trip.imageUrl"
-                                    class="w-full max-w-sm h-52 rounded-2xl object-cover shadow-sm"
+                                <img [src]="trip.imageUrl" class="w-full h-52 rounded-2xl object-cover shadow-sm"
                                     [alt]="trip.title" />
                                 } @else {
                                 <div
-                                    class="w-full max-w-sm h-52 rounded-2xl border-2 border-dashed bg-gray-50/50 dark:bg-gray-800/30 flex items-center justify-center">
+                                    class="w-full h-52 rounded-2xl border-2 border-dashed bg-gray-50/50 dark:bg-gray-800/30 flex items-center justify-center">
                                     <mat-icon class="text-secondary opacity-30 text-4xl">image</mat-icon>
                                 </div>
                                 }
                             </div>
+
+                            <!-- Description (col 2, next to image) -->
+                            @if (trip.description) {
+                            <div class="rounded-xl bg-gray-50/50 dark:bg-white/5 p-4 h-52 overflow-y-auto">
+                                <div class="text-xs text-secondary uppercase tracking-wider font-semibold mb-1">
+                                    Περιγραφή</div>
+                                <p class="text-secondary text-sm leading-relaxed whitespace-pre-line">{{
+                                    trip.description }}</p>
+                            </div>
+                            } @else {
+                            <div></div>
+                            }
 
                             <div class="rounded-xl bg-gray-50/50 dark:bg-white/5 p-4">
                                 <div class="text-xs text-secondary uppercase tracking-wider font-semibold mb-1">Τίτλος
@@ -236,7 +257,7 @@
                             </div>
 
                             @if (trip.event) {
-                            <div class="md:col-span-2 rounded-xl bg-gray-50/50 dark:bg-white/5 p-4">
+                            <div class="rounded-xl bg-gray-50/50 dark:bg-white/5 p-4">
                                 <div class="text-xs text-secondary uppercase tracking-wider font-semibold mb-1">Αγώνας
                                 </div>
                                 <div class="font-semibold">{{ trip.event.homeTeamName }} vs {{ trip.event.awayTeamName
@@ -250,14 +271,6 @@
                             </div>
                             }
 
-                            @if (trip.description) {
-                            <div class="md:col-span-2 rounded-xl bg-gray-50/50 dark:bg-white/5 p-4">
-                                <div class="text-xs text-secondary uppercase tracking-wider font-semibold mb-1">
-                                    Περιγραφή</div>
-                                <p class="text-secondary text-sm leading-relaxed whitespace-pre-line">{{
-                                    trip.description }}</p>
-                            </div>
-                            }
                         </div>
                         }
 
@@ -606,6 +619,14 @@
                         </span>
                     </ng-template>
                     <div class="p-6">
+                        <div class="flex items-center justify-between mb-5">
+                            <h3 class="text-base font-bold">Λίστα Ενδιαφέροντος</h3>
+                            <button mat-flat-button color="primary" (click)="openAddInterestModal()"
+                                class="!rounded-full !font-semibold">
+                                <mat-icon class="mr-1">person_add</mat-icon>
+                                Προσθήκη
+                            </button>
+                        </div>
                         @if (interests.length === 0) {
                         <div class="flex flex-col items-center justify-center py-14 gap-3">
                             <mat-icon class="text-secondary opacity-30 text-[3rem]">favorite_border</mat-icon>
@@ -667,6 +688,11 @@
                                         <button mat-icon-button (click)="openUserDetails(row)"
                                             matTooltip="Στοιχεία χρήστη" class="!text-secondary hover:!text-primary">
                                             <mat-icon class="!text-base">info</mat-icon>
+                                        </button>
+                                        <button mat-icon-button (click)="deleteInterest(row)"
+                                            matTooltip="Αφαίρεση ενδιαφέροντος"
+                                            class="!text-secondary hover:!text-red-500">
+                                            <mat-icon class="!text-base">delete</mat-icon>
                                         </button>
                                     </td>
                                 </ng-container>
@@ -1056,6 +1082,186 @@
 
         <div class="flex justify-end px-6 py-4 border-t bg-gray-50/50 dark:bg-white/5">
             <button mat-stroked-button (click)="closeNotifDetails()">Κλείσιμο</button>
+        </div>
+    </div>
+</div>
+}
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     ADD INTEREST MODAL
+     ══════════════════════════════════════════════════════════════════════════ -->
+@if (addInterestModalOpen) {
+<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" (click)="closeAddInterestModal()">
+    <div class="bg-card w-full max-w-md rounded-2xl shadow-2xl overflow-hidden max-h-[85vh] flex flex-col"
+        (click)="$event.stopPropagation()">
+
+        <div class="flex items-center justify-between px-6 py-4 border-b shrink-0">
+            <h2 class="text-lg font-bold">Προσθήκη Ενδιαφέροντος</h2>
+            <button mat-icon-button (click)="closeAddInterestModal()"><mat-icon>close</mat-icon></button>
+        </div>
+
+        <div class="px-6 pt-4 pb-2 shrink-0">
+            <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full">
+                <mat-label>Αναζήτηση χρήστη</mat-label>
+                <input matInput [value]="userSearchQuery" (input)="onInterestUserSearch($any($event.target).value)"
+                    placeholder="Όνομα, email, κωδικός…" />
+                <mat-icon matPrefix class="!text-secondary !text-base mr-1">search</mat-icon>
+            </mat-form-field>
+        </div>
+
+        <div class="overflow-y-auto flex-1 px-4 pb-4">
+            @if (filteredUsers.length === 0) {
+            <div class="flex flex-col items-center justify-center py-10 gap-2">
+                <mat-icon class="text-secondary opacity-30 text-[2.5rem]">person_search</mat-icon>
+                <span class="text-secondary text-sm">Δεν βρέθηκαν χρήστες</span>
+            </div>
+            }
+            @for (user of filteredUsers; track user.id) {
+            <div class="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50/80 dark:hover:bg-white/5 cursor-pointer transition-colors"
+                (click)="confirmAddInterest(user)">
+                @if (user.image) {
+                <img [src]="user.image" class="w-9 h-9 rounded-lg object-cover shrink-0" />
+                } @else {
+                <div class="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                    <mat-icon class="text-primary !text-base">person</mat-icon>
+                </div>
+                }
+                <div class="flex-1 min-w-0">
+                    <div class="font-semibold text-sm">{{ user.firstname }} {{ user.lastname }}</div>
+                    <div class="text-secondary text-xs truncate">{{ user.email }}</div>
+                </div>
+                @if (user.code) {
+                <code class="text-xs bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded shrink-0">{{ user.code }}</code>
+                }
+            </div>
+            }
+        </div>
+
+        <div class="flex justify-end px-6 py-4 border-t bg-gray-50/50 dark:bg-white/5 shrink-0">
+            <button mat-stroked-button (click)="closeAddInterestModal()">Ακύρωση</button>
+        </div>
+    </div>
+</div>
+}
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     GROUP CHAT CREATION MODAL
+     ══════════════════════════════════════════════════════════════════════════ -->
+@if (groupChatModalOpen) {
+<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" (click)="closeGroupChatModal()">
+    <div class="bg-card w-full max-w-xl rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
+        (click)="$event.stopPropagation()">
+
+        <div class="flex items-center justify-between px-6 py-4 border-b shrink-0">
+            <div class="flex items-center gap-3">
+                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+                    <mat-icon class="text-primary">group</mat-icon>
+                </div>
+                <h2 class="text-lg font-bold">Δημιουργία Ομαδικής Συνομιλίας</h2>
+            </div>
+            <button mat-icon-button (click)="closeGroupChatModal()"><mat-icon>close</mat-icon></button>
+        </div>
+
+        <div class="overflow-y-auto flex-1">
+            <form [formGroup]="groupChatForm" class="flex flex-col gap-4 px-6 py-5">
+
+                <!-- Image uploader -->
+                <div class="flex flex-col gap-2">
+                    <label class="text-sm font-medium">Εικόνα ομαδικής (προαιρετικό)</label>
+                    <div class="relative w-full h-28 rounded-xl border-2 border-dashed flex items-center justify-center bg-gray-50/50 dark:bg-gray-800/30 overflow-hidden cursor-pointer"
+                        (click)="gcFileInput.click()">
+                        @if (groupChatImagePreview) {
+                        <img [src]="groupChatImagePreview" class="w-full h-full object-cover" />
+                        <button mat-icon-button class="!absolute top-1 right-1 !bg-black/40 !text-white"
+                            (click)="removeGcImage(); $event.stopPropagation()">
+                            <mat-icon class="!text-sm">close</mat-icon>
+                        </button>
+                        } @else {
+                        <div class="flex flex-col items-center gap-1 text-secondary">
+                            @if (groupChatUploading()) {
+                            <mat-icon class="animate-spin">refresh</mat-icon>
+                            } @else {
+                            <mat-icon>add_photo_alternate</mat-icon>
+                            <span class="text-xs">Κλικ για ανέβασμα</span>
+                            }
+                        </div>
+                        }
+                    </div>
+                    <input #gcFileInput type="file" accept="image/*" class="hidden"
+                        (change)="onGcFileSelected($event)" />
+                </div>
+
+                <!-- Title -->
+                <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full">
+                    <mat-label>Τίτλος *</mat-label>
+                    <input matInput formControlName="name" placeholder="Όνομα ομαδικής συνομιλίας" />
+                </mat-form-field>
+
+                <!-- Description -->
+                <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full">
+                    <mat-label>Περιγραφή</mat-label>
+                    <textarea matInput formControlName="description" rows="2"
+                        placeholder="Προαιρετική περιγραφή…"></textarea>
+                </mat-form-field>
+
+                <!-- Member selection -->
+                <div class="flex flex-col gap-2">
+                    <div class="flex items-center justify-between">
+                        <label class="text-sm font-medium">Μέλη
+                            <span
+                                class="ml-1.5 px-1.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary">
+                                {{ gcSelectedUserIds.size }} / {{ gcCandidates.length }}
+                            </span>
+                        </label>
+                        <button type="button" class="text-xs text-primary font-semibold hover:underline"
+                            (click)="selectAllGcUsers()">
+                            Επιλογή όλων
+                        </button>
+                    </div>
+
+                    @if (gcCandidates.length === 0) {
+                    <div class="flex flex-col items-center py-6 gap-2 rounded-xl border bg-gray-50/50">
+                        <mat-icon class="text-secondary opacity-30">people_outline</mat-icon>
+                        <span class="text-secondary text-xs">Δεν υπάρχουν ενδιαφερόμενοι ή κρατήσεις</span>
+                    </div>
+                    } @else {
+                    <div class="rounded-xl border overflow-hidden max-h-52 overflow-y-auto">
+                        @for (u of gcCandidates; track u.userId) {
+                        <div class="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50/80 dark:hover:bg-white/5 cursor-pointer transition-colors border-b last:border-b-0"
+                            (click)="toggleGcUser(u.userId)">
+                            @if (u.userImageUrl) {
+                            <img [src]="u.userImageUrl" class="w-8 h-8 rounded-lg object-cover shrink-0" />
+                            } @else {
+                            <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                                <mat-icon class="text-primary !text-sm">person</mat-icon>
+                            </div>
+                            }
+                            <span class="flex-1 text-sm font-medium">{{ u.userFullName }}</span>
+                            <mat-icon
+                                [class]="gcSelectedUserIds.has(u.userId) ? 'text-primary' : 'text-gray-300 dark:text-gray-600'">
+                                {{ gcSelectedUserIds.has(u.userId) ? 'check_circle' : 'radio_button_unchecked' }}
+                            </mat-icon>
+                        </div>
+                        }
+                    </div>
+                    }
+                </div>
+
+            </form>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 px-6 py-4 border-t bg-gray-50/50 dark:bg-white/5 shrink-0">
+            <button mat-stroked-button (click)="closeGroupChatModal()">Ακύρωση</button>
+            <button mat-flat-button color="primary" (click)="createGroupChat()"
+                [disabled]="groupChatForm.invalid || groupChatLoading() || groupChatUploading()"
+                class="!rounded-full !font-semibold">
+                @if (groupChatLoading()) {
+                <mat-icon class="animate-spin mr-1">refresh</mat-icon>
+                } @else {
+                <mat-icon class="mr-1">group_add</mat-icon>
+                }
+                Δημιουργία
+            </button>
         </div>
     </div>
 </div>

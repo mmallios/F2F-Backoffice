@@ -194,6 +194,14 @@ export class BOAwayTripsService {
         return this._http.get<AwayTripInterestDto[]>(`${this.base}/${tripId}/interests`);
     }
 
+    addInterest(tripId: number, userId: number): Observable<AwayTripInterestDto> {
+        return this._http.post<AwayTripInterestDto>(`${this.base}/${tripId}/interests`, { userId });
+    }
+
+    deleteInterest(tripId: number, interestId: number): Observable<void> {
+        return this._http.delete<void>(`${this.base}/${tripId}/interests/${interestId}`);
+    }
+
     // ── Notifications ────────────────────────────────────────────────────────
 
     getNotifications(tripId: number): Observable<AwayTripNotificationDto[]> {

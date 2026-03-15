@@ -10,8 +10,8 @@ import {
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { Subject, forkJoin, takeUntil } from 'rxjs';
-import { finalize } from 'rxjs/operators';
+import { Subject, forkJoin, of, takeUntil } from 'rxjs';
+import { catchError, finalize } from 'rxjs/operators';
 
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
@@ -21,6 +21,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatSortModule } from '@angular/material/sort';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatTabsModule } from '@angular/material/tabs';
@@ -37,7 +38,9 @@ import {
 } from '@fuse/services/away-trips/bo-away-trips.service';
 import { EventItem, EventsService } from '@fuse/services/events/events.service';
 import { FuseConfirmationService } from '@fuse/services/confirmation';
+import { GroupChatsService, CreateGroupChatDto } from '@fuse/services/groupchats/groupchats.service';
 import { ImageUploadService } from '@fuse/services/general/image-upload.service';
+import { User, UsersService } from '@fuse/services/users/users.service';
 import { AuthService } from 'app/core/auth/auth.service';
 import { SendNotificationDialogComponent } from '../dialogs/send-notification-dialog.component';
 
@@ -56,6 +59,7 @@ import { SendNotificationDialogComponent } from '../dialogs/send-notification-di
         MatProgressBarModule,
         MatSelectModule,
         MatSlideToggleModule,
+        MatSnackBarModule,
         MatSortModule,
         MatTableModule,
         MatTabsModule,
@@ -67,6 +71,7 @@ import { SendNotificationDialogComponent } from '../dialogs/send-notification-di
 export class BOAwayTripDetailsComponent implements OnInit, OnDestroy {
     private api = inject(BOAwayTripsService);
     private eventsApi = inject(EventsService);
+    private usersApi = inject(UsersService);
     private fb = inject(FormBuilder);
     private cdr = inject(ChangeDetectorRef);
     private route = inject(ActivatedRoute);
@@ -75,6 +80,8 @@ export class BOAwayTripDetailsComponent implements OnInit, OnDestroy {
     private confirmation = inject(FuseConfirmationService);
     private imageUpload = inject(ImageUploadService);
     private auth = inject(AuthService);
+    private snack = inject(MatSnackBar);
+    private groupChatsApi = inject(GroupChatsService);
     private destroy$ = new Subject<void>();
 
     tripId: number | null = null;
@@ -115,6 +122,13 @@ export class BOAwayTripDetailsComponent implements OnInit, OnDestroy {
     interestDS = new MatTableDataSource<AwayTripInterestDto>([]);
     interestColumns = ['avatar', 'name', 'code', 'email', 'registeredAt', 'actions'];
 
+    // Add Interest modal
+    addInterestModalOpen = false;
+    addInterestLoading = signal(false);
+    userSearchQuery = '';
+    allUsers: User[] = [];
+    filteredUsers: User[] = [];
+
     // User details modal
     userDetailsModalOpen = false;
     selectedUser: AwayTripInterestDto | null = null;
@@ -125,6 +139,29 @@ export class BOAwayTripDetailsComponent implements OnInit, OnDestroy {
 
     // Notifications
     notifications: AwayTripNotificationDto[] = [];
+
+    // Group Chat creation modal
+    groupChatModalOpen = false;
+    hasGroupChat = signal(false);
+    groupChatLoading = signal(false);
+    groupChatImagePreview: string | null = null;
+    groupChatUploading = signal(false);
+    gcSelectedUserIds = new Set<number>();
+    gcImageUrl: string | null = null;
+
+    /** Deduplicated list of users from interests + bookings for member picker */
+    get gcCandidates(): { userId: number; userFullName: string; userImageUrl: string | null }[] {
+        const map = new Map<number, { userId: number; userFullName: string; userImageUrl: string | null }>();
+        for (const i of this.interests) {
+            map.set(i.userId, { userId: i.userId, userFullName: i.userFullName, userImageUrl: i.userImageUrl ?? null });
+        }
+        for (const b of this.bookings) {
+            if (!map.has(b.userId)) {
+                map.set(b.userId, { userId: b.userId, userFullName: b.userFullName, userImageUrl: b.userImageUrl ?? null });
+            }
+        }
+        return [...map.values()];
+    }
 
     // Forms
     infoForm = this.fb.group({
@@ -149,6 +186,11 @@ export class BOAwayTripDetailsComponent implements OnInit, OnDestroy {
         categoryId: [null as number | null, Validators.required],
         quantity: [1, [Validators.required, Validators.min(1)]],
         notes: [''],
+    });
+
+    groupChatForm = this.fb.group({
+        name: ['', Validators.required],
+        description: [''],
     });
 
     // ── Derived stats ────────────────────────────────────────────────────────
@@ -199,6 +241,7 @@ export class BOAwayTripDetailsComponent implements OnInit, OnDestroy {
 
                     this._loadInterests();
                     this._loadBookings();
+                    this._checkGroupChat();
                     this.loading.set(false);
                     this.cdr.markForCheck();
                 },
@@ -229,6 +272,19 @@ export class BOAwayTripDetailsComponent implements OnInit, OnDestroy {
                     this.bookingDS.data = bookings;
                     this.cdr.markForCheck();
                 },
+            });
+    }
+
+    private _checkGroupChat(): void {
+        if (!this.tripId) return;
+        this.groupChatsApi.getByCode(`AWAYTRIP-${this.tripId}`)
+            .pipe(
+                catchError(() => of(null)),
+                takeUntil(this.destroy$),
+            )
+            .subscribe(result => {
+                this.hasGroupChat.set(result != null);
+                this.cdr.markForCheck();
             });
     }
 
@@ -280,9 +336,14 @@ export class BOAwayTripDetailsComponent implements OnInit, OnDestroy {
                     }
                     this.infoEditMode = false;
                     this.saving.set(false);
+                    this.snack.open('Οι πληροφορίες αποθηκεύτηκαν.', 'Κλείσιμο', { duration: 3000 });
                     this.cdr.markForCheck();
                 },
-                error: () => { this.saving.set(false); this.cdr.markForCheck(); },
+                error: () => {
+                    this.saving.set(false);
+                    this.snack.open('Σφάλμα κατά την αποθήκευση.', 'Κλείσιμο', { duration: 4000 });
+                    this.cdr.markForCheck();
+                },
             });
     }
 
@@ -316,6 +377,11 @@ export class BOAwayTripDetailsComponent implements OnInit, OnDestroy {
                         next: (res) => {
                             if (this.trip) this.trip = { ...this.trip, isActive: res.isActive };
                             this.infoForm.patchValue({ isActive: res.isActive });
+                            this.snack.open(res.isActive ? 'Away trip ενεργοποιήθηκε.' : 'Away trip απενεργοποιήθηκε.', 'Κλείσιμο', { duration: 3000 });
+                            this.cdr.markForCheck();
+                        },
+                        error: () => {
+                            this.snack.open('Σφάλμα κατά την αλλαγή κατάστασης.', 'Κλείσιμο', { duration: 4000 });
                             this.cdr.markForCheck();
                         },
                     });
@@ -403,9 +469,13 @@ export class BOAwayTripDetailsComponent implements OnInit, OnDestroy {
                         this.categories = [cat, ...this.categories];
                         this.catDS.data = this.categories;
                         this.closeCatModal();
+                        this.snack.open('Κατηγορία δημιουργήθηκε.', 'Κλείσιμο', { duration: 3000 });
                         this.cdr.markForCheck();
                     },
-                    error: () => this.cdr.markForCheck(),
+                    error: () => {
+                        this.snack.open('Σφάλμα κατά τη δημιουργία κατηγορίας.', 'Κλείσιμο', { duration: 4000 });
+                        this.cdr.markForCheck();
+                    },
                 });
         } else {
             this.api.updateCategory(this.tripId, this.editingCatId, req)
@@ -417,9 +487,13 @@ export class BOAwayTripDetailsComponent implements OnInit, OnDestroy {
                         );
                         this.catDS.data = this.categories;
                         this.closeCatModal();
+                        this.snack.open('Κατηγορία ενημερώθηκε.', 'Κλείσιμο', { duration: 3000 });
                         this.cdr.markForCheck();
                     },
-                    error: () => this.cdr.markForCheck(),
+                    error: () => {
+                        this.snack.open('Σφάλμα κατά την ενημέρωση κατηγορίας.', 'Κλείσιμο', { duration: 4000 });
+                        this.cdr.markForCheck();
+                    },
                 });
         }
     }
@@ -442,6 +516,11 @@ export class BOAwayTripDetailsComponent implements OnInit, OnDestroy {
                         next: () => {
                             this.categories = this.categories.filter(c => c.id !== cat.id);
                             this.catDS.data = this.categories;
+                            this.snack.open('Κατηγορία διαγράφηκε.', 'Κλείσιμο', { duration: 3000 });
+                            this.cdr.markForCheck();
+                        },
+                        error: () => {
+                            this.snack.open('Σφάλμα κατά τη διαγραφή κατηγορίας.', 'Κλείσιμο', { duration: 4000 });
                             this.cdr.markForCheck();
                         },
                     });
@@ -533,15 +612,18 @@ export class BOAwayTripDetailsComponent implements OnInit, OnDestroy {
                     next: (b) => {
                         this.bookings = [b, ...this.bookings];
                         this.bookingDS.data = this.bookings;
-                        // Update bookedCount on the category
                         this.categories = this.categories.map(c =>
                             c.id === b.categoryId ? { ...c, bookedCount: c.bookedCount + b.quantity } : c,
                         );
                         this.catDS.data = this.categories;
                         this.closeBookingModal();
+                        this.snack.open('Κράτηση δημιουργήθηκε.', 'Κλείσιμο', { duration: 3000 });
                         this.cdr.markForCheck();
                     },
-                    error: () => this.cdr.markForCheck(),
+                    error: () => {
+                        this.snack.open('Σφάλμα κατά τη δημιουργία κράτησης.', 'Κλείσιμο', { duration: 4000 });
+                        this.cdr.markForCheck();
+                    },
                 });
         } else {
             this.api.updateBooking(this.tripId, this.editingBookingId, req)
@@ -562,7 +644,6 @@ export class BOAwayTripDetailsComponent implements OnInit, OnDestroy {
                                 : b,
                         );
                         this.bookingDS.data = this.bookings;
-                        // Recalculate bookedCount per category
                         if (old) {
                             this.categories = this.categories.map(c => {
                                 let count = c.bookedCount;
@@ -573,9 +654,13 @@ export class BOAwayTripDetailsComponent implements OnInit, OnDestroy {
                             this.catDS.data = this.categories;
                         }
                         this.closeBookingModal();
+                        this.snack.open('Κράτηση ενημερώθηκε.', 'Κλείσιμο', { duration: 3000 });
                         this.cdr.markForCheck();
                     },
-                    error: () => this.cdr.markForCheck(),
+                    error: () => {
+                        this.snack.open('Σφάλμα κατά την ενημέρωση κράτησης.', 'Κλείσιμο', { duration: 4000 });
+                        this.cdr.markForCheck();
+                    },
                 });
         }
     }
@@ -604,6 +689,11 @@ export class BOAwayTripDetailsComponent implements OnInit, OnDestroy {
                                     : c,
                             );
                             this.catDS.data = this.categories;
+                            this.snack.open('Κράτηση διαγράφηκε.', 'Κλείσιμο', { duration: 3000 });
+                            this.cdr.markForCheck();
+                        },
+                        error: () => {
+                            this.snack.open('Σφάλμα κατά τη διαγραφή κράτησης.', 'Κλείσιμο', { duration: 4000 });
                             this.cdr.markForCheck();
                         },
                     });
@@ -621,6 +711,202 @@ export class BOAwayTripDetailsComponent implements OnInit, OnDestroy {
         this.userDetailsModalOpen = false;
         this.selectedUser = null;
         this.cdr.markForCheck();
+    }
+
+    // ── Add Interest modal ───────────────────────────────────────────────────
+    openAddInterestModal(): void {
+        this.userSearchQuery = '';
+        this.usersApi.loadUsers()
+            .pipe(takeUntil(this.destroy$))
+            .subscribe({
+                next: (users) => {
+                    const existingIds = new Set(this.interests.map(i => i.userId));
+                    this.allUsers = users.filter(u => u.id != null && !existingIds.has(u.id!));
+                    this.filteredUsers = [...this.allUsers];
+                    this.addInterestModalOpen = true;
+                    this.cdr.markForCheck();
+                },
+            });
+    }
+
+    closeAddInterestModal(): void {
+        this.addInterestModalOpen = false;
+        this.userSearchQuery = '';
+        this.filteredUsers = [];
+        this.cdr.markForCheck();
+    }
+
+    onInterestUserSearch(query: string): void {
+        const q = query.toLowerCase().trim();
+        this.filteredUsers = q
+            ? this.allUsers.filter(u =>
+                `${u.firstname} ${u.lastname} ${u.email} ${u.code ?? ''}`.toLowerCase().includes(q))
+            : [...this.allUsers];
+        this.cdr.markForCheck();
+    }
+
+    confirmAddInterest(user: User): void {
+        if (!this.tripId || !user.id || this.addInterestLoading()) return;
+        this.addInterestLoading.set(true);
+        this.api.addInterest(this.tripId, user.id)
+            .pipe(
+                takeUntil(this.destroy$),
+                finalize(() => { this.addInterestLoading.set(false); this.cdr.markForCheck(); }),
+            )
+            .subscribe({
+                next: (newInterest) => {
+                    this.interests = [newInterest, ...this.interests];
+                    this.interestDS.data = this.interests;
+                    this.closeAddInterestModal();
+                    this.snack.open('Χρήστης προστέθηκε στη λίστα ενδιαφέροντος.', 'Κλείσιμο', { duration: 3000 });
+                },
+                error: () => {
+                    this.snack.open('Σφάλμα κατά την προσθήκη ενδιαφέροντος.', 'Κλείσιμο', { duration: 4000 });
+                },
+            });
+    }
+
+    deleteInterest(interest: AwayTripInterestDto): void {
+        if (!this.tripId) return;
+        this.confirmation.open({
+            title: 'Αφαίρεση Ενδιαφέροντος',
+            message: `Είστε σίγουροι ότι θέλετε να αφαιρέσετε το ενδιαφέρον του χρήστη <strong>${interest.userFullName}</strong>;`,
+            icon: { show: true, name: 'heroicons_outline:trash', color: 'warn' },
+            actions: { confirm: { label: 'Αφαίρεση', color: 'warn' }, cancel: { label: 'Ακύρωση' } },
+        })
+            .afterClosed()
+            .pipe(takeUntil(this.destroy$))
+            .subscribe(result => {
+                if (result !== 'confirmed') return;
+                this.api.deleteInterest(this.tripId!, interest.interestId)
+                    .pipe(takeUntil(this.destroy$))
+                    .subscribe({
+                        next: () => {
+                            this.interests = this.interests.filter(i => i.interestId !== interest.interestId);
+                            this.interestDS.data = this.interests;
+                            this.snack.open('Ενδιαφέρον αφαιρέθηκε.', 'Κλείσιμο', { duration: 3000 });
+                            this.cdr.markForCheck();
+                        },
+                        error: () => {
+                            this.snack.open('Σφάλμα κατά την αφαίρεση ενδιαφέροντος.', 'Κλείσιμο', { duration: 4000 });
+                            this.cdr.markForCheck();
+                        },
+                    });
+            });
+    }
+
+    // ── Group Chat creation modal ────────────────────────────────────────────
+    openGroupChatModal(): void {
+        this.groupChatForm.reset({ name: this.trip?.title ?? '', description: '' });
+        this.groupChatImagePreview = null;
+        this.gcImageUrl = null;
+        this.gcSelectedUserIds = new Set(this.gcCandidates.map(u => u.userId));
+        this.groupChatModalOpen = true;
+        this.cdr.markForCheck();
+    }
+
+    closeGroupChatModal(): void {
+        this.groupChatModalOpen = false;
+        this.groupChatImagePreview = null;
+        this.gcImageUrl = null;
+        this.gcSelectedUserIds = new Set();
+        this.cdr.markForCheck();
+    }
+
+    toggleGcUser(userId: number): void {
+        if (this.gcSelectedUserIds.has(userId)) {
+            this.gcSelectedUserIds.delete(userId);
+        } else {
+            this.gcSelectedUserIds.add(userId);
+        }
+        this.cdr.markForCheck();
+    }
+
+    selectAllGcUsers(): void {
+        this.gcSelectedUserIds = new Set(this.gcCandidates.map(u => u.userId));
+        this.cdr.markForCheck();
+    }
+
+    onGcFileSelected(ev: Event): void {
+        const input = ev.target as HTMLInputElement;
+        const file = input.files?.[0];
+        input.value = '';
+        if (!file || !file.type.startsWith('image/') || file.size > 3 * 1024 * 1024) return;
+
+        const reader = new FileReader();
+        reader.onload = () => { this.groupChatImagePreview = reader.result as string; this.cdr.markForCheck(); };
+        reader.readAsDataURL(file);
+
+        this.groupChatUploading.set(true);
+        this.imageUpload
+            .uploadImage(file, 'groupchats', `trip-${this.tripId ?? 'new'}`)
+            .pipe(finalize(() => { this.groupChatUploading.set(false); this.cdr.markForCheck(); }))
+            .subscribe({
+                next: (res) => {
+                    this.gcImageUrl = res.publicUrl;
+                    this.groupChatImagePreview = res.publicUrl;
+                    this.cdr.markForCheck();
+                },
+            });
+    }
+
+    removeGcImage(): void {
+        this.gcImageUrl = null;
+        this.groupChatImagePreview = null;
+        this.cdr.markForCheck();
+    }
+
+    createGroupChat(): void {
+        if (!this.tripId || this.groupChatForm.invalid || this.groupChatLoading()) return;
+        const v = this.groupChatForm.value;
+        const code = `AWAYTRIP-${this.tripId}`;
+        const dto: CreateGroupChatDto = {
+            code,
+            name: v.name!,
+            description: v.description || null,
+            eventId: null,
+            isMain: false,
+            image: this.gcImageUrl ?? null,
+            isActive: true,
+        };
+        this.groupChatLoading.set(true);
+        this.groupChatsApi.create(dto)
+            .pipe(takeUntil(this.destroy$))
+            .subscribe({
+                next: (created: any) => {
+                    const groupId: number = created?.id ?? created?.Id;
+                    this.hasGroupChat.set(true);
+                    const userIds = [...this.gcSelectedUserIds];
+                    if (userIds.length === 0) {
+                        this.groupChatLoading.set(false);
+                        this.closeGroupChatModal();
+                        this.snack.open('Η ομαδική συνομιλία δημιουργήθηκε!', 'Κλείσιμο', { duration: 4000 });
+                        this.cdr.markForCheck();
+                        return;
+                    }
+                    const joins$ = userIds.map(uid => this.groupChatsApi.joinGroup(groupId, uid));
+                    forkJoin(joins$)
+                        .pipe(
+                            takeUntil(this.destroy$),
+                            finalize(() => { this.groupChatLoading.set(false); this.cdr.markForCheck(); }),
+                        )
+                        .subscribe({
+                            next: () => {
+                                this.closeGroupChatModal();
+                                this.snack.open('Η ομαδική συνομιλία δημιουργήθηκε με ' + userIds.length + ' μέλη!', 'Κλείσιμο', { duration: 4000 });
+                            },
+                            error: () => {
+                                this.closeGroupChatModal();
+                                this.snack.open('Η ομαδική δημιουργήθηκε αλλά ορισμένα μέλη δεν προστέθηκαν.', 'Κλείσιμο', { duration: 5000 });
+                            },
+                        });
+                },
+                error: () => {
+                    this.groupChatLoading.set(false);
+                    this.snack.open('Σφάλμα κατά τη δημιουργία ομαδικής συνομιλίας.', 'Κλείσιμο', { duration: 4000 });
+                    this.cdr.markForCheck();
+                },
+            });
     }
 
     // ── Notification details modal ───────────────────────────────────────────

@@ -110,6 +110,10 @@ export class GroupChatsService {
         return this.http.post(`${this.baseUrl}/groupchat`, dto);
     }
 
+    getByCode(code: string): Observable<GroupChat> {
+        return this.http.get<GroupChat>(`${this.baseUrl}/groupchat/by-code/${code}`);
+    }
+
     // -------- mapper --------
     private mapGroupChat(x: any): GroupChat {
         return {
@@ -200,6 +204,10 @@ export class GroupChatsService {
                 isAdmin: Boolean(x.isAdmin ?? x.IsAdmin ?? false)
             })))
         );
+    }
+
+    joinGroup(groupId: number, userId: number): Observable<void> {
+        return this.http.post<void>(`${this.baseUrl}/groupchat/${groupId}/join`, { userId });
     }
 
     pauseGroupChat(groupId: number, userId: number): Observable<any> {
