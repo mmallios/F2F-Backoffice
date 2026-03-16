@@ -66,22 +66,52 @@ export interface EventItem {
 export interface EventTicketDto {
     id: number;
     eventId: number;
-    title?: string;
-    status?: string;
+    ticketUserId?: number;
+    ticketId?: number;
+    status: number;       // 0=ForSale, 1=Requested, 2=Accepted, 3=Rejected
+    price?: number;
+    type: number;         // 0=MatchTicket, 1=SeasonTicket
+    transferredToUserId?: number;
+    soldFor?: number;
+    buyerData?: string;
+    isLocked?: boolean;
     ownerFirstname?: string;
     ownerLastname?: string;
     gate?: string;
     section?: string;
     row?: string;
     seat?: string;
+    createdOn?: string;
+}
+
+export interface UpdateEventTicketDto {
+    gate?: string;
+    section?: string;
+    row?: string;
+    seat?: string;
+    price?: number;
+    status?: number;
+    transferredToUserId?: number;
+    soldFor?: number;
+    buyerData?: string;
+    isLocked?: boolean;
 }
 
 export interface CreateEventTicketDto {
     eventId?: number;
-    title: string;
-    status?: string;
-
-    // πρόσθεσε τα required πεδία του backend DTO
+    ticketId?: number;
+    status: number;
+    price?: number;
+    transferredToUserId?: number;
+    soldFor?: number;
+    buyerData?: string;
+    // BO direct-creation fields (used when ticketId is 0 or omitted)
+    gate?: string;
+    section?: string;
+    row?: string;
+    seat?: string;
+    userId?: number;
+    type?: number;
 }
 
 export interface Ticket {
@@ -262,6 +292,21 @@ export class EventsService {
         return this.http.post<EventTicketDto>(
             `${this.baseUrl}/events/${eventId}/tickets`,
             body
+        );
+    }
+
+    /** PUT api/events/{eventId}/tickets/{ticketId} */
+    updateEventTicket(eventId: number, ticketId: number, dto: UpdateEventTicketDto): Observable<EventTicketDto> {
+        return this.http.put<EventTicketDto>(
+            `${this.baseUrl}/events/${eventId}/tickets/${ticketId}`,
+            dto
+        );
+    }
+
+    /** DELETE api/events/{eventId}/tickets/{ticketId} */
+    deleteEventTicket(eventId: number, ticketId: number): Observable<void> {
+        return this.http.delete<void>(
+            `${this.baseUrl}/events/${eventId}/tickets/${ticketId}`
         );
     }
 

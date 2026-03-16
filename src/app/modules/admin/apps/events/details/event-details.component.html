@@ -424,130 +424,275 @@
     <div class="bg-card rounded-2xl border shadow-sm overflow-hidden">
         <mat-tab-group class="p-2 md:p-4" (selectedTabChange)="$event.index === 2 && loadFanCardUsages()">
 
-            <!-- TAB 1 -->
+            <!-- TAB 1 : ΕΙΣΙΤΗΡΙΑ ΑΓΩΝΑ -->
             <mat-tab label="ΕΙΣΙΤΗΡΙΑ ΑΓΩΝΑ">
                 <div class="p-4 md:p-6 space-y-4">
 
+                    <!-- Header row -->
                     <div class="flex items-center justify-between">
                         <div>
                             <div class="text-lg font-bold">Εισιτήρια αγώνα</div>
-                            <div class="text-secondary text-sm">Λίστα εισιτηρίων (dummy)</div>
+                            <div class="text-secondary text-sm">{{ tickets.length }} εισιτήρια συνολικά</div>
                         </div>
+                        <button mat-flat-button color="primary" type="button" (click)="openAddModal()"
+                            *ngIf="!createMode">
+                            <mat-icon>add</mat-icon>
+                            Προσθήκη εισιτηρίου
+                        </button>
                     </div>
 
-                    <!-- ================= FILTER BAR ================= -->
+                    <!-- Filter bar -->
                     <div class="rounded-2xl border bg-white/40 dark:bg-transparent p-4">
-                        <div class="grid grid-cols-1 md:grid-cols-[1fr_200px_260px_260px] gap-3 items-center">
-
-                            <!-- SEARCH (by name) -->
+                        <div class="grid grid-cols-1 md:grid-cols-[1fr_180px_220px_220px] gap-3 items-center">
                             <mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
                                 <mat-label>Αναζήτηση (Όνομα)</mat-label>
                                 <mat-icon matPrefix>search</mat-icon>
-                                <input matInput [formControl]="ticketSearchCtrl"
-                                    placeholder="π.χ. Γιώργος Παπαδόπουλος" />
+                                <input matInput [formControl]="ticketSearchCtrl" placeholder="π.χ. Γιώργος Παπαδόπουλος" />
                             </mat-form-field>
-
-                            <!-- FILTER: GATE -->
                             <mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
                                 <mat-label>Θύρα</mat-label>
                                 <mat-select [formControl]="ticketGateCtrl">
                                     <mat-option [value]="null">Όλες</mat-option>
-                                    <mat-option *ngFor="let g of availableGates" [value]="g">
-                                        {{ g }}
-                                    </mat-option>
+                                    <mat-option *ngFor="let g of availableGates" [value]="g">{{ g }}</mat-option>
                                 </mat-select>
                             </mat-form-field>
-
-                            <!-- FILTER: TICKET TYPE -->
                             <mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
-                                <mat-label>Τύπος εισιτηρίου</mat-label>
+                                <mat-label>Τύπος</mat-label>
                                 <mat-select [formControl]="ticketTypeCtrl">
                                     <mat-option [value]="null">Όλα</mat-option>
-                                    <mat-option [value]="0">ΕΙΣΙΤΗΡΙΟ ΔΙΑΡΚΕΙΑΣ</mat-option>
-                                    <mat-option [value]="1">ΕΙΣΙΤΗΡΙΟ ΑΓΩΝΑ</mat-option>
+                                    <mat-option [value]="0">ΑΓΩΝΑ</mat-option>
+                                    <mat-option [value]="1">ΔΙΑΡΚΕΙΑΣ</mat-option>
                                 </mat-select>
                             </mat-form-field>
-
                             <mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
-                                <mat-label>Κατάσταση εισιτηρίου</mat-label>
+                                <mat-label>Κατάσταση</mat-label>
                                 <mat-select [formControl]="ticketStatusCtrl">
                                     <mat-option [value]="null">Όλες</mat-option>
                                     <mat-option [value]="0">ΔΙΑΘΕΣΙΜΟ</mat-option>
-                                    <mat-option [value]="1">ΕΚΡΕΜΜΕΙ ΜΕΤΑΒΙΒΑΣΗ</mat-option>
-                                    <mat-option [value]="2">ΜΕΤΑΒΗΒΑΣΤΗΚΕ</mat-option>
+                                    <mat-option [value]="1">ΕΚΚΡΕΜΕΙ ΜΕΤΑΒΙΒΑΣΗ</mat-option>
+                                    <mat-option [value]="2">ΜΕΤΑΒΙΒΑΣΘΗΚΕ</mat-option>
+                                    <mat-option [value]="3">ΑΠΟΡΡΙΦΘΗΚΕ</mat-option>
                                 </mat-select>
                             </mat-form-field>
-
                         </div>
                     </div>
 
-                    <!-- EMPTY -->
-                    <div *ngIf="!filteredTickets?.length"
-                        class="rounded-2xl border bg-white/40 dark:bg-transparent p-6 text-center text-secondary">
+                    <!-- Loading -->
+                    <mat-progress-bar *ngIf="loadingTickets" mode="indeterminate"></mat-progress-bar>
+
+                    <!-- Empty -->
+                    <div *ngIf="!loadingTickets && !filteredTickets.length"
+                        class="rounded-2xl border bg-white/40 dark:bg-transparent p-8 text-center text-secondary text-sm">
                         Δεν υπάρχουν εισιτήρια.
                     </div>
 
-                    <!-- LIST -->
-                    <div class="grid grid-cols-1 gap-3" *ngIf="filteredTickets?.length">
+                    <!-- Table -->
+                    <div *ngIf="filteredTickets.length" class="rounded-2xl border overflow-hidden shadow-sm">
 
-                        <div *ngFor="let t of filteredTickets; trackBy: trackByTicketId" class="rounded-2xl border bg-card shadow-sm p-4
-               flex items-center justify-between gap-4
-               hover:bg-gray-50/60 dark:hover:bg-white/5 transition">
+                        <!-- Table header -->
+                        <div class="ticket-table-header hidden md:grid">
+                            <div>Κάτοχος</div>
+                            <div>Ημ/νία εισαγωγής</div>
+                            <div>Θύρα / Θέση</div>
+                            <div>Κατάσταση</div>
+                            <div>Στοιχεία αγοραστή</div>
+                            <div></div>
+                        </div>
 
-                            <!-- LEFT SIDE -->
-                            <div class="flex items-start gap-4 min-w-0">
+                        <!-- Rows -->
+                        <div *ngFor="let t of filteredTickets; trackBy: trackByTicketId"
+                            class="ticket-table-row"
+                            [class.delete-pending]="deleteTargetId === t.id">
 
-                                <!-- 🎟 Ticket Icon -->
-                                <div class="h-11 w-11 shrink-0 rounded-xl
-                      bg-primary/10 text-primary
-                      flex items-center justify-center">
-                                    <mat-icon class="text-[22px]">confirmation_number</mat-icon>
-                                </div>
-
-                                <!-- CONTENT -->
-                                <div class="min-w-0">
-
-                                    <!-- Name + Badges -->
-                                    <div class="flex items-center gap-2 flex-wrap">
-                                        <div class="text-base font-semibold truncate">
-                                            {{ t.ownerFirstname }} {{ t.ownerLastname }}
-                                        </div>
-
-
-
-                                        <!-- TYPE BADGE -->
-                                        <span
-                                            class="px-2 py-0.5 rounded-full text-xs font-semibold border whitespace-nowrap">
-                                            {{ ticketStatusLabel(t.status) }}
-                                        </span>
-                                    </div>
-
-                                    <!-- Seat Info -->
-                                    <div class="text-secondary text-sm mt-1">
-                                        {{ticketTypeLabel(t.type)}} --
-                                        ΘΥΡΑ: <span class="font-bold">{{ t.gate }}</span> |
-                                        ΤΜΗΜΑ: <span class="font-bold">{{ t.section }}</span> |
-                                        ΣΕΙΡΑ: <span class="font-bold">{{ t.row }}</span> |
-                                        ΘΕΣΗ: <span class="font-bold">{{ t.seat }}</span>
-                                    </div>
+                            <!-- Owner -->
+                            <div class="ticket-col-owner">
+                                <div class="owner-avatar">{{ ownerInitials(t) }}</div>
+                                <div class="owner-info">
+                                    <div class="owner-name">{{ t.ownerFirstname || '' }} {{ t.ownerLastname || '' }}</div>
+                                    <div class="owner-sub">ID {{ t.ticketUserId ?? '—' }}</div>
                                 </div>
                             </div>
 
-                            <!-- ACTIONS -->
-                            <div class="flex items-center gap-2 shrink-0">
-                                <button mat-stroked-button type="button" (click)="openEditTicket(t)">
-                                    <mat-icon>edit</mat-icon>
-                                    <span class="ml-2 hidden sm:inline">Επεξεργασία</span>
-                                </button>
+                            <!-- Date -->
+                            <div class="ticket-col-date text-secondary text-sm">
+                                {{ formatDate(t.createdOn) }}
+                            </div>
 
-                                <button mat-stroked-button color="warn" type="button" (click)="openDeleteTicket(t)">
-                                    <mat-icon>delete</mat-icon>
-                                    <span class="ml-2 hidden sm:inline">Διαγραφή</span>
-                                </button>
+                            <!-- Gate / Seat -->
+                            <div class="ticket-col-gate">
+                                <div class="gate-badge">ΘΥΡΑ {{ t.gate || '—' }}</div>
+                                <div class="seat-detail text-secondary text-xs mt-1">
+                                    <span *ngIf="t.row">Σειρά {{ t.row }}</span>
+                                    <span *ngIf="t.row && t.seat"> · </span>
+                                    <span *ngIf="t.seat">Θέση {{ t.seat }}</span>
+                                    <span *ngIf="!t.row && !t.seat">—</span>
+                                </div>
+                                <div class="text-xs mt-0.5">
+                                    <span class="ticket-type-badge">{{ ticketTypeLabel(t.type) }}</span>
+                                </div>
+                            </div>
+
+                            <!-- Status -->
+                            <div class="ticket-col-status">
+                                <span class="status-badge px-2 py-0.5 rounded-full text-xs font-semibold"
+                                    [ngClass]="ticketStatusColor(t.status)">
+                                    {{ ticketStatusLabel(t.status) }}
+                                </span>
+                            </div>
+
+                            <!-- Buyer data -->
+                            <div class="ticket-col-buyer text-secondary text-sm">
+                                <ng-container *ngIf="t.buyerData; else noBuyer">
+                                    <span class="truncate-2">{{ t.buyerData }}</span>
+                                </ng-container>
+                                <ng-template #noBuyer>—</ng-template>
+                            </div>
+
+                            <!-- Actions -->
+                            <div class="ticket-col-actions">
+                                <ng-container *ngIf="deleteTargetId === t.id; else normalActions">
+                                    <span class="text-xs text-red-600 font-medium mr-1">Διαγραφή;</span>
+                                    <button mat-flat-button color="warn" class="!text-xs !py-0 !px-2 !min-h-0 !h-7"
+                                        (click)="executeDelete()" [disabled]="deletePending">
+                                        Ναι
+                                    </button>
+                                    <button mat-stroked-button class="!text-xs !py-0 !px-2 !min-h-0 !h-7 ml-1"
+                                        (click)="cancelDelete()">
+                                        Όχι
+                                    </button>
+                                </ng-container>
+                                <ng-template #normalActions>
+                                    <button mat-icon-button title="Επεξεργασία" (click)="openEditTicket(t)">
+                                        <mat-icon class="text-[18px]">edit</mat-icon>
+                                    </button>
+                                    <button mat-icon-button title="Διαγραφή" color="warn" (click)="confirmDelete(t.id)">
+                                        <mat-icon class="text-[18px]">delete</mat-icon>
+                                    </button>
+                                </ng-template>
                             </div>
 
                         </div>
+                    </div>
 
+                    <!-- ── ADD MODAL ── -->
+                    <div *ngIf="showAddModal" class="ticket-modal-backdrop" (click)="closeAddModal()">
+                        <div class="ticket-modal" (click)="$event.stopPropagation()" [formGroup]="addForm">
+                            <div class="ticket-modal-header">
+                                <span class="font-bold text-base">Προσθήκη εισιτηρίου</span>
+                                <button mat-icon-button (click)="closeAddModal()">
+                                    <mat-icon>close</mat-icon>
+                                </button>
+                            </div>
+                            <div class="ticket-modal-body">
+                                <div class="ticket-modal-grid">
+                                    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                                        <mat-label>Θύρα *</mat-label>
+                                        <input matInput formControlName="gate" />
+                                    </mat-form-field>
+                                    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                                        <mat-label>Τμήμα</mat-label>
+                                        <input matInput formControlName="section" />
+                                    </mat-form-field>
+                                    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                                        <mat-label>Σειρά</mat-label>
+                                        <input matInput formControlName="row" />
+                                    </mat-form-field>
+                                    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                                        <mat-label>Θέση</mat-label>
+                                        <input matInput formControlName="seat" />
+                                    </mat-form-field>
+                                    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                                        <mat-label>Τιμή (€)</mat-label>
+                                        <input matInput type="number" formControlName="price" />
+                                    </mat-form-field>
+                                    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                                        <mat-label>Τύπος</mat-label>
+                                        <mat-select formControlName="type">
+                                            <mat-option [value]="0">ΑΓΩΝΑ</mat-option>
+                                            <mat-option [value]="1">ΔΙΑΡΚΕΙΑΣ</mat-option>
+                                        </mat-select>
+                                    </mat-form-field>
+                                    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                                        <mat-label>Κατάσταση</mat-label>
+                                        <mat-select formControlName="status">
+                                            <mat-option [value]="0">ΔΙΑΘΕΣΙΜΟ</mat-option>
+                                            <mat-option [value]="1">ΕΚΚΡΕΜΕΙ ΜΕΤΑΒΙΒΑΣΗ</mat-option>
+                                            <mat-option [value]="2">ΜΕΤΑΒΙΒΑΣΘΗΚΕ</mat-option>
+                                            <mat-option [value]="3">ΑΠΟΡΡΙΦΘΗΚΕ</mat-option>
+                                        </mat-select>
+                                    </mat-form-field>
+                                    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="col-span-2">
+                                        <mat-label>Στοιχεία αγοραστή</mat-label>
+                                        <input matInput formControlName="buyerData" />
+                                    </mat-form-field>
+                                </div>
+                            </div>
+                            <div class="ticket-modal-footer">
+                                <button mat-stroked-button type="button" (click)="closeAddModal()">Ακύρωση</button>
+                                <button mat-flat-button color="primary" type="button"
+                                    (click)="saveAddTicket()" [disabled]="addForm.invalid || addSaving">
+                                    <mat-icon *ngIf="addSaving" class="animate-spin text-sm">refresh</mat-icon>
+                                    Αποθήκευση
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ── EDIT MODAL ── -->
+                    <div *ngIf="editTarget" class="ticket-modal-backdrop" (click)="closeEditModal()">
+                        <div class="ticket-modal" (click)="$event.stopPropagation()" [formGroup]="editForm">
+                            <div class="ticket-modal-header">
+                                <span class="font-bold text-base">Επεξεργασία εισιτηρίου #{{ editTarget.id }}</span>
+                                <button mat-icon-button (click)="closeEditModal()">
+                                    <mat-icon>close</mat-icon>
+                                </button>
+                            </div>
+                            <div class="ticket-modal-body">
+                                <div class="ticket-modal-grid">
+                                    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                                        <mat-label>Θύρα *</mat-label>
+                                        <input matInput formControlName="gate" />
+                                    </mat-form-field>
+                                    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                                        <mat-label>Τμήμα</mat-label>
+                                        <input matInput formControlName="section" />
+                                    </mat-form-field>
+                                    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                                        <mat-label>Σειρά</mat-label>
+                                        <input matInput formControlName="row" />
+                                    </mat-form-field>
+                                    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                                        <mat-label>Θέση</mat-label>
+                                        <input matInput formControlName="seat" />
+                                    </mat-form-field>
+                                    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                                        <mat-label>Τιμή (€)</mat-label>
+                                        <input matInput type="number" formControlName="price" />
+                                    </mat-form-field>
+                                    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                                        <mat-label>Κατάσταση</mat-label>
+                                        <mat-select formControlName="status">
+                                            <mat-option [value]="0">ΔΙΑΘΕΣΙΜΟ</mat-option>
+                                            <mat-option [value]="1">ΕΚΚΡΕΜΕΙ ΜΕΤΑΒΙΒΑΣΗ</mat-option>
+                                            <mat-option [value]="2">ΜΕΤΑΒΙΒΑΣΘΗΚΕ</mat-option>
+                                            <mat-option [value]="3">ΑΠΟΡΡΙΦΘΗΚΕ</mat-option>
+                                        </mat-select>
+                                    </mat-form-field>
+                                    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="col-span-2">
+                                        <mat-label>Στοιχεία αγοραστή</mat-label>
+                                        <input matInput formControlName="buyerData" />
+                                    </mat-form-field>
+                                </div>
+                            </div>
+                            <div class="ticket-modal-footer">
+                                <button mat-stroked-button type="button" (click)="closeEditModal()">Ακύρωση</button>
+                                <button mat-flat-button color="primary" type="button"
+                                    (click)="saveEditTicket()" [disabled]="editForm.invalid || editSaving">
+                                    <mat-icon *ngIf="editSaving" class="animate-spin text-sm">refresh</mat-icon>
+                                    Αποθήκευση
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
                 </div>

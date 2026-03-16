@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { Subject, combineLatest, forkJoin, map, of, startWith, switchMap, takeUntil } from 'rxjs';
+import { Subject, combineLatest, forkJoin, startWith, takeUntil } from 'rxjs';
 
 import { MatButtonModule } from '@angular/material/button';
 import { MatDatepickerModule } from '@angular/material/datepicker';
@@ -18,11 +18,13 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 
 import {
     Competition,
+    CreateEventTicketDto,
     EventItem,
     EventStats,
+    EventTicketDto,
     EventsService,
     Team,
-    Ticket,
+    UpdateEventTicketDto,
     TvChannel
 } from '@fuse/services/events/events.service';
 import { EventFanCardUsage, FanCardsAdminService } from '@fuse/services/fan-cards/fan-cards-admin.service';
@@ -34,7 +36,6 @@ import { EventFanCardUsage, FanCardsAdminService } from '@fuse/services/fan-card
         CommonModule,
         RouterModule,
         ReactiveFormsModule,
-
         MatButtonModule,
         MatDatepickerModule,
         MatIconModule,
@@ -54,39 +55,46 @@ export class EventDetailsComponent implements OnInit, OnDestroy {
 
     teams: Team[] = [];
     competitions: Competition[] = [];
-    tickets: any[] = [];
-    tvChannels: TvChannel[] = []
+    tickets: EventTicketDto[] = [];
+    tvChannels: TvChannel[] = [];
 
     overviewEdit = false;
-
     showDeleteConfirm = false;
-
     headerForm!: FormGroup;
     statsStrip: any;
     eventStats: EventStats | null = null;
 
-    // gates dropdown options (computed from tickets)
-    availableGates: number[] = [];
-
-    // filtered list shown in UI
-    filteredTickets: any[] = [];
+    availableGates: string[] = [];
+    filteredTickets: EventTicketDto[] = [];
+    loadingTickets = false;
 
     ticketSearchCtrl = new FormControl<string>('', { nonNullable: true });
-    ticketGateCtrl = new FormControl<number | null>(null);
-    ticketTypeCtrl = new FormControl<number | null>(null);
-
-    // component.ts (dummy stats strip)
-
-    trackByStatKey = (_: number, s: any) => s.key;
+    ticketGateCtrl   = new FormControl<string | null>(null);
+    ticketTypeCtrl   = new FormControl<number | null>(null);
     ticketStatusCtrl = new FormControl<number | null>(null);
+
+    // ── delete confirm
+    deleteTargetId: number | null = null;
+    deletePending = false;
+
+    // ── edit modal
+    editTarget: EventTicketDto | null = null;
+    editForm!: FormGroup;
+    editSaving = false;
+
+    // ── add modal
+    showAddModal = false;
+    addForm!: FormGroup;
+    addSaving = false;
 
     createMode = false;
 
     fanCardUsages: EventFanCardUsage[] = [];
     loadingFanCardUsages = false;
-    fanCardUsagesLoaded = false;
+    fanCardUsagesLoaded  = false;
 
-
+    trackByStatKey   = (_: number, s: any) => s.key;
+    trackByTicketId  = (_: number, t: EventTicketDto) => t.id;
 
     private _unsubscribeAll = new Subject<void>();
 
@@ -97,107 +105,304 @@ export class EventDetailsComponent implements OnInit, OnDestroy {
         private _fanCardsService: FanCardsAdminService,
         private _fb: FormBuilder,
         private _cdr: ChangeDetectorRef
-    ) { }
+    ) {}
 
     // ==============================
     // Lifecycle
     // ==============================
     ngOnInit(): void {
         this.buildHeaderForm();
+        this._buildEditForm();
+        this._buildAddForm();
 
-        // load dropdowns once (teams/competitions/tv)
         forkJoin({
-            teams: this._eventsService.getTeams(),
+            teams:        this._eventsService.getTeams(),
             competitions: this._eventsService.getCompetitions(),
-            tvChannels: this._eventsService.getTVChannels(),
+            tvChannels:   this._eventsService.getTVChannels(),
         }).pipe(takeUntil(this._unsubscribeAll))
-            .subscribe(({ teams, competitions, tvChannels }) => {
-                this.teams = teams ?? [];
-                this.competitions = competitions ?? [];
-                this.tvChannels = tvChannels ?? [];
+          .subscribe(({ teams, competitions, tvChannels }) => {
+              this.teams        = teams        ?? [];
+              this.competitions = competitions ?? [];
+              this.tvChannels   = tvChannels   ?? [];
+              this._cdr.markForCheck();
+          });
+
+        this._route.data.pipe(takeUntil(this._unsubscribeAll)).subscribe((d: any) => {
+            const mode = d?.mode;
+
+            if (mode === 'create') {
+                this.createMode  = true;
+                this.overviewEdit = true;
+                this.event        = null;
+                this.tickets      = [];
+                this.filteredTickets = [];
+                this.availableGates  = [];
+                this.statsStrip      = [];
+
+                this.headerForm.reset({
+                    competitionId: null, matchday: '',
+                    eventDateOnly: null, eventTimeOnly: '',
+                    homeTeamId: null, awayTeamId: null,
+                    tvChannel: null, referenceId: '',
+                    openTickets: true, eventDate: ''
+                }, { emitEvent: false });
+
+                this.headerForm.enable({ emitEvent: false });
                 this._cdr.markForCheck();
+                return;
+            }
+
+            this.createMode   = false;
+            const ev = d?.['event'] as EventItem | null;
+            if (!ev) { this._router.navigateByUrl('/apps/events'); return; }
+
+            this.event = ev;
+            this.overviewEdit = false;
+            this.patchHeaderFormFromEvent(ev);
+            this.headerForm.disable({ emitEvent: false });
+
+            this._eventsService.getEventStats(ev.id).subscribe({
+                next: (stats) => { this.eventStats = stats; this._cdr.markForCheck(); },
             });
 
-        // ✅ decide mode from route data
-        this._route.data
-            .pipe(takeUntil(this._unsubscribeAll))
-            .subscribe((d: any) => {
-                const mode = d?.mode;
-
-                if (mode === 'create') {
-                    this.createMode = true;
-                    this.overviewEdit = true;
-
-                    this.event = null;
-                    this.tickets = [];
-                    this.filteredTickets = [];
-                    this.availableGates = [];
-                    this.statsStrip = [];
-
-                    this.headerForm.reset({
-                        competitionId: null,
-                        matchday: '',
-                        eventDateOnly: null,
-                        eventTimeOnly: '',
-                        homeTeamId: null,
-                        awayTeamId: null,
-                        tvChannel: null,
-                        referenceId: '',
-                        openTickets: true,
-                        eventDate: ''
-                    }, { emitEvent: false });
-
-                    this.headerForm.enable({ emitEvent: false });
-                    this._cdr.markForCheck();
-                    return;
-                }
-
-                // ✅ edit mode: resolver gives us event
-                this.createMode = false;
-                const ev = d?.['event'] as EventItem | null;
-
-                if (!ev) {
-                    this._router.navigateByUrl('/apps/events');
-                    return;
-                }
-
-                this.event = ev;
-                this.overviewEdit = false;
-
-                this.patchHeaderFormFromEvent(ev);
-                this.headerForm.disable({ emitEvent: false });
-
-                this._eventsService.getEventStats(ev.id).subscribe({
-                    next: (stats) => { this.eventStats = stats; this._cdr.markForCheck(); },
-                });
-
-                this._cdr.markForCheck();
-            });
-
-
+            this._loadTickets(ev.id);
+            this._cdr.markForCheck();
+        });
     }
-
 
     ngOnDestroy(): void {
         this._unsubscribeAll.next();
         this._unsubscribeAll.complete();
     }
 
+    // ── tickets loading ──────────────────────────────────────────
+    private _loadTickets(eventId: number): void {
+        this.loadingTickets = true;
+        this._cdr.markForCheck();
+
+        this._eventsService.getEventTickets(eventId)
+            .pipe(takeUntil(this._unsubscribeAll))
+            .subscribe({
+                next: (list) => {
+                    this.tickets = list ?? [];
+                    this.availableGates = [...new Set(
+                        this.tickets.map(t => t.gate ?? '').filter(g => !!g)
+                    )].sort();
+                    this._wireFilters();
+                    this.loadingTickets = false;
+                    this._cdr.markForCheck();
+                },
+                error: () => { this.loadingTickets = false; this._cdr.markForCheck(); },
+            });
+    }
+
+    private _wireFilters(): void {
+        combineLatest([
+            this.ticketSearchCtrl.valueChanges.pipe(startWith('')),
+            this.ticketGateCtrl.valueChanges.pipe(startWith(null)),
+            this.ticketTypeCtrl.valueChanges.pipe(startWith(null)),
+            this.ticketStatusCtrl.valueChanges.pipe(startWith(null)),
+        ]).pipe(takeUntil(this._unsubscribeAll))
+          .subscribe(([search, gate, type, status]) => {
+              const s = (search ?? '').toLowerCase();
+              this.filteredTickets = this.tickets.filter(t => {
+                  const name = `${t.ownerFirstname ?? ''} ${t.ownerLastname ?? ''}`.toLowerCase();
+                  if (s && !name.includes(s)) return false;
+                  if (gate   != null && t.gate   !== gate)   return false;
+                  if (type   != null && t.type   !== type)   return false;
+                  if (status != null && t.status !== status) return false;
+                  return true;
+              });
+              this._cdr.markForCheck();
+          });
+    }
+
+    // ── edit modal ───────────────────────────────────────────────
+    private _buildEditForm(): void {
+        this.editForm = this._fb.group({
+            gate:    ['', Validators.required],
+            section: [''],
+            row:     [''],
+            seat:    [''],
+            price:   [0],
+            status:  [0, Validators.required],
+            buyerData: [''],
+        });
+    }
+
+    openEditTicket(t: EventTicketDto): void {
+        this.editTarget = t;
+        this.editForm.reset({
+            gate:    t.gate    ?? '',
+            section: t.section ?? '',
+            row:     t.row     ?? '',
+            seat:    t.seat    ?? '',
+            price:   t.price   ?? 0,
+            status:  t.status  ?? 0,
+            buyerData: t.buyerData ?? '',
+        });
+        this._cdr.markForCheck();
+    }
+
+    closeEditModal(): void { this.editTarget = null; this._cdr.markForCheck(); }
+
+    saveEditTicket(): void {
+        if (!this.editTarget || !this.event || this.editForm.invalid) return;
+        this.editSaving = true;
+        this._cdr.markForCheck();
+
+        const raw = this.editForm.getRawValue();
+        const dto: UpdateEventTicketDto = {
+            gate:    raw.gate    || undefined,
+            section: raw.section || undefined,
+            row:     raw.row     || undefined,
+            seat:    raw.seat    || undefined,
+            price:   raw.price   ?? undefined,
+            status:  raw.status  ?? undefined,
+            buyerData: raw.buyerData || undefined,
+        };
+
+        this._eventsService.updateEventTicket(this.event.id, this.editTarget.id, dto)
+            .subscribe({
+                next: (updated) => {
+                    const idx = this.tickets.findIndex(t => t.id === updated.id);
+                    if (idx >= 0) this.tickets[idx] = updated;
+                    this.filteredTickets = [...this.filteredTickets.map(t => t.id === updated.id ? updated : t)];
+                    this.editSaving = false;
+                    this.editTarget = null;
+                    this._cdr.markForCheck();
+                },
+                error: () => { this.editSaving = false; this._cdr.markForCheck(); },
+            });
+    }
+
+    // ── add modal ────────────────────────────────────────────────
+    private _buildAddForm(): void {
+        this.addForm = this._fb.group({
+            gate:    ['', Validators.required],
+            section: [''],
+            row:     [''],
+            seat:    [''],
+            price:   [0],
+            status:  [0, Validators.required],
+            type:    [0, Validators.required],
+            buyerData: [''],
+        });
+    }
+
+    openAddModal(): void {
+        this.addForm.reset({ gate: '', section: '', row: '', seat: '', price: 0, status: 0, type: 0, buyerData: '' });
+        this.showAddModal = true;
+        this._cdr.markForCheck();
+    }
+
+    closeAddModal(): void { this.showAddModal = false; this._cdr.markForCheck(); }
+
+    saveAddTicket(): void {
+        if (!this.event || this.addForm.invalid) return;
+        this.addSaving = true;
+        this._cdr.markForCheck();
+
+        const raw = this.addForm.getRawValue();
+        const dto: CreateEventTicketDto = {
+            ticketId: 0,
+            gate:    raw.gate,
+            section: raw.section || undefined,
+            row:     raw.row     || undefined,
+            seat:    raw.seat    || undefined,
+            price:   raw.price   ?? 0,
+            status:  raw.status  ?? 0,
+            type:    raw.type    ?? 0,
+            buyerData: raw.buyerData || undefined,
+        };
+
+        this._eventsService.addTicketToEvent(this.event.id, dto)
+            .subscribe({
+                next: (created) => {
+                    this.tickets = [created, ...this.tickets];
+                    this.filteredTickets = [created, ...this.filteredTickets];
+                    this.addSaving    = false;
+                    this.showAddModal = false;
+                    this._cdr.markForCheck();
+                },
+                error: () => { this.addSaving = false; this._cdr.markForCheck(); },
+            });
+    }
+
+    // ── delete ───────────────────────────────────────────────────
+    confirmDelete(id: number): void { this.deleteTargetId = id; this._cdr.markForCheck(); }
+    cancelDelete():    void { this.deleteTargetId = null; this._cdr.markForCheck(); }
+
+    executeDelete(): void {
+        if (this.deleteTargetId == null || !this.event) return;
+        this.deletePending = true;
+        this._cdr.markForCheck();
+
+        this._eventsService.deleteEventTicket(this.event.id, this.deleteTargetId)
+            .subscribe({
+                next: () => {
+                    this.tickets = this.tickets.filter(t => t.id !== this.deleteTargetId);
+                    this.filteredTickets = this.filteredTickets.filter(t => t.id !== this.deleteTargetId);
+                    this.deleteTargetId = null;
+                    this.deletePending  = false;
+                    this._cdr.markForCheck();
+                },
+                error: () => { this.deletePending = false; this._cdr.markForCheck(); },
+            });
+    }
+
+    // ── labels ───────────────────────────────────────────────────
+    ticketTypeLabel(type: number): string {
+        return type === 1 ? 'ΔΙΑΡΚΕΙΑΣ' : 'ΑΓΩΝΑ';
+    }
+
+    ticketStatusLabel(status: number): string {
+        switch (status) {
+            case 0:  return 'ΔΙΑΘΕΣΙΜΟ';
+            case 1:  return 'ΕΚΚΡΕΜΕΙ ΜΕΤΑΒΙΒΑΣΗ';
+            case 2:  return 'ΜΕΤΑΒΙΒΑΣΘΗΚΕ';
+            case 3:  return 'ΑΠΟΡΡΙΦΘΗΚΕ';
+            default: return '—';
+        }
+    }
+
+    ticketStatusColor(status: number): string {
+        switch (status) {
+            case 0:  return 'text-green-700 bg-green-100';
+            case 1:  return 'text-amber-700 bg-amber-100';
+            case 2:  return 'text-blue-700 bg-blue-100';
+            case 3:  return 'text-red-700 bg-red-100';
+            default: return 'text-gray-500 bg-gray-100';
+        }
+    }
+
+    formatDate(iso?: string): string {
+        if (!iso) return '—';
+        const d = new Date(iso);
+        if (isNaN(d.getTime())) return '—';
+        return d.toLocaleDateString('el-GR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+            + ' ' + d.toLocaleTimeString('el-GR', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    ownerInitials(t: EventTicketDto): string {
+        const f = (t.ownerFirstname ?? '').trim();
+        const l = (t.ownerLastname  ?? '').trim();
+        return ((f[0] ?? '') + (l[0] ?? '')).toUpperCase() || '?';
+    }
+
+    // ── fan card usages ──────────────────────────────────────────
     loadFanCardUsages(): void {
         if (!this.event?.id || this.fanCardUsagesLoaded) return;
         this.loadingFanCardUsages = true;
         this._cdr.markForCheck();
         this._fanCardsService.getEventUsages(this.event.id).subscribe({
             next: (usages) => {
-                this.fanCardUsages = usages;
-                this.fanCardUsagesLoaded = true;
+                this.fanCardUsages        = usages;
+                this.fanCardUsagesLoaded  = true;
                 this.loadingFanCardUsages = false;
                 this._cdr.markForCheck();
             },
-            error: () => {
-                this.loadingFanCardUsages = false;
-                this._cdr.markForCheck();
-            },
+            error: () => { this.loadingFanCardUsages = false; this._cdr.markForCheck(); },
         });
     }
 
@@ -207,308 +412,167 @@ export class EventDetailsComponent implements OnInit, OnDestroy {
     private buildHeaderForm(): void {
         this.headerForm = this._fb.group({
             competitionId: [null, Validators.required],
-
-            // matchday ΔΕΝ είναι required (σύμφωνα με αυτό που ζήτησες)
-            matchday: [''],
-
-            // required μόνο ημερομηνία (ώρα προαιρετική)
+            matchday:      [''],
             eventDateOnly: [null as Date | null, Validators.required],
-            eventTimeOnly: ['', Validators.pattern(/^([01]\d|2[0-3]):[0-5]\d$/)], // optional, 24h HH:MM
-
-            homeTeamId: [null, Validators.required],
-            awayTeamId: [null, Validators.required],
-
-            eventDate: [''],
-            tvChannel: [null],
-            referenceId: [''],
-            openTickets: [true],
+            eventTimeOnly: ['', Validators.pattern(/^([01]\d|2[0-3]):[0-5]\d$/)],
+            homeTeamId:    [null, Validators.required],
+            awayTeamId:    [null, Validators.required],
+            eventDate:     [''],
+            tvChannel:     [null],
+            referenceId:   [''],
+            openTickets:   [true],
         });
-
-        // ξεκινά disabled μέχρι να δούμε αν είναι new ή υπάρχον
         this.headerForm.disable({ emitEvent: false });
     }
-
-    ticketTypeLabel(type: number): string {
-        return type === 0 ? 'ΕΙΣΙΤΗΡΙΟ ΔΙΑΡΚΕΙΑΣ' : 'ΕΙΣΙΤΗΡΙΟ ΑΓΩΝΑ';
-    }
-
-    ticketStatusLabel(status: number): string {
-        switch (status) {
-            case 0:
-                return 'ΔΙΑΘΕΣΙΜΟ';
-            case 1:
-                return 'ΕΚΡΕΜΜΕΙ ΜΕΤΑΒΙΒΑΣΗ';
-            case 2:
-                return 'ΜΕΤΑΒΗΒΑΣΤΗΚΕ';
-            default:
-                return 'Unknown';
-        }
-    }
-
 
     private patchHeaderFormFromEvent(ev: EventItem): void {
         const iso = ev.eventDate || '';
         const { dateOnly, timeOnly } = this.splitIsoToDateTime(iso);
-
-        this.headerForm.reset(
-            {
-                competitionId: ev.competitionId ?? null,
-                matchday: ev.matchday ?? '',
-                homeTeamId: ev.homeTeamId ?? null,
-                awayTeamId: ev.awayTeamId ?? null,
-
-                eventDate: iso,
-                eventDateOnly: dateOnly,
-                eventTimeOnly: timeOnly,
-                tvChannel: ev.tvChannel,
-                openTickets: ev.isTicketingOpen,
-                referenceId: ev.referenceMatchId
-            },
-            { emitEvent: false }
-        );
+        this.headerForm.reset({
+            competitionId: ev.competitionId ?? null,
+            matchday:      ev.matchday      ?? '',
+            homeTeamId:    ev.homeTeamId    ?? null,
+            awayTeamId:    ev.awayTeamId    ?? null,
+            eventDate:     iso,
+            eventDateOnly: dateOnly,
+            eventTimeOnly: timeOnly,
+            tvChannel:     ev.tvChannel,
+            openTickets:   ev.isTicketingOpen,
+            referenceId:   ev.referenceMatchId
+        }, { emitEvent: false });
     }
 
-    // ==============================
-    // Header edit actions
-    // ==============================
+    // ── header edit actions ──────────────────────────────────────
     enableHeaderEdit(): void {
         this.overviewEdit = true;
         this.headerForm.enable({ emitEvent: false });
-
-        // Αν δεν έχει split values (πχ κενό), προσπάθησε από eventDate
         const dateOnly = this.headerForm.get('eventDateOnly')?.value;
         const timeOnly = this.headerForm.get('eventTimeOnly')?.value;
         if ((!dateOnly || !timeOnly) && this.headerForm.get('eventDate')?.value) {
             const split = this.splitIsoToDateTime(this.headerForm.get('eventDate')?.value);
-            this.headerForm.patchValue(
-                { eventDateOnly: split.dateOnly, eventTimeOnly: split.timeOnly },
-                { emitEvent: false }
-            );
+            this.headerForm.patchValue({ eventDateOnly: split.dateOnly, eventTimeOnly: split.timeOnly }, { emitEvent: false });
         }
-
         this._cdr.markForCheck();
     }
 
     cancelHeaderEdit(): void {
         if (!this.event) return;
-
         this.overviewEdit = false;
         this.patchHeaderFormFromEvent(this.event);
         this.headerForm.disable({ emitEvent: false });
-
         this._cdr.markForCheck();
     }
 
     saveHeader(): void {
-        if (this.headerForm.invalid) {
-            this.headerForm.markAllAsTouched();
-            this._cdr.markForCheck();
-            return;
-        }
-
+        if (this.headerForm.invalid) { this.headerForm.markAllAsTouched(); this._cdr.markForCheck(); return; }
         const raw = this.headerForm.getRawValue();
-
-        // ώρα προαιρετική → αν λείπει βάλε 00:00
         const combined = this.combineDateAndTime(raw.eventDateOnly, raw.eventTimeOnly || '00:00');
-
         const payload: Partial<EventItem> = {
-            code: 'BO',
-            name: 'BOO',
-            competitionId: raw.competitionId,
-            matchday: raw.matchday || '',
-            homeTeamId: raw.homeTeamId,
-            awayTeamId: raw.awayTeamId,
-            eventDate: combined,
-            tvChannel: raw.tvChannel,
+            code: 'BO', name: 'BOO',
+            competitionId:    raw.competitionId,
+            matchday:         raw.matchday || '',
+            homeTeamId:       raw.homeTeamId,
+            awayTeamId:       raw.awayTeamId,
+            eventDate:        combined,
+            tvChannel:        raw.tvChannel,
             referenceMatchId: raw.referenceId,
-            isTicketingOpen: !!raw.openTickets,
+            isTicketingOpen:  !!raw.openTickets,
         };
 
-        // ✅ CREATE
         if (this.createMode) {
             this._eventsService.createEvent(payload).subscribe((created: EventItem) => {
-                // πήγαινε στο details του νέου event
                 this._router.navigate(['/apps/events', created.id]);
             });
             return;
         }
 
-        // ✅ UPDATE
         if (!this.event) return;
-
         this._eventsService.updateEvent(this.event.id, { ...payload, id: this.event.id })
             .subscribe((updated: EventItem) => {
                 this.event = updated;
-
                 this.overviewEdit = false;
                 this.patchHeaderFormFromEvent(updated);
                 this.headerForm.disable({ emitEvent: false });
-
                 this._cdr.markForCheck();
             });
     }
 
-
     deleteEvent(): void {
         if (!this.event) return;
         this._eventsService.deleteEvent(this.event.id).subscribe({
-            next: () => {
-                this.showDeleteConfirm = false;
-                this._router.navigate(['/apps/events']);
-            },
-            error: () => {
-                this.showDeleteConfirm = false;
-                this._cdr.markForCheck();
-            },
+            next: () => { this.showDeleteConfirm = false; this._router.navigate(['/apps/events']); },
+            error: () => { this.showDeleteConfirm = false; this._cdr.markForCheck(); },
         });
     }
 
-    // ── Time picker helpers ──────────────────────────────────────
-    readonly timeHours: string[] = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
+    // ── time picker helpers ──────────────────────────────────────
+    readonly timeHours:   string[] = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
     readonly timeMinutes: string[] = ['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'];
 
-    get timeHour(): string {
-        const v: string = this.headerForm?.get('eventTimeOnly')?.value ?? '';
-        return v.slice(0, 2) || '00';
-    }
-    get timeMinute(): string {
-        const v: string = this.headerForm?.get('eventTimeOnly')?.value ?? '';
-        return v.slice(3, 5) || '00';
-    }
+    get timeHour():   string { const v: string = this.headerForm?.get('eventTimeOnly')?.value ?? ''; return v.slice(0, 2) || '00'; }
+    get timeMinute(): string { const v: string = this.headerForm?.get('eventTimeOnly')?.value ?? ''; return v.slice(3, 5) || '00'; }
     setTimePart(part: 'h' | 'm', val: string): void {
         const cur: string = this.headerForm.get('eventTimeOnly')?.value ?? '00:00';
         const [h, m] = cur.split(':');
-        const newVal = part === 'h' ? `${val}:${m || '00'}` : `${h || '00'}:${val}`;
-        this.headerForm.get('eventTimeOnly')?.setValue(newVal);
+        this.headerForm.get('eventTimeOnly')?.setValue(part === 'h' ? `${val}:${m || '00'}` : `${h || '00'}:${val}`);
         this._cdr.markForCheck();
     }
 
-    // ==============================
-    // Helpers (teams/competitions)
-    // ==============================
+    // ── helpers ──────────────────────────────────────────────────
     get competitionName(): string {
         const cid = this.headerForm?.get('competitionId')?.value;
-        const c = this.competitions?.find((x) => x.id === cid);
-        return c?.name || this.event?.competitionName || '-';
+        return this.competitions?.find(x => x.id === cid)?.name || this.event?.competitionName || '-';
     }
-
     teamName(teamId: number | null | undefined): string {
-        const t = this.teams?.find((x) => x.id === Number(teamId));
-        return t?.name || '-';
+        return this.teams?.find(x => x.id === Number(teamId))?.name || '-';
     }
-
     teamLogo(teamId: number | null | undefined): string {
-        const t = this.teams?.find((x) => x.id === Number(teamId));
-        return t?.image || 'assets/images/placeholder-team.png';
+        return this.teams?.find(x => x.id === Number(teamId))?.image || 'assets/images/placeholder-team.png';
     }
-
-    // ==============================
-    // Date formatting
-    // ==============================
     get formattedDateGreek(): string {
         const iso = this.headerForm?.get('eventDate')?.value || this.event?.eventDate;
         if (!iso) return '-';
-
         const d = new Date(iso);
         if (isNaN(d.getTime())) return iso;
-
-        // πχ "9 Ιανουαρίου 2026 | 21:30"
-        const datePart = d.toLocaleDateString('el-GR', {
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric',
-        });
-
-        const timePart = d.toLocaleTimeString('el-GR', {
-            hour: '2-digit',
-            minute: '2-digit',
-        });
-
-        return `${datePart} | ${timePart}`;
+        return d.toLocaleDateString('el-GR', { day: 'numeric', month: 'long', year: 'numeric' })
+            + ' | ' + d.toLocaleTimeString('el-GR', { hour: '2-digit', minute: '2-digit' });
     }
-
     private splitIsoToDateTime(iso: string): { dateOnly: Date | null; timeOnly: string } {
         if (!iso) return { dateOnly: null, timeOnly: '' };
-
         const d = new Date(iso);
         if (isNaN(d.getTime())) return { dateOnly: null, timeOnly: '' };
-
         const pad = (n: number) => String(n).padStart(2, '0');
-        return {
-            dateOnly: d,
-            timeOnly: `${pad(d.getHours())}:${pad(d.getMinutes())}`,
-        };
+        return { dateOnly: d, timeOnly: `${pad(d.getHours())}:${pad(d.getMinutes())}` };
     }
-
     private combineDateAndTime(dateOnly: any, timeOnly: string): string {
         if (!dateOnly) return this.event?.eventDate || '';
         const t = timeOnly || '00:00';
+        if (typeof dateOnly === 'string') return `${dateOnly}T${t}`;
         let d: Date;
-        if (typeof dateOnly === 'string') {
-            return `${dateOnly}T${t}`;
-        }
-        // Luxon DateTime (has toJSDate)
-        if (typeof dateOnly.toJSDate === 'function') {
-            d = dateOnly.toJSDate();
-        } else {
-            d = dateOnly as Date;
-        }
+        if (typeof dateOnly.toJSDate === 'function') d = dateOnly.toJSDate();
+        else d = dateOnly as Date;
         const pad = (n: number) => String(n).padStart(2, '0');
-        const ds = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-        return `${ds}T${t}`;
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${t}`;
     }
-
-    // ==============================
-    // Tickets actions (hooks)
-    // ==============================
-    trackByTicketId = (_: number, t: Ticket) => t.id;
-
-    openEditTicket(t: Ticket): void {
-        // TODO: ανοίγεις MatDialog με form (edit)
-        console.log('EDIT TICKET', t);
-    }
-
-    openDeleteTicket(t: Ticket): void {
-        // TODO: ανοίγεις confirm dialog (delete)
-        console.log('DELETE TICKET', t);
-    }
-
-    // ==============================
-    // Avatar (αν το θες στο header)
-    // ==============================
-    onAvatarSelected(_ev: Event): void {
-        // optional - αν κρατάς εικόνες ομάδων/διοργάνωσης κλπ
-    }
-
-    tvChannelName(tvChannelId: number | null | undefined): string {
-        if (tvChannelId == null) return '';
-        return this.tvChannels?.find(x => x.id === Number(tvChannelId))?.name || '';
-    }
-
-    competitionImage(competitionId: number | null | undefined): string {
-        return this.competitions?.find(x => x.id === Number(competitionId))?.image || '';
-    }
-
     get eventDateFormatted(): string {
         const iso = this.event?.eventDate;
         if (!iso) return '—';
         const d = new Date(iso);
-        if (isNaN(d.getTime())) return '—';
-        return d.toLocaleDateString('el-GR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+        return isNaN(d.getTime()) ? '—' : d.toLocaleDateString('el-GR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     }
-
     get eventTimeFormatted(): string {
         const iso = this.event?.eventDate;
         if (!iso) return '—';
         const d = new Date(iso);
-        if (isNaN(d.getTime())) return '—';
-        return d.toLocaleTimeString('el-GR', { hour: '2-digit', minute: '2-digit' });
+        return isNaN(d.getTime()) ? '—' : d.toLocaleTimeString('el-GR', { hour: '2-digit', minute: '2-digit' });
     }
-
-    // ==============================
-    // Navigation
-    // ==============================
-    backToList(): void {
-        this._router.navigateByUrl('/apps/events');
+    tvChannelName(tvChannelId: number | null | undefined): string {
+        if (tvChannelId == null) return '';
+        return this.tvChannels?.find(x => x.id === Number(tvChannelId))?.name || '';
     }
+    competitionImage(competitionId: number | null | undefined): string {
+        return this.competitions?.find(x => x.id === Number(competitionId))?.image || '';
+    }
+    onAvatarSelected(_ev: Event): void {}
+    backToList(): void { this._router.navigateByUrl('/apps/events'); }
 }
