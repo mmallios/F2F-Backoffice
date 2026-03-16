@@ -447,7 +447,8 @@
                             <mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
                                 <mat-label>Αναζήτηση (Όνομα)</mat-label>
                                 <mat-icon matPrefix>search</mat-icon>
-                                <input matInput [formControl]="ticketSearchCtrl" placeholder="π.χ. Γιώργος Παπαδόπουλος" />
+                                <input matInput [formControl]="ticketSearchCtrl"
+                                    placeholder="π.χ. Γιώργος Παπαδόπουλος" />
                             </mat-form-field>
                             <mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
                                 <mat-label>Θύρα</mat-label>
@@ -500,15 +501,15 @@
                         </div>
 
                         <!-- Rows -->
-                        <div *ngFor="let t of filteredTickets; trackBy: trackByTicketId"
-                            class="ticket-table-row"
+                        <div *ngFor="let t of filteredTickets; trackBy: trackByTicketId" class="ticket-table-row"
                             [class.delete-pending]="deleteTargetId === t.id">
 
                             <!-- Owner -->
                             <div class="ticket-col-owner">
                                 <div class="owner-avatar">{{ ownerInitials(t) }}</div>
                                 <div class="owner-info">
-                                    <div class="owner-name">{{ t.ownerFirstname || '' }} {{ t.ownerLastname || '' }}</div>
+                                    <div class="owner-name">{{ t.ownerFirstname || '' }} {{ t.ownerLastname || '' }}
+                                    </div>
                                     <div class="owner-sub">ID {{ t.ticketUserId ?? '—' }}</div>
                                 </div>
                             </div>
@@ -629,8 +630,8 @@
                             </div>
                             <div class="ticket-modal-footer">
                                 <button mat-stroked-button type="button" (click)="closeAddModal()">Ακύρωση</button>
-                                <button mat-flat-button color="primary" type="button"
-                                    (click)="saveAddTicket()" [disabled]="addForm.invalid || addSaving">
+                                <button mat-flat-button color="primary" type="button" (click)="saveAddTicket()"
+                                    [disabled]="addForm.invalid || addSaving">
                                     <mat-icon *ngIf="addSaving" class="animate-spin text-sm">refresh</mat-icon>
                                     Αποθήκευση
                                 </button>
@@ -686,8 +687,8 @@
                             </div>
                             <div class="ticket-modal-footer">
                                 <button mat-stroked-button type="button" (click)="closeEditModal()">Ακύρωση</button>
-                                <button mat-flat-button color="primary" type="button"
-                                    (click)="saveEditTicket()" [disabled]="editForm.invalid || editSaving">
+                                <button mat-flat-button color="primary" type="button" (click)="saveEditTicket()"
+                                    [disabled]="editForm.invalid || editSaving">
                                     <mat-icon *ngIf="editSaving" class="animate-spin text-sm">refresh</mat-icon>
                                     Αποθήκευση
                                 </button>

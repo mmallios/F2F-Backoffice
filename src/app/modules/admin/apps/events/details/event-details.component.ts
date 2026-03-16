@@ -69,8 +69,8 @@ export class EventDetailsComponent implements OnInit, OnDestroy {
     loadingTickets = false;
 
     ticketSearchCtrl = new FormControl<string>('', { nonNullable: true });
-    ticketGateCtrl   = new FormControl<string | null>(null);
-    ticketTypeCtrl   = new FormControl<number | null>(null);
+    ticketGateCtrl = new FormControl<string | null>(null);
+    ticketTypeCtrl = new FormControl<number | null>(null);
     ticketStatusCtrl = new FormControl<number | null>(null);
 
     // ── delete confirm
@@ -91,10 +91,10 @@ export class EventDetailsComponent implements OnInit, OnDestroy {
 
     fanCardUsages: EventFanCardUsage[] = [];
     loadingFanCardUsages = false;
-    fanCardUsagesLoaded  = false;
+    fanCardUsagesLoaded = false;
 
-    trackByStatKey   = (_: number, s: any) => s.key;
-    trackByTicketId  = (_: number, t: EventTicketDto) => t.id;
+    trackByStatKey = (_: number, s: any) => s.key;
+    trackByTicketId = (_: number, t: EventTicketDto) => t.id;
 
     private _unsubscribeAll = new Subject<void>();
 
@@ -105,7 +105,7 @@ export class EventDetailsComponent implements OnInit, OnDestroy {
         private _fanCardsService: FanCardsAdminService,
         private _fb: FormBuilder,
         private _cdr: ChangeDetectorRef
-    ) {}
+    ) { }
 
     // ==============================
     // Lifecycle
@@ -116,28 +116,28 @@ export class EventDetailsComponent implements OnInit, OnDestroy {
         this._buildAddForm();
 
         forkJoin({
-            teams:        this._eventsService.getTeams(),
+            teams: this._eventsService.getTeams(),
             competitions: this._eventsService.getCompetitions(),
-            tvChannels:   this._eventsService.getTVChannels(),
+            tvChannels: this._eventsService.getTVChannels(),
         }).pipe(takeUntil(this._unsubscribeAll))
-          .subscribe(({ teams, competitions, tvChannels }) => {
-              this.teams        = teams        ?? [];
-              this.competitions = competitions ?? [];
-              this.tvChannels   = tvChannels   ?? [];
-              this._cdr.markForCheck();
-          });
+            .subscribe(({ teams, competitions, tvChannels }) => {
+                this.teams = teams ?? [];
+                this.competitions = competitions ?? [];
+                this.tvChannels = tvChannels ?? [];
+                this._cdr.markForCheck();
+            });
 
         this._route.data.pipe(takeUntil(this._unsubscribeAll)).subscribe((d: any) => {
             const mode = d?.mode;
 
             if (mode === 'create') {
-                this.createMode  = true;
+                this.createMode = true;
                 this.overviewEdit = true;
-                this.event        = null;
-                this.tickets      = [];
+                this.event = null;
+                this.tickets = [];
                 this.filteredTickets = [];
-                this.availableGates  = [];
-                this.statsStrip      = [];
+                this.availableGates = [];
+                this.statsStrip = [];
 
                 this.headerForm.reset({
                     competitionId: null, matchday: '',
@@ -152,7 +152,7 @@ export class EventDetailsComponent implements OnInit, OnDestroy {
                 return;
             }
 
-            this.createMode   = false;
+            this.createMode = false;
             const ev = d?.['event'] as EventItem | null;
             if (!ev) { this._router.navigateByUrl('/apps/events'); return; }
 
@@ -203,29 +203,29 @@ export class EventDetailsComponent implements OnInit, OnDestroy {
             this.ticketTypeCtrl.valueChanges.pipe(startWith(null)),
             this.ticketStatusCtrl.valueChanges.pipe(startWith(null)),
         ]).pipe(takeUntil(this._unsubscribeAll))
-          .subscribe(([search, gate, type, status]) => {
-              const s = (search ?? '').toLowerCase();
-              this.filteredTickets = this.tickets.filter(t => {
-                  const name = `${t.ownerFirstname ?? ''} ${t.ownerLastname ?? ''}`.toLowerCase();
-                  if (s && !name.includes(s)) return false;
-                  if (gate   != null && t.gate   !== gate)   return false;
-                  if (type   != null && t.type   !== type)   return false;
-                  if (status != null && t.status !== status) return false;
-                  return true;
-              });
-              this._cdr.markForCheck();
-          });
+            .subscribe(([search, gate, type, status]) => {
+                const s = (search ?? '').toLowerCase();
+                this.filteredTickets = this.tickets.filter(t => {
+                    const name = `${t.ownerFirstname ?? ''} ${t.ownerLastname ?? ''}`.toLowerCase();
+                    if (s && !name.includes(s)) return false;
+                    if (gate != null && t.gate !== gate) return false;
+                    if (type != null && t.type !== type) return false;
+                    if (status != null && t.status !== status) return false;
+                    return true;
+                });
+                this._cdr.markForCheck();
+            });
     }
 
     // ── edit modal ───────────────────────────────────────────────
     private _buildEditForm(): void {
         this.editForm = this._fb.group({
-            gate:    ['', Validators.required],
+            gate: ['', Validators.required],
             section: [''],
-            row:     [''],
-            seat:    [''],
-            price:   [0],
-            status:  [0, Validators.required],
+            row: [''],
+            seat: [''],
+            price: [0],
+            status: [0, Validators.required],
             buyerData: [''],
         });
     }
@@ -233,12 +233,12 @@ export class EventDetailsComponent implements OnInit, OnDestroy {
     openEditTicket(t: EventTicketDto): void {
         this.editTarget = t;
         this.editForm.reset({
-            gate:    t.gate    ?? '',
+            gate: t.gate ?? '',
             section: t.section ?? '',
-            row:     t.row     ?? '',
-            seat:    t.seat    ?? '',
-            price:   t.price   ?? 0,
-            status:  t.status  ?? 0,
+            row: t.row ?? '',
+            seat: t.seat ?? '',
+            price: t.price ?? 0,
+            status: t.status ?? 0,
             buyerData: t.buyerData ?? '',
         });
         this._cdr.markForCheck();
@@ -253,12 +253,12 @@ export class EventDetailsComponent implements OnInit, OnDestroy {
 
         const raw = this.editForm.getRawValue();
         const dto: UpdateEventTicketDto = {
-            gate:    raw.gate    || undefined,
+            gate: raw.gate || undefined,
             section: raw.section || undefined,
-            row:     raw.row     || undefined,
-            seat:    raw.seat    || undefined,
-            price:   raw.price   ?? undefined,
-            status:  raw.status  ?? undefined,
+            row: raw.row || undefined,
+            seat: raw.seat || undefined,
+            price: raw.price ?? undefined,
+            status: raw.status ?? undefined,
             buyerData: raw.buyerData || undefined,
         };
 
@@ -279,13 +279,13 @@ export class EventDetailsComponent implements OnInit, OnDestroy {
     // ── add modal ────────────────────────────────────────────────
     private _buildAddForm(): void {
         this.addForm = this._fb.group({
-            gate:    ['', Validators.required],
+            gate: ['', Validators.required],
             section: [''],
-            row:     [''],
-            seat:    [''],
-            price:   [0],
-            status:  [0, Validators.required],
-            type:    [0, Validators.required],
+            row: [''],
+            seat: [''],
+            price: [0],
+            status: [0, Validators.required],
+            type: [0, Validators.required],
             buyerData: [''],
         });
     }
@@ -306,13 +306,13 @@ export class EventDetailsComponent implements OnInit, OnDestroy {
         const raw = this.addForm.getRawValue();
         const dto: CreateEventTicketDto = {
             ticketId: 0,
-            gate:    raw.gate,
+            gate: raw.gate,
             section: raw.section || undefined,
-            row:     raw.row     || undefined,
-            seat:    raw.seat    || undefined,
-            price:   raw.price   ?? 0,
-            status:  raw.status  ?? 0,
-            type:    raw.type    ?? 0,
+            row: raw.row || undefined,
+            seat: raw.seat || undefined,
+            price: raw.price ?? 0,
+            status: raw.status ?? 0,
+            type: raw.type ?? 0,
             buyerData: raw.buyerData || undefined,
         };
 
@@ -321,7 +321,7 @@ export class EventDetailsComponent implements OnInit, OnDestroy {
                 next: (created) => {
                     this.tickets = [created, ...this.tickets];
                     this.filteredTickets = [created, ...this.filteredTickets];
-                    this.addSaving    = false;
+                    this.addSaving = false;
                     this.showAddModal = false;
                     this._cdr.markForCheck();
                 },
@@ -331,7 +331,7 @@ export class EventDetailsComponent implements OnInit, OnDestroy {
 
     // ── delete ───────────────────────────────────────────────────
     confirmDelete(id: number): void { this.deleteTargetId = id; this._cdr.markForCheck(); }
-    cancelDelete():    void { this.deleteTargetId = null; this._cdr.markForCheck(); }
+    cancelDelete(): void { this.deleteTargetId = null; this._cdr.markForCheck(); }
 
     executeDelete(): void {
         if (this.deleteTargetId == null || !this.event) return;
@@ -344,7 +344,7 @@ export class EventDetailsComponent implements OnInit, OnDestroy {
                     this.tickets = this.tickets.filter(t => t.id !== this.deleteTargetId);
                     this.filteredTickets = this.filteredTickets.filter(t => t.id !== this.deleteTargetId);
                     this.deleteTargetId = null;
-                    this.deletePending  = false;
+                    this.deletePending = false;
                     this._cdr.markForCheck();
                 },
                 error: () => { this.deletePending = false; this._cdr.markForCheck(); },
@@ -358,20 +358,20 @@ export class EventDetailsComponent implements OnInit, OnDestroy {
 
     ticketStatusLabel(status: number): string {
         switch (status) {
-            case 0:  return 'ΔΙΑΘΕΣΙΜΟ';
-            case 1:  return 'ΕΚΚΡΕΜΕΙ ΜΕΤΑΒΙΒΑΣΗ';
-            case 2:  return 'ΜΕΤΑΒΙΒΑΣΘΗΚΕ';
-            case 3:  return 'ΑΠΟΡΡΙΦΘΗΚΕ';
+            case 0: return 'ΔΙΑΘΕΣΙΜΟ';
+            case 1: return 'ΕΚΚΡΕΜΕΙ ΜΕΤΑΒΙΒΑΣΗ';
+            case 2: return 'ΜΕΤΑΒΙΒΑΣΘΗΚΕ';
+            case 3: return 'ΑΠΟΡΡΙΦΘΗΚΕ';
             default: return '—';
         }
     }
 
     ticketStatusColor(status: number): string {
         switch (status) {
-            case 0:  return 'text-green-700 bg-green-100';
-            case 1:  return 'text-amber-700 bg-amber-100';
-            case 2:  return 'text-blue-700 bg-blue-100';
-            case 3:  return 'text-red-700 bg-red-100';
+            case 0: return 'text-green-700 bg-green-100';
+            case 1: return 'text-amber-700 bg-amber-100';
+            case 2: return 'text-blue-700 bg-blue-100';
+            case 3: return 'text-red-700 bg-red-100';
             default: return 'text-gray-500 bg-gray-100';
         }
     }
@@ -386,7 +386,7 @@ export class EventDetailsComponent implements OnInit, OnDestroy {
 
     ownerInitials(t: EventTicketDto): string {
         const f = (t.ownerFirstname ?? '').trim();
-        const l = (t.ownerLastname  ?? '').trim();
+        const l = (t.ownerLastname ?? '').trim();
         return ((f[0] ?? '') + (l[0] ?? '')).toUpperCase() || '?';
     }
 
@@ -397,8 +397,8 @@ export class EventDetailsComponent implements OnInit, OnDestroy {
         this._cdr.markForCheck();
         this._fanCardsService.getEventUsages(this.event.id).subscribe({
             next: (usages) => {
-                this.fanCardUsages        = usages;
-                this.fanCardUsagesLoaded  = true;
+                this.fanCardUsages = usages;
+                this.fanCardUsagesLoaded = true;
                 this.loadingFanCardUsages = false;
                 this._cdr.markForCheck();
             },
@@ -412,15 +412,15 @@ export class EventDetailsComponent implements OnInit, OnDestroy {
     private buildHeaderForm(): void {
         this.headerForm = this._fb.group({
             competitionId: [null, Validators.required],
-            matchday:      [''],
+            matchday: [''],
             eventDateOnly: [null as Date | null, Validators.required],
             eventTimeOnly: ['', Validators.pattern(/^([01]\d|2[0-3]):[0-5]\d$/)],
-            homeTeamId:    [null, Validators.required],
-            awayTeamId:    [null, Validators.required],
-            eventDate:     [''],
-            tvChannel:     [null],
-            referenceId:   [''],
-            openTickets:   [true],
+            homeTeamId: [null, Validators.required],
+            awayTeamId: [null, Validators.required],
+            eventDate: [''],
+            tvChannel: [null],
+            referenceId: [''],
+            openTickets: [true],
         });
         this.headerForm.disable({ emitEvent: false });
     }
@@ -430,15 +430,15 @@ export class EventDetailsComponent implements OnInit, OnDestroy {
         const { dateOnly, timeOnly } = this.splitIsoToDateTime(iso);
         this.headerForm.reset({
             competitionId: ev.competitionId ?? null,
-            matchday:      ev.matchday      ?? '',
-            homeTeamId:    ev.homeTeamId    ?? null,
-            awayTeamId:    ev.awayTeamId    ?? null,
-            eventDate:     iso,
+            matchday: ev.matchday ?? '',
+            homeTeamId: ev.homeTeamId ?? null,
+            awayTeamId: ev.awayTeamId ?? null,
+            eventDate: iso,
             eventDateOnly: dateOnly,
             eventTimeOnly: timeOnly,
-            tvChannel:     ev.tvChannel,
-            openTickets:   ev.isTicketingOpen,
-            referenceId:   ev.referenceMatchId
+            tvChannel: ev.tvChannel,
+            openTickets: ev.isTicketingOpen,
+            referenceId: ev.referenceMatchId
         }, { emitEvent: false });
     }
 
@@ -469,14 +469,14 @@ export class EventDetailsComponent implements OnInit, OnDestroy {
         const combined = this.combineDateAndTime(raw.eventDateOnly, raw.eventTimeOnly || '00:00');
         const payload: Partial<EventItem> = {
             code: 'BO', name: 'BOO',
-            competitionId:    raw.competitionId,
-            matchday:         raw.matchday || '',
-            homeTeamId:       raw.homeTeamId,
-            awayTeamId:       raw.awayTeamId,
-            eventDate:        combined,
-            tvChannel:        raw.tvChannel,
+            competitionId: raw.competitionId,
+            matchday: raw.matchday || '',
+            homeTeamId: raw.homeTeamId,
+            awayTeamId: raw.awayTeamId,
+            eventDate: combined,
+            tvChannel: raw.tvChannel,
             referenceMatchId: raw.referenceId,
-            isTicketingOpen:  !!raw.openTickets,
+            isTicketingOpen: !!raw.openTickets,
         };
 
         if (this.createMode) {
@@ -506,10 +506,10 @@ export class EventDetailsComponent implements OnInit, OnDestroy {
     }
 
     // ── time picker helpers ──────────────────────────────────────
-    readonly timeHours:   string[] = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
+    readonly timeHours: string[] = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
     readonly timeMinutes: string[] = ['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'];
 
-    get timeHour():   string { const v: string = this.headerForm?.get('eventTimeOnly')?.value ?? ''; return v.slice(0, 2) || '00'; }
+    get timeHour(): string { const v: string = this.headerForm?.get('eventTimeOnly')?.value ?? ''; return v.slice(0, 2) || '00'; }
     get timeMinute(): string { const v: string = this.headerForm?.get('eventTimeOnly')?.value ?? ''; return v.slice(3, 5) || '00'; }
     setTimePart(part: 'h' | 'm', val: string): void {
         const cur: string = this.headerForm.get('eventTimeOnly')?.value ?? '00:00';
@@ -573,6 +573,6 @@ export class EventDetailsComponent implements OnInit, OnDestroy {
     competitionImage(competitionId: number | null | undefined): string {
         return this.competitions?.find(x => x.id === Number(competitionId))?.image || '';
     }
-    onAvatarSelected(_ev: Event): void {}
+    onAvatarSelected(_ev: Event): void { }
     backToList(): void { this._router.navigateByUrl('/apps/events'); }
 }

@@ -85,12 +85,25 @@
     transition: background 0.15s ease;
 }
 
-.ticket-table-row:last-child { border-bottom: none; }
-.ticket-table-row:hover      { background: #f8fafc; }
-.ticket-table-row.delete-pending { background: #fef2f2; }
+.ticket-table-row:last-child {
+    border-bottom: none;
+}
+
+.ticket-table-row:hover {
+    background: #f8fafc;
+}
+
+.ticket-table-row.delete-pending {
+    background: #fef2f2;
+}
 
 /* Owner cell */
-.ticket-col-owner { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.ticket-col-owner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
 
 .owner-avatar {
     flex: 0 0 36px;
@@ -106,12 +119,29 @@
     justify-content: center;
 }
 
-.owner-info { min-width: 0; }
-.owner-name { font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.owner-sub  { font-size: 11px; color: #94a3b8; margin-top: 1px; }
+.owner-info {
+    min-width: 0;
+}
+
+.owner-name {
+    font-weight: 600;
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.owner-sub {
+    font-size: 11px;
+    color: #94a3b8;
+    margin-top: 1px;
+}
 
 /* Gate cell */
-.ticket-col-gate { min-width: 0; }
+.ticket-col-gate {
+    min-width: 0;
+}
+
 .gate-badge {
     display: inline-block;
     font-size: 12px;
@@ -134,7 +164,12 @@
 }
 
 /* Actions cell */
-.ticket-col-actions { display: flex; align-items: center; justify-content: flex-end; gap: 2px; }
+.ticket-col-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 2px;
+}
 
 /* ─── Ticket modal ─────────────────────────────────────── */
 .ticket-modal-backdrop {
@@ -179,7 +214,9 @@
     gap: 12px;
 }
 
-.ticket-modal-grid .col-span-2 { grid-column: span 2; }
+.ticket-modal-grid .col-span-2 {
+    grid-column: span 2;
+}
 
 .ticket-modal-footer {
     display: flex;
