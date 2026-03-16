@@ -17,6 +17,8 @@ import { BOToastComponent } from 'app/layout/common/bo-toast/bo-toast.component'
 import { NavigationService } from 'app/core/navigation/navigation.service';
 import { Navigation } from 'app/core/navigation/navigation.types';
 import { UserService } from 'app/core/user/user.service';
+import { NotificationsService } from 'app/layout/common/notifications/notifications.service';
+import { Notification as AppNotification } from 'app/layout/common/notifications/notifications.types';
 
 import { LanguagesComponent } from 'app/layout/common/languages/languages.component';
 import { MessagesComponent } from 'app/layout/common/messages/messages.component';
@@ -53,6 +55,11 @@ export class ClassyLayoutComponent implements OnInit, OnDestroy {
     isScreenSmall: boolean;
     navigation: Navigation;
     user: User;
+    unreadMessages: number = 0;
+    unreadNotifications: number = 0;
+    notifDropdownOpen = false;
+    unreadNotifSnapshot: AppNotification[] = [];
+    private _allNotifications: AppNotification[] = [];
     private _unsubscribeAll: Subject<any> = new Subject<any>();
 
     /**
@@ -68,6 +75,7 @@ export class ClassyLayoutComponent implements OnInit, OnDestroy {
         private _authService: AuthService,
         private _boHub: BOHubService,
         private _chatService: ChatService,
+        private _notificationsService: NotificationsService,
     ) { }
 
     // -----------------------------------------------------------------------------------------------------
@@ -127,6 +135,7 @@ export class ClassyLayoutComponent implements OnInit, OnDestroy {
         this._chatService.totalUnread$
             .pipe(takeUntil(this._unsubscribeAll))
             .subscribe(count => {
+                this.unreadMessages = count;
                 const navComponent = this._fuseNavigationService.getComponent<FuseVerticalNavigationComponent>('mainNavigation');
                 if (!navComponent) return;
                 const item = this._fuseNavigationService.getItem('apps.chat', navComponent.navigation);
@@ -137,6 +146,15 @@ export class ClassyLayoutComponent implements OnInit, OnDestroy {
                     item.badge = null;
                 }
                 navComponent.refresh();
+            });
+
+        // Track unread notifications count
+        this._notificationsService.notifications$
+            .pipe(takeUntil(this._unsubscribeAll))
+            .subscribe(notifications => {
+                this._allNotifications = notifications;
+                this.unreadNotifications = notifications.filter(n => !n.read).length;
+                this._updateNavBadges(notifications);
             });
     }
 
@@ -169,6 +187,39 @@ export class ClassyLayoutComponent implements OnInit, OnDestroy {
             // Toggle the opened status
             navigation.toggle();
         }
+    }
+
+    toggleNotifDropdown(): void {
+        if (!this.notifDropdownOpen) {
+            this.unreadNotifSnapshot = this._allNotifications.filter(n => !n.read);
+            if (this.unreadNotifSnapshot.length > 0) {
+                this._notificationsService.markAllAsRead().subscribe();
+            }
+        }
+        this.notifDropdownOpen = !this.notifDropdownOpen;
+    }
+
+    private _updateNavBadges(notifications: AppNotification[]): void {
+        const navComponent = this._fuseNavigationService.getComponent<FuseVerticalNavigationComponent>('mainNavigation');
+        if (!navComponent) return;
+
+        const supportCount = notifications.filter(n => !n.read && (n.type === 1 || n.type === 2)).length;
+        const ordersCount = notifications.filter(n => !n.read && n.type === 3).length;
+        const regCount = notifications.filter(n => !n.read && n.type === 4).length;
+
+        this._setNavBadge('apps.support.tickets', supportCount, navComponent);
+        this._setNavBadge('apps.orders', ordersCount, navComponent);
+        this._setNavBadge('apps.registration-requests', regCount, navComponent);
+
+        navComponent.refresh();
+    }
+
+    private _setNavBadge(id: string, count: number, navComponent: FuseVerticalNavigationComponent): void {
+        const item = this._fuseNavigationService.getItem(id, navComponent.navigation);
+        if (!item) return;
+        item.badge = count > 0
+            ? { title: `(${count})`, classes: 'text-red-500 font-semibold text-sm' }
+            : null;
     }
 
     signOut(): void {
