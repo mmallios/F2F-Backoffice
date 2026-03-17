@@ -27,9 +27,14 @@
                         </div>
                     </div>
 
-                    <div class="text-secondary text-m mt-0.5">
+                    <div class="text-secondary text-m mt-0.5 flex items-center gap-2 flex-wrap">
                         Κωδικός:
                         <span class="font-medium">{{ detailsForm.get('code')?.value || '-' }}</span>
+                        <button mat-icon-button type="button" (click)="openCodeEdit()"
+                            matTooltip="Αλλαγή κωδικού"
+                            style="width:20px;height:20px;line-height:20px;" class="opacity-50 hover:opacity-100">
+                            <mat-icon style="font-size:14px;width:14px;height:14px;">edit</mat-icon>
+                        </button>
                         • Πόντοι:
                         <span class="font-medium f-bold">{{ detailsForm.get('points')?.value ?? 0 }}</span>
                     </div>
@@ -97,9 +102,17 @@
                 <div class="rounded-xl border p-4 flex items-center gap-4
              hover:bg-gray-50/60 dark:hover:bg-white/5 transition">
                     <!-- BIG ICON (LEFT) -->
-                    <div class="flex items-center justify-center w-10 h-10 rounded-xl
-               bg-primary/10 text-primary shrink-0">
-                        <mat-icon class="icon-size-6 text-primary" [svgIcon]="field.icon"></mat-icon>
+                    <div class="flex items-center justify-center w-10 h-10 rounded-xl shrink-0"
+                        [ngClass]="{'bg-primary/10': field.control !== 'linkedPerson' || !user?.linkedUser}">
+                        <ng-container *ngIf="field.control === 'linkedPerson' && user?.linkedUser; else defaultIcon">
+                            <div class="h-10 w-10 rounded-xl overflow-hidden bg-gray-200 flex items-center justify-center text-sm font-semibold text-gray-700">
+                                <img *ngIf="user.linkedUser.image" [src]="user.linkedUser.image" class="h-full w-full object-cover" />
+                                <span *ngIf="!user.linkedUser.image">{{ (user.linkedUser.firstname?.[0] || '') + (user.linkedUser.lastname?.[0] || '') | uppercase }}</span>
+                            </div>
+                        </ng-container>
+                        <ng-template #defaultIcon>
+                            <mat-icon class="icon-size-6 text-primary" [svgIcon]="field.icon"></mat-icon>
+                        </ng-template>
                     </div>
 
                     <!-- TEXT (RIGHT) -->
@@ -110,6 +123,17 @@
                         <div class="font-semibold truncate">
                             <ng-container [ngSwitch]="field.control">
 
+                                <!-- mobile: country code + number -->
+                                <ng-container *ngSwitchCase="'mobile'">
+                                    <ng-container *ngIf="detailsForm.get('mobile')?.value; else noMobile">
+                                        <span class="inline-flex items-center gap-1">
+                                            <span *ngIf="user?.mobileCountryCode" class="text-secondary font-normal">{{ user.mobileCountryCode }}</span>
+                                            <span>{{ detailsForm.get('mobile')?.value }}</span>
+                                        </span>
+                                    </ng-container>
+                                    <ng-template #noMobile>-</ng-template>
+                                </ng-container>
+
                                 <!-- ✅ Social media: icon + account -->
                                 <ng-container *ngSwitchCase="'socialMediaProfile'">
                                     <span class="inline-flex items-center gap-2 min-w-0">
@@ -117,6 +141,17 @@
                                             [src]="getSocialIconUrl()" [alt]="getSocialMediaName() || 'social'" />
                                         <span class="truncate">{{ detailsForm.get(field.control)?.value || '-' }}</span>
                                     </span>
+                                </ng-container>
+
+                                <!-- linkedPerson: fullname + code below -->
+                                <ng-container *ngSwitchCase="'linkedPerson'">
+                                    <ng-container *ngIf="user?.linkedUser; else noLinkedUser">
+                                        <div class="leading-tight">
+                                            <div class="truncate">{{ user.linkedUser.firstname }} {{ user.linkedUser.lastname }}</div>
+                                            <div *ngIf="user.linkedUser.code" class="text-secondary text-xs font-normal">#{{ user.linkedUser.code }}</div>
+                                        </div>
+                                    </ng-container>
+                                    <ng-template #noLinkedUser>-</ng-template>
                                 </ng-container>
 
                                 <!-- birthdate: Greek dd/MM/yyyy format -->
@@ -138,8 +173,94 @@
             </ng-container>
         </div>
 
+    </div>
 
+    <!-- ================= CHANGE CODE MODAL ================= -->
+    <div *ngIf="codeModalOpen"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+        <div class="bg-card rounded-2xl shadow-xl w-full max-w-md p-6 space-y-5">
 
+            <!-- Header -->
+            <div class="flex items-center justify-between">
+                <div class="text-lg font-bold">Αλλαγή Κωδικού</div>
+                <button mat-icon-button type="button" (click)="cancelCodeEdit()">
+                    <mat-icon>close</mat-icon>
+                </button>
+            </div>
+
+            <!-- STEP 1: Input -->
+            <ng-container *ngIf="codeModalStep === 1">
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-sm text-secondary font-medium block mb-1">Νέος Κωδικός</label>
+                        <div class="relative">
+                            <input [formControl]="codeEditCtrl" (input)="onCodeInput()"
+                                class="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary pr-9"
+                                placeholder="Εισάγετε νέο κωδικό" autocomplete="off" />
+                            <div class="absolute right-2 top-1/2 -translate-y-1/2">
+                                <mat-icon *ngIf="codeChecking" class="icon-size-5 text-gray-400 animate-spin">refresh</mat-icon>
+                                <mat-icon *ngIf="!codeChecking && codeAvailable === true" class="icon-size-5 text-green-500">check_circle</mat-icon>
+                                <mat-icon *ngIf="!codeChecking && codeAvailable === false" class="icon-size-5 text-red-500">cancel</mat-icon>
+                            </div>
+                        </div>
+                        <!-- feedback message -->
+                        <p *ngIf="!codeChecking && codeAvailable === true"
+                            class="text-xs text-green-600 mt-1">Ο κωδικός είναι διαθέσιμος.</p>
+                        <p *ngIf="!codeChecking && codeAvailable === false"
+                            class="text-xs text-red-500 mt-1">Ο κωδικός χρησιμοποιείται ήδη.</p>
+                    </div>
+
+                    <div class="flex justify-end gap-2 pt-2">
+                        <button mat-stroked-button type="button" (click)="cancelCodeEdit()">Ακύρωση</button>
+                        <button mat-flat-button color="primary" type="button"
+                            [disabled]="!codeAvailable || codeChecking"
+                            (click)="codeModalStep = 2">
+                            ΣΥΝΕΧΕΙΑ
+                        </button>
+                    </div>
+                </div>
+            </ng-container>
+
+            <!-- STEP 2: Confirmation -->
+            <ng-container *ngIf="codeModalStep === 2">
+                <div class="space-y-4">
+                    <p class="text-sm text-secondary">Επιβεβαιώστε την αλλαγή κωδικού:</p>
+
+                    <div class="rounded-xl border divide-y">
+                        <div class="flex items-center justify-between px-4 py-3">
+                            <span class="text-sm text-secondary">Τρέχων κωδικός</span>
+                            <span class="font-semibold">{{ user.code || '-' }}</span>
+                        </div>
+                        <div class="flex items-center justify-between px-4 py-3">
+                            <span class="text-sm text-secondary">Νέος κωδικός</span>
+                            <span class="font-semibold text-primary">{{ codeEditCtrl.value }}</span>
+                        </div>
+                    </div>
+
+                    <!-- success / error after submit -->
+                    <div *ngIf="codeSaveResult === 'success'"
+                        class="flex items-center gap-2 text-green-600 text-sm bg-green-50 rounded-lg px-3 py-2">
+                        <mat-icon class="icon-size-4">check_circle</mat-icon>
+                        Ο κωδικός ενημερώθηκε επιτυχώς.
+                    </div>
+                    <div *ngIf="codeSaveResult === 'error'"
+                        class="flex items-center gap-2 text-red-500 text-sm bg-red-50 rounded-lg px-3 py-2">
+                        <mat-icon class="icon-size-4">error</mat-icon>
+                        Κάτι πήγε στραβά. Δοκιμάστε ξανά.
+                    </div>
+
+                    <div class="flex justify-end gap-2 pt-2">
+                        <button mat-stroked-button type="button" (click)="codeModalStep = 1" [disabled]="codeSaving">Πίσω</button>
+                        <button mat-flat-button color="primary" type="button"
+                            (click)="saveCode()" [disabled]="codeSaving">
+                            <span *ngIf="!codeSaving">ΑΠΟΘΗΚΕΥΣΗ</span>
+                            <span *ngIf="codeSaving">Αποθήκευση...</span>
+                        </button>
+                    </div>
+                </div>
+            </ng-container>
+
+        </div>
     </div>
 
 

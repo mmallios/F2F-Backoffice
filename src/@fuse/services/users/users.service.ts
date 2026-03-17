@@ -175,6 +175,17 @@ export class UsersService {
         );
     }
 
+    checkCode(code: string, excludeUserId: number): Observable<{ available: boolean }> {
+        const params = new HttpParams()
+            .set('code', code)
+            .set('excludeUserId', String(excludeUserId));
+        return this.http.get<{ available: boolean }>(`${environment.apiUrl}/BOUsers/check-code`, { params });
+    }
+
+    updateUserCode(id: number, code: string): Observable<{ code: string }> {
+        return this.http.patch<{ code: string }>(`${environment.apiUrl}/BOUsers/${id}/code`, { code });
+    }
+
     // ── Registration Requests ──────────────────────────────────────
 
     getRegistrationStats(): Observable<RegistrationStats> {

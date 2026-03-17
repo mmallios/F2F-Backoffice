@@ -75,6 +75,16 @@ export class UsersProfileComponent implements OnInit {
     rejectionInfo: RegistrationRequest | null = null;
     loadingRejectionInfo = false;
 
+    // Code edit modal
+    codeModalOpen = false;
+    codeModalStep = 1; // 1 = input, 2 = confirm
+    codeEditCtrl = new FormControl('', { nonNullable: true });
+    codeAvailable: boolean | null = null;
+    codeChecking = false;
+    codeSaving = false;
+    codeSaveResult: 'success' | 'error' | null = null;
+    private _codeCheckSub: any = null;
+
     // Ban confirm modal
     readonly adminUserId: number | null = null;
     banConfirmModalOpen = false;
@@ -188,7 +198,7 @@ export class UsersProfileComponent implements OnInit {
                 country: this.nameById((this.user as any).countryId),
                 region: this.nameById((this.user as any).regionId),
 
-                city: (this.user as any).city || '',
+                city: this.nameById((this.user as any).cityId ?? (this.user as any).city),
                 area: (this.user as any).area || '',
             });
 
@@ -241,7 +251,7 @@ export class UsersProfileComponent implements OnInit {
                     points: u.points ?? 0,
                     country: this.nameById((u as any).countryId),
                     region: this.nameById((u as any).regionId),
-                    city: (u as any).city || '',
+                    city: this.nameById((u as any).cityId ?? (u as any).city),
                     area: (u as any).area || '',
                 });
 
@@ -289,6 +299,68 @@ export class UsersProfileComponent implements OnInit {
             this.avatarPreview = u.image ?? null;
             this.overviewEdit = false;
             this._cdr.markForCheck();
+        });
+    }
+
+    // ---- Code Edit Modal ----
+    openCodeEdit(): void {
+        this.codeEditCtrl.setValue('');
+        this.codeAvailable = null;
+        this.codeChecking = false;
+        this.codeSaveResult = null;
+        this.codeModalStep = 1;
+        this.codeModalOpen = true;
+        this._cdr.markForCheck();
+    }
+
+    cancelCodeEdit(): void {
+        this.codeModalOpen = false;
+        this.codeAvailable = null;
+        this.codeSaveResult = null;
+        if (this._codeCheckSub) { this._codeCheckSub.unsubscribe(); this._codeCheckSub = null; }
+        this._cdr.markForCheck();
+    }
+
+    onCodeInput(): void {
+        const val = this.codeEditCtrl.value.trim();
+        this.codeAvailable = null;
+        if (this._codeCheckSub) { this._codeCheckSub.unsubscribe(); this._codeCheckSub = null; }
+        if (!val || val === (this.user.code ?? '')) { this._cdr.markForCheck(); return; }
+
+        this.codeChecking = true;
+        this._cdr.markForCheck();
+
+        this._codeCheckSub = this._usersService.checkCode(val, this.user.id!).subscribe({
+            next: (res) => {
+                this.codeAvailable = res.available;
+                this.codeChecking = false;
+                this._cdr.markForCheck();
+            },
+            error: () => { this.codeChecking = false; this._cdr.markForCheck(); },
+        });
+    }
+
+    saveCode(): void {
+        const val = this.codeEditCtrl.value.trim();
+        if (!val || !this.codeAvailable || this.codeSaving) return;
+        this.codeSaving = true;
+        this.codeSaveResult = null;
+        this._cdr.markForCheck();
+
+        this._usersService.updateUserCode(this.user.id!, val).subscribe({
+            next: (res) => {
+                this.user = { ...this.user, code: res.code };
+                this.detailsForm.patchValue({ code: res.code });
+                this.codeSaveResult = 'success';
+                this.codeSaving = false;
+                this._cdr.markForCheck();
+                setTimeout(() => { this.cancelCodeEdit(); }, 1200);
+            },
+            error: () => {
+                this.codeSaveResult = 'error';
+                this.codeSaving = false;
+                this._cdr.markForCheck();
+            },
         });
     }
 
