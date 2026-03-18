@@ -6,6 +6,8 @@ import {
     OnDestroy,
     OnInit,
     ViewEncapsulation,
+    inject,
+    signal,
 } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -15,8 +17,10 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { Subject, takeUntil } from 'rxjs';
+import { Subject, finalize, takeUntil } from 'rxjs';
 
+import { ImageUploadService } from '@fuse/services/general/image-upload.service';
+import { AuthService } from 'app/core/auth/auth.service';
 import {
     AnnouncementsService,
     AnnouncementDto,
@@ -58,6 +62,7 @@ export class AnnouncementDetailsComponent implements OnInit, OnDestroy {
     announcement: AnnouncementDto | null = null;
     isCreate = false;
 
+    uploading = signal(false);
     previewUrl: string | null = null;
     selectedFile: File | null = null;
 
@@ -76,6 +81,9 @@ export class AnnouncementDetailsComponent implements OnInit, OnDestroy {
 
     private _unsubscribeAll = new Subject<void>();
 
+
+    private _imageUpload = inject(ImageUploadService);
+    private _auth = inject(AuthService);
 
     constructor(
         private _route: ActivatedRoute,
@@ -109,14 +117,13 @@ export class AnnouncementDetailsComponent implements OnInit, OnDestroy {
                 next: (a) => {
                     this.announcement = a;
 
-                    const isPublished = !!a.publishDate;
                     this.form.patchValue({
                         title: a.title ?? '',
                         code: a.code ?? '',
                         message: a.message ?? '',
                         thumbnail: a.thumbnail ?? null,
                         publishDate: a.publishDate ? new Date(a.publishDate) : null,
-                        status: isPublished ? 'published' : 'draft',
+                        status: a.status === 1 ? 'published' : 'draft',
                         sendPushNotification: !!a.sendPushNotification,
                     });
 
@@ -149,7 +156,22 @@ export class AnnouncementDetailsComponent implements OnInit, OnDestroy {
         this.selectedFile = file;
         if (this.previewUrl?.startsWith('blob:')) URL.revokeObjectURL(this.previewUrl);
         this.previewUrl = URL.createObjectURL(file);
+        this.uploading.set(true);
         this._cdr.markForCheck();
+
+        this._imageUpload
+            .uploadImage(file, 'announcements')
+            .pipe(finalize(() => { this.uploading.set(false); this._cdr.markForCheck(); }))
+            .subscribe({
+                next: (res) => {
+                    this.form.controls.thumbnail.setValue(res.publicUrl);
+                    this.previewUrl = res.publicUrl;
+                    this._cdr.markForCheck();
+                },
+                error: () => {
+                    this._snack.open('Σφάλμα κατά το ανέβασμα εικόνας.', 'OK', { duration: 3000 });
+                },
+            });
     }
 
     removeImage(): void {
@@ -177,14 +199,12 @@ export class AnnouncementDetailsComponent implements OnInit, OnDestroy {
 
         this.applyStatusToPublishDate();
 
-        // TODO optional:
-        // if (this.selectedFile) => upload to your backend => get url => set thumbnail
-
         if (this.isCreate) {
             const payload: CreateAnnouncementRequest = {
                 title: this.form.controls.title.value,
                 message: this.form.controls.message.value,
-                thumbnail: this.form.controls.thumbnail.value
+                thumbnail: this.form.controls.thumbnail.value,
+                createdByBoUserId: this._auth.currentUser?.boUserId ?? null,
             };
 
             this.loading = true;
@@ -203,6 +223,7 @@ export class AnnouncementDetailsComponent implements OnInit, OnDestroy {
                         thumbnail: this.form.controls.thumbnail.value,
                         publishDate: publishDateIso,
                         sendPushNotification: this.form.controls.sendPushNotification.value,
+                        status: this.form.controls.status.value === 'published' ? 1 : 0,
                     };
 
                     this._api.update(created.id, extra).subscribe({
@@ -255,6 +276,7 @@ export class AnnouncementDetailsComponent implements OnInit, OnDestroy {
             thumbnail: this.form.controls.thumbnail.value,
             publishDate: publishDateIso,
             sendPushNotification: this.form.controls.sendPushNotification.value,
+            status: this.form.controls.status.value === 'published' ? 1 : 0,
         };
 
         this.loading = true;

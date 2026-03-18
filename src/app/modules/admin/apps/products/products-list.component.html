@@ -195,15 +195,20 @@
 
                         <!-- Actions -->
                         <ng-container matColumnDef="actions">
-                            <th mat-header-cell *matHeaderCellDef class="text-right px-6">Actions</th>
+                            <th mat-header-cell *matHeaderCellDef class="text-right px-6">Ενέργειες</th>
                             <td mat-cell *matCellDef="let p" class="text-right px-6 py-3">
                                 <div class="inline-flex items-center gap-2">
-                                    <button mat-stroked-button class="!rounded-xl" matTooltip="View product"
+                                    <button mat-stroked-button class="!rounded-xl" matTooltip="Προβολή προϊόντος"
                                         (click)="viewDetails(p)">
                                         <mat-icon [svgIcon]="'heroicons_outline:eye'"></mat-icon>
-                                        <span class="ml-2">View</span>
+                                        <span class="ml-2">Προβολή</span>
                                     </button>
-
+                                    <button mat-stroked-button class="!rounded-xl text-red-500 border-red-300 hover:bg-red-50 dark:hover:bg-red-500/10"
+                                        matTooltip="Διαγραφή προϊόντος"
+                                        (click)="deleteProduct(p)">
+                                        <mat-icon [svgIcon]="'heroicons_outline:trash'"></mat-icon>
+                                        <span class="ml-2">Διαγραφή</span>
+                                    </button>
                                 </div>
                             </td>
                         </ng-container>

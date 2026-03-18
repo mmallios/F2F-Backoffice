@@ -8,33 +8,49 @@
 
         @if (loading) {
         <div class="h-10 w-1/3 rounded bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
-        } @else if (!product) {
+        } @else if (!product && !isCreate) {
         <div class="text-secondary">Το προϊόν δεν βρέθηκε.</div>
         } @else {
         <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between flex-wrap">
             <div class="min-w-0">
+                @if (isCreate) {
+                <div class="text-3xl md:text-4xl font-extrabold tracking-tight">Νέο Προϊόν</div>
+                } @else {
                 <div class="text-3xl md:text-4xl font-extrabold tracking-tight truncate">{{ product.title }}</div>
                 <div class="text-secondary mt-1 truncate font-mono text-sm">{{ product.code }}</div>
+                }
             </div>
 
             <div class="flex flex-wrap items-center gap-2 justify-end">
+                @if (!isCreate) {
                 <mat-chip class="!rounded-full !px-3 !text-xs !font-semibold" [ngClass]="product.isPublished
                             ? 'bg-green-100 text-green-800 dark:bg-green-500/10 dark:text-green-300'
                             : 'bg-gray-100 text-gray-600 dark:bg-white/5 dark:text-gray-400'">
                     {{ product.isPublished ? 'Δημοσιευμένο' : 'Πρόχειρο' }}
                 </mat-chip>
+                }
 
                 <button mat-stroked-button class="!rounded-xl" (click)="back()">
                     <mat-icon [svgIcon]="'heroicons_outline:arrow-left'"></mat-icon>
                     <span class="ml-2">Πίσω</span>
                 </button>
 
-                @if (editMode) {
+                @if (!isCreate) {
+                <button mat-stroked-button class="!rounded-xl text-red-500 border-red-300 hover:bg-red-50 dark:hover:bg-red-500/10"
+                    (click)="deleteProduct()" [disabled]="saving">
+                    <mat-icon [svgIcon]="'heroicons_outline:trash'"></mat-icon>
+                    <span class="ml-2">Διαγραφή</span>
+                </button>
+                }
+
                 <button mat-flat-button color="primary" class="!rounded-xl" (click)="save()"
                     [disabled]="saving || form.invalid">
                     <mat-icon [svgIcon]="'heroicons_outline:check'"></mat-icon>
-                    <span class="ml-2">{{ saving ? 'Αποθήκευση…' : 'Αποθήκευση' }}</span>
+                    <span class="ml-2">{{ saving ? 'Αποθήκευση…' : (isCreate ? 'Δημιουργία' : 'Αποθήκευση') }}</span>
                 </button>
+
+                @if (!isCreate) {
+                @if (editMode) {
                 <button mat-stroked-button class="!rounded-xl" (click)="cancelEdit()" [disabled]="saving">
                     Άκυρο
                 </button>
@@ -44,6 +60,7 @@
                     <span class="ml-2">Επεξεργασία</span>
                 </button>
                 }
+                }
             </div>
         </div>
         }
@@ -51,7 +68,7 @@
 
     <!-- ================= SCROLL AREA ================= -->
     <div class="flex-1 min-h-0 overflow-auto">
-        @if (!loading && product) {
+        @if (!loading && (product || isCreate)) {
         <div class="p-4 md:p-6 lg:p-8">
             <mat-tab-group animationDuration="0ms" (selectedTabChange)="onTabChange($event)">
 
@@ -183,6 +200,20 @@
 
                                         <div class="flex items-start gap-3">
                                             <mat-icon class="icon-size-5 mt-3 text-gray-400 shrink-0"
+                                                [svgIcon]="'heroicons_outline:tag'"></mat-icon>
+                                            <mat-form-field class="fuse-mat-dense fuse-mat-rounded flex-1"
+                                                subscriptSizing="dynamic">
+                                                <mat-label>Κατηγορίες</mat-label>
+                                                <mat-select [formControl]="form.controls.categoryIds" multiple>
+                                                    @for (cat of allCategories; track cat.id) {
+                                                    <mat-option [value]="cat.id">{{ cat.name }}</mat-option>
+                                                    }
+                                                </mat-select>
+                                            </mat-form-field>
+                                        </div>
+
+                                        <div class="flex items-start gap-3">
+                                            <mat-icon class="icon-size-5 mt-3 text-gray-400 shrink-0"
                                                 [svgIcon]="'heroicons_outline:document-text'"></mat-icon>
                                             <mat-form-field class="fuse-mat-dense fuse-mat-rounded flex-1"
                                                 subscriptSizing="dynamic">
@@ -287,6 +318,30 @@
                                                 <div class="text-xs text-secondary font-medium">Ορατότητα</div>
                                                 <div class="font-semibold">{{ product.isPublished ? 'Δημοσιευμένο' :
                                                     'Πρόχειρο' }}</div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Κατηγορίες -->
+                                        <div
+                                            class="sm:col-span-2 rounded-xl border p-4 flex items-start gap-4 hover:bg-gray-50/60 dark:hover:bg-white/5 transition">
+                                            <div
+                                                class="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10 text-primary shrink-0 mt-0.5">
+                                                <mat-icon class="icon-size-6"
+                                                    [svgIcon]="'heroicons_outline:tag'"></mat-icon>
+                                            </div>
+                                            <div class="min-w-0 flex-1">
+                                                <div class="text-xs text-secondary font-medium mb-2">Κατηγορίες</div>
+                                                @if (selectedCategoryNames().length) {
+                                                <div class="flex flex-wrap gap-1.5">
+                                                    @for (name of selectedCategoryNames(); track name) {
+                                                    <mat-chip class="!rounded-full !px-3 !text-xs !font-semibold bg-primary/10 text-primary">
+                                                        {{ name }}
+                                                    </mat-chip>
+                                                    }
+                                                </div>
+                                                } @else {
+                                                <span class="text-secondary text-sm">—</span>
+                                                }
                                             </div>
                                         </div>
 
@@ -419,6 +474,7 @@
                 </mat-tab>
 
                 <!-- ================= TAB 2: ΠΑΡΑΓΓΕΛΙΕΣ ================= -->
+                @if (!isCreate) {
                 <mat-tab label="Παραγγελίες">
                     <div class="pt-5">
                         <div class="bg-card rounded-2xl border shadow-sm overflow-hidden">
@@ -539,6 +595,7 @@
                         </div>
                     </div>
                 </mat-tab>
+                }
 
             </mat-tab-group>
         </div>

@@ -6,5 +6,6 @@ import { ProductsListComponent } from "./products-list.component";
 export default [
     { path: '', component: ProductsListComponent },
     { path: 'categories', component: ProductCategoriesComponent },
+    { path: 'create', component: ProductDetailsComponent },
     { path: ':id', component: ProductDetailsComponent },
 ];

@@ -28,6 +28,7 @@ import {
     TvChannel
 } from '@fuse/services/events/events.service';
 import { EventFanCardUsage, FanCardsAdminService } from '@fuse/services/fan-cards/fan-cards-admin.service';
+import { UsersService, User } from '@fuse/services/users/users.service';
 
 @Component({
     selector: 'event-details',
@@ -86,6 +87,9 @@ export class EventDetailsComponent implements OnInit, OnDestroy {
     showAddModal = false;
     addForm!: FormGroup;
     addSaving = false;
+    activeUsers: User[] = [];
+    filteredUsers: User[] = [];
+    userSearchCtrl = new FormControl<string>('', { nonNullable: true });
 
     createMode = false;
 
@@ -103,6 +107,7 @@ export class EventDetailsComponent implements OnInit, OnDestroy {
         private _router: Router,
         private _eventsService: EventsService,
         private _fanCardsService: FanCardsAdminService,
+        private _usersService: UsersService,
         private _fb: FormBuilder,
         private _cdr: ChangeDetectorRef
     ) { }
@@ -119,11 +124,25 @@ export class EventDetailsComponent implements OnInit, OnDestroy {
             teams: this._eventsService.getTeams(),
             competitions: this._eventsService.getCompetitions(),
             tvChannels: this._eventsService.getTVChannels(),
+            users: this._usersService.loadUsers(),
         }).pipe(takeUntil(this._unsubscribeAll))
-            .subscribe(({ teams, competitions, tvChannels }) => {
+            .subscribe(({ teams, competitions, tvChannels, users }) => {
                 this.teams = teams ?? [];
                 this.competitions = competitions ?? [];
                 this.tvChannels = tvChannels ?? [];
+                this.activeUsers = (users ?? []).filter(u => u.isActive);
+                this.filteredUsers = this.activeUsers;
+                this._cdr.markForCheck();
+            });
+
+        this.userSearchCtrl.valueChanges
+            .pipe(takeUntil(this._unsubscribeAll))
+            .subscribe(q => {
+                const lower = (q ?? '').toLowerCase().trim();
+                this.filteredUsers = lower
+                    ? this.activeUsers.filter(u =>
+                        `${u.firstname} ${u.lastname} ${u.email}`.toLowerCase().includes(lower))
+                    : this.activeUsers;
                 this._cdr.markForCheck();
             });
 
@@ -286,12 +305,14 @@ export class EventDetailsComponent implements OnInit, OnDestroy {
             price: [0],
             status: [0, Validators.required],
             type: [0, Validators.required],
-            buyerData: [''],
+            userId: [null as number | null],
         });
     }
 
     openAddModal(): void {
-        this.addForm.reset({ gate: '', section: '', row: '', seat: '', price: 0, status: 0, type: 0, buyerData: '' });
+        this.addForm.reset({ gate: '', section: '', row: '', seat: '', price: 0, status: 0, type: 0, userId: null });
+        this.userSearchCtrl.setValue('', { emitEvent: false });
+        this.filteredUsers = this.activeUsers;
         this.showAddModal = true;
         this._cdr.markForCheck();
     }
@@ -313,7 +334,7 @@ export class EventDetailsComponent implements OnInit, OnDestroy {
             price: raw.price ?? 0,
             status: raw.status ?? 0,
             type: raw.type ?? 0,
-            buyerData: raw.buyerData || undefined,
+            userId: raw.userId ?? undefined,
         };
 
         this._eventsService.addTicketToEvent(this.event.id, dto)

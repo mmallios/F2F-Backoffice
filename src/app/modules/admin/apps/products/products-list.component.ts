@@ -1,5 +1,5 @@
 import { AsyncPipe, CommonModule, I18nPluralPipe, NgClass } from '@angular/common';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit, ViewChild, ViewEncapsulation } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit, ViewChild, ViewEncapsulation, inject } from '@angular/core';
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, UntypedFormControl } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -17,6 +17,7 @@ import { MatNativeDateModule } from '@angular/material/core';
 import { Subject, takeUntil } from 'rxjs';
 
 import { StoreService, ProductDto } from '@fuse/services/store/store.service';
+import { FuseConfirmationService } from '@fuse/services/confirmation';
 
 @Component({
     selector: 'products-list',
@@ -71,6 +72,8 @@ export class ProductsListComponent implements OnInit, OnDestroy {
     dataSource = new MatTableDataSource<ProductDto>([]);
 
     private _unsubscribeAll = new Subject<void>();
+
+    private _confirmation = inject(FuseConfirmationService);
 
     constructor(private _api: StoreService, private _cdr: ChangeDetectorRef, private _router: Router,) { }
 
@@ -167,8 +170,7 @@ export class ProductsListComponent implements OnInit, OnDestroy {
     }
 
     createProduct(): void {
-        // TODO: navigate to create page or open dialog
-        // e.g. this._router.navigate(['/products/create'])
+        this._router.navigate(['/apps/products/create']);
     }
 
 
@@ -180,5 +182,33 @@ export class ProductsListComponent implements OnInit, OnDestroy {
     getTotalStock(p: ProductDto): number {
         if (p.skUs?.length) return p.skUs.reduce((s, x) => s + (Number(x.stock) || 0), 0);
         return Number(p.stock) || 0;
+    }
+
+    deleteProduct(p: ProductDto): void {
+        this._confirmation
+            .open({
+                title: 'Διαγραφή προϊόντος',
+                message: `Είστε σίγουροι ότι θέλετε να διαγράψετε το προϊόν <strong>${p.title}</strong>;`,
+                icon: { show: true, name: 'heroicons_outline:trash', color: 'warn' },
+                actions: {
+                    confirm: { label: 'Διαγραφή', color: 'warn' },
+                    cancel: { label: 'Ακύρωση' },
+                },
+            })
+            .afterClosed()
+            .pipe(takeUntil(this._unsubscribeAll))
+            .subscribe((result) => {
+                if (result !== 'confirmed') return;
+                this._api.deleteProduct(p.id)
+                    .pipe(takeUntil(this._unsubscribeAll))
+                    .subscribe({
+                        next: () => {
+                            this.dataSource.data = this.dataSource.data.filter(x => x.id !== p.id);
+                            this.productsCount = this.dataSource.data.length;
+                            this.applyFilter();
+                        },
+                        error: () => this._cdr.markForCheck(),
+                    });
+            });
     }
 }

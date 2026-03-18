@@ -77,6 +77,8 @@ export interface EventTicketDto {
     isLocked?: boolean;
     ownerFirstname?: string;
     ownerLastname?: string;
+    ownerCode?: string;
+    ownerImage?: string;
     gate?: string;
     section?: string;
     row?: string;

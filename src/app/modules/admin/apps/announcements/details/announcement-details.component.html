@@ -157,9 +157,10 @@
                                                 <input type="file" (change)="onFileSelected($event)" hidden #fileInput>
 
                                                 <button mat-stroked-button class="!rounded-xl w-full sm:w-auto"
-                                                    (click)="fileInput.click()">
-                                                    <mat-icon [svgIcon]="'heroicons_outline:arrow-up-tray'"></mat-icon>
-                                                    <span class="ml-2">Μεταφόρτωση</span>
+                                                    (click)="fileInput.click()"
+                                                    [disabled]="uploading()">
+                                                    <mat-icon [svgIcon]="uploading() ? 'heroicons_outline:arrow-path' : 'heroicons_outline:arrow-up-tray'"></mat-icon>
+                                                    <span class="ml-2">{{ uploading() ? 'Ανέβασμα...' : 'Μεταφόρτωση' }}</span>
                                                 </button>
 
                                                 <button mat-stroked-button class="!rounded-xl w-full sm:w-auto"

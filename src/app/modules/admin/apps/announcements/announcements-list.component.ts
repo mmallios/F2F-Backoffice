@@ -7,6 +7,7 @@ import {
     OnInit,
     ViewChild,
     ViewEncapsulation,
+    inject,
 } from '@angular/core';
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, UntypedFormControl } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -25,6 +26,8 @@ import { MatNativeDateModule } from '@angular/material/core';
 import { Subject, takeUntil } from 'rxjs';
 
 import { AnnouncementsService, AnnouncementDto } from '@fuse/services/announcements/announcements.service';
+import { SafeHtmlPipe } from '@fuse/pipes/safe-html/safe-html.pipe';
+import { FuseConfirmationService } from '@fuse/services/confirmation';
 
 @Component({
     selector: 'announcements-list',
@@ -56,6 +59,7 @@ import { AnnouncementsService, AnnouncementDto } from '@fuse/services/announceme
 
         MatDatepickerModule,
         MatNativeDateModule,
+        SafeHtmlPipe,
     ],
 })
 export class AnnouncementsListComponent implements OnInit, OnDestroy {
@@ -75,10 +79,12 @@ export class AnnouncementsListComponent implements OnInit, OnDestroy {
         end: new FormControl<Date | null>(null),
     });
 
-    columns: string[] = ['announcement', 'publishDate', 'status', 'actions'];
+    columns: string[] = ['announcement', 'announcedBy', 'publishDate', 'status', 'actions'];
     dataSource = new MatTableDataSource<AnnouncementDto>([]);
 
     private _unsubscribeAll = new Subject<void>();
+
+    private _confirmation = inject(FuseConfirmationService);
 
     constructor(
         private _api: AnnouncementsService,
@@ -97,7 +103,7 @@ export class AnnouncementsListComponent implements OnInit, OnDestroy {
             const start = f.start ? new Date(f.start) : null;
             const end = f.end ? new Date(f.end) : null;
 
-            const pub = !!a.publishDate; // published if has publishDate
+            const pub = a.status === 1; // 1 = Published
             const passStatus = isPublished == null || pub === Boolean(isPublished);
             if (!passStatus) return false;
 
@@ -191,5 +197,33 @@ export class AnnouncementsListComponent implements OnInit, OnDestroy {
 
     viewDetails(a: AnnouncementDto): void {
         this._router.navigate(['/apps/announcements', a.id]);
+    }
+
+    deleteAnnouncement(a: AnnouncementDto): void {
+        this._confirmation
+            .open({
+                title: 'Διαγραφή ανακοίνωσης',
+                message: `Είστε σίγουροι ότι θέλετε να διαγράψετε την ανακοίνωση <strong>${a.title}</strong>;`,
+                icon: { show: true, name: 'heroicons_outline:trash', color: 'warn' },
+                actions: {
+                    confirm: { label: 'Διαγραφή', color: 'warn' },
+                    cancel: { label: 'Ακύρωση' },
+                },
+            })
+            .afterClosed()
+            .pipe(takeUntil(this._unsubscribeAll))
+            .subscribe((result) => {
+                if (result !== 'confirmed') return;
+                this._api.delete(a.id)
+                    .pipe(takeUntil(this._unsubscribeAll))
+                    .subscribe({
+                        next: () => {
+                            this.dataSource.data = this.dataSource.data.filter(x => x.id !== a.id);
+                            this.totalCount = this.dataSource.data.length;
+                            this.applyFilter();
+                        },
+                        error: () => this._cdr.markForCheck(),
+                    });
+            });
     }
 }

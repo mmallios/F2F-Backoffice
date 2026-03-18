@@ -65,6 +65,16 @@
     opacity: 1 !important;
 }
 
+/* Quill preview in list tables */
+.quill-preview p {
+    margin: 0;
+    display: inline;
+}
+.quill-preview * {
+    font-size: inherit !important;
+    color: inherit !important;
+}
+
 /* 7️⃣ Disabled outline / underline */
 .mat-mdc-form-field-disabled .mdc-notched-outline__leading,
 .mat-mdc-form-field-disabled .mdc-notched-outline__notch,

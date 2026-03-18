@@ -18,7 +18,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDialog, MatDialogModule, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { Subject, finalize, takeUntil } from 'rxjs';
 
-import { StoreService, ProductDto, OrderDetailsResponse } from '@fuse/services/store/store.service';
+import { StoreService, ProductDto, OrderDetailsResponse, CategoryDto, CreateProductRequest } from '@fuse/services/store/store.service';
 
 const SIZES = [
     { value: 0, label: 'XS' },
@@ -87,7 +87,9 @@ export class ProductConfirmDialogComponent {
 export class ProductDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
     loading = true;
     saving = false;
+    isCreate = false;
     product: ProductDto | null = null;
+    allCategories: CategoryDto[] = [];
 
     previewUrl: string | null = null;
     selectedFile: File | null = null;
@@ -123,6 +125,7 @@ export class ProductDetailsComponent implements OnInit, AfterViewInit, OnDestroy
         smallDescription: new FormControl<string | null>(null),
         description: new FormControl<string | null>(null),
         imageUrl: new FormControl<string | null>(null),
+        categoryIds: new FormControl<number[]>([], { nonNullable: true }),
     });
 
     private _unsubscribeAll = new Subject<void>();
@@ -138,7 +141,21 @@ export class ProductDetailsComponent implements OnInit, AfterViewInit, OnDestroy
     ) { }
 
     ngOnInit(): void {
-        const id = Number(this._route.snapshot.paramMap.get('id'));
+        const idParam = this._route.snapshot.paramMap.get('id');
+
+        this._api.getAllCategories()
+            .pipe(takeUntil(this._unsubscribeAll))
+            .subscribe({ next: (cats) => { this.allCategories = cats ?? []; this._cdr.markForCheck(); } });
+
+        if (!idParam || idParam === 'create') {
+            this.isCreate = true;
+            this.editMode = true;
+            this.loading = false;
+            this._cdr.markForCheck();
+            return;
+        }
+
+        const id = Number(idParam);
         if (!id) {
             this.loading = false;
             this._cdr.markForCheck();
@@ -200,7 +217,13 @@ export class ProductDetailsComponent implements OnInit, AfterViewInit, OnDestroy
             smallDescription: p.smallDescription ?? null,
             description: p.description ?? null,
             imageUrl: p.imageUrl ?? null,
+            categoryIds: p.categoryIds ?? [],
         });
+    }
+
+    selectedCategoryNames(): string[] {
+        const ids = new Set(this.form.controls.categoryIds.value);
+        return this.allCategories.filter(c => ids.has(c.id)).map(c => c.name);
     }
 
     startEdit(): void {
@@ -215,7 +238,14 @@ export class ProductDetailsComponent implements OnInit, AfterViewInit, OnDestroy
     }
 
     save(): void {
-        if (!this.product || this.form.invalid) return;
+        if (this.form.invalid) return;
+
+        if (this.isCreate) {
+            this._executeCreate();
+            return;
+        }
+
+        if (!this.product) return;
         this._dialog.open(ProductConfirmDialogComponent, {
             data: { title: 'Αποθήκευση αλλαγών', message: 'Θέλεις σίγουρα να αποθηκεύσεις τις αλλαγές στο προϊόν;', confirmLabel: 'Αποθήκευση' },
             maxWidth: '400px',
@@ -224,6 +254,38 @@ export class ProductDetailsComponent implements OnInit, AfterViewInit, OnDestroy
             if (!confirmed) return;
             this._executeSave();
         });
+    }
+
+    private _executeCreate(): void {
+        const v = this.form.getRawValue();
+        const payload: CreateProductRequest = {
+            code: v.code,
+            title: v.title,
+            smallDescription: v.smallDescription,
+            description: v.description,
+            price: v.price,
+            deletedPrice: v.deletedPrice,
+            stock: v.stock,
+            imageUrl: v.imageUrl,
+            maxQuantity: v.maxQuantity,
+            isPublished: v.isPublished,
+            categoryIds: v.categoryIds,
+        };
+
+        this.saving = true;
+        this._cdr.markForCheck();
+
+        this._api.createProduct(payload)
+            .pipe(finalize(() => { this.saving = false; this._cdr.markForCheck(); }))
+            .subscribe({
+                next: (p) => {
+                    this._snack.open('✅ Το προϊόν δημιουργήθηκε.', 'OK', { duration: 3000 });
+                    this._router.navigate(['/apps/products', p.id]);
+                },
+                error: (err) => {
+                    this._snack.open(`❌ ${err?.error?.message ?? 'Αποτυχία δημιουργίας'}`, 'OK', { duration: 4000 });
+                },
+            });
     }
 
     private _executeSave(): void {
@@ -242,7 +304,7 @@ export class ProductDetailsComponent implements OnInit, AfterViewInit, OnDestroy
             maxQuantity: v.maxQuantity,
             isPublished: v.isPublished,
             skUs: JSON.stringify(this.skuDraft),
-            categoryIds: this.product.categoryIds ?? [],
+            categoryIds: this.form.controls.categoryIds.value,
         };
 
         this.saving = true;
@@ -334,7 +396,7 @@ export class ProductDetailsComponent implements OnInit, AfterViewInit, OnDestroy
             maxQuantity: v.maxQuantity,
             isPublished: v.isPublished,
             skUs: JSON.stringify(this.skuDraft),
-            categoryIds: this.product.categoryIds ?? [],
+            categoryIds: this.form.controls.categoryIds.value,
         };
 
         this.skuSaving = true;
@@ -433,6 +495,28 @@ export class ProductDetailsComponent implements OnInit, AfterViewInit, OnDestroy
 
     viewOrder(o: OrderDetailsResponse): void {
         this._router.navigate(['/apps/orders', o.code]);
+    }
+
+    deleteProduct(): void {
+        if (!this.product) return;
+        this._dialog.open(ProductConfirmDialogComponent, {
+            data: {
+                title: 'Διαγραφή προϊόντος',
+                message: `Είστε σίγουροι ότι θέλετε να διαγράψετε το προϊόν <strong>${this.product.title}</strong>; Η ενέργεια δεν αναιρείται.`,
+                danger: true,
+                confirmLabel: 'Διαγραφή',
+            },
+            maxWidth: '400px',
+            panelClass: ['rounded-2xl'],
+        }).afterClosed().subscribe(confirmed => {
+            if (!confirmed) return;
+            this._api.deleteProduct(this.product!.id)
+                .pipe(takeUntil(this._unsubscribeAll))
+                .subscribe({
+                    next: () => this._router.navigate(['/apps/products']),
+                    error: () => this._snack.open('❌ Αποτυχία διαγραφής προϊόντος.', 'OK', { duration: 4000 }),
+                });
+        });
     }
 
     back(): void {

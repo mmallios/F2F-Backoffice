@@ -144,11 +144,31 @@
 
                                     <div class="min-w-0 max-w-[420px]">
                                         <div class="font-semibold truncate">{{ a.title }}</div>
-                                        <div class="text-secondary text-sm line-clamp-2">
-                                            {{ a.message || '-' }}
-                                        </div>
+                                        <div class="text-secondary text-sm line-clamp-2 quill-preview"
+                                            [innerHTML]="a.message | safeHtml"></div>
                                     </div>
                                 </div>
+                            </td>
+                        </ng-container>
+
+                        <!-- Announced By -->
+                        <ng-container matColumnDef="announcedBy">
+                            <th mat-header-cell *matHeaderCellDef class="px-4">Δημοσιεύτηκε από</th>
+                            <td mat-cell *matCellDef="let a" class="px-4 py-3">
+                                @if (a.createdByFullName) {
+                                <div class="flex items-center gap-2">
+                                    <div class="w-8 h-8 shrink-0 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                                        @if (a.createdByImage) {
+                                        <img [src]="a.createdByImage" class="h-full w-full object-cover" />
+                                        } @else {
+                                        <mat-icon class="icon-size-4 text-gray-400" [svgIcon]="'heroicons_outline:user'"></mat-icon>
+                                        }
+                                    </div>
+                                    <span class="text-sm font-medium truncate max-w-[140px]">{{ a.createdByFullName }}</span>
+                                </div>
+                                } @else {
+                                <span class="text-secondary text-sm">—</span>
+                                }
                             </td>
                         </ng-container>
 
@@ -164,10 +184,10 @@
                         <ng-container matColumnDef="status">
                             <th mat-header-cell *matHeaderCellDef mat-sort-header>Κατάσταση</th>
                             <td mat-cell *matCellDef="let a" class="py-3">
-                                <mat-chip class="!rounded-full !px-3 !text-xs !font-semibold" [ngClass]="a.publishDate
+                                <mat-chip class="!rounded-full !px-3 !text-xs !font-semibold" [ngClass]="a.status === 1
                                         ? 'bg-green-100 text-green-800 dark:bg-green-500/10 dark:text-green-300'
                                         : 'bg-gray-100 text-gray-800 dark:bg-white/5 dark:text-gray-200'">
-                                    {{ a.publishDate ? 'Δημοσιευμένη' : 'Πρόχειρη' }}
+                                    {{ a.status === 1 ? 'Δημοσιευμένη' : 'Πρόχειρη' }}
                                 </mat-chip>
                             </td>
                         </ng-container>
@@ -181,6 +201,12 @@
                                         (click)="viewDetails(a)">
                                         <mat-icon [svgIcon]="'heroicons_outline:eye'"></mat-icon>
                                         <span class="ml-2">Προβολή</span>
+                                    </button>
+                                    <button mat-stroked-button class="!rounded-xl text-red-500 border-red-300 hover:bg-red-50 dark:hover:bg-red-500/10"
+                                        matTooltip="Διαγραφή ανακοίνωσης"
+                                        (click)="deleteAnnouncement(a)">
+                                        <mat-icon [svgIcon]="'heroicons_outline:trash'"></mat-icon>
+                                        <span class="ml-2">Διαγραφή</span>
                                     </button>
                                 </div>
                             </td>

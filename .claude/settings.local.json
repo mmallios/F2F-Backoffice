@@ -1,7 +1,27 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npx ng:*)"
+      "Bash(npx ng:*)",
+      "Read(//c/Users/Michalis Mallios/Desktop/FAN2FAN/fan2fan-workspace/Server/**)",
+      "Bash(dotnet ef:*)",
+      "Bash(dotnet build:*)",
+      "Bash(sqlcmd -S \"46.224.196.145,7777\" -d \"Fan2FanDB\" -U \"sa\" -P \"Olympiakossa!\" -Q \":*)",
+      "Bash(sqlcmd -S \"46.224.196.145,7777\" -d \"Fan2FanDB\" -U \"sa\" -P \"Olympiakossa!\" -Q \"SELECT COLUMN_NAME, IS_NULLABLE, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ''Announcements'' AND COLUMN_NAME IN \\(''PublishDate'',''CreatedByBoUserId''\\);\")",
+      "Bash(sqlcmd -S \"46.224.196.145,7777\" -d \"Fan2FanDB\" -U \"sa\" -P 'Olympiakossa!' -Q \"SELECT COLUMN_NAME, IS_NULLABLE, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ''Announcements'' AND COLUMN_NAME IN \\(''PublishDate'',''CreatedByBoUserId''\\);\" -C)",
+      "Read(//c/Users/Michalis Mallios/Desktop/FAN2FAN/fan2fan-workspace/projects/fan2fan/**)",
+      "Bash(sqlcmd -S \"46.224.196.145,7777\" -U sa -P \"StrongP@ss123\" -Q \":*)",
+      "Bash(sqlcmd -S \"46.224.196.145,7777\" -U sa -P \"Olympiakossa!\" -d Fan2FanDB -Q \":*)",
+      "Bash(sqlcmd -S \"46.224.196.145,7777\" -U sa -P \"Olympiakossa!\" -d Fan2FanDB -Q \"SELECT TOP 5 Id, Name FROM Seasons ORDER BY Id DESC\")"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\Michalis Mallios\\Desktop\\FAN2FAN\\fan2fan-workspace\\Server\\Database\\Entities",
+      "C:\\Users\\Michalis Mallios\\Desktop\\FAN2FAN\\fan2fan-workspace\\Server\\Models\\Announcements",
+      "C:\\Users\\Michalis Mallios\\Desktop\\FAN2FAN\\fan2fan-workspace\\Server\\Interfaces",
+      "C:\\Users\\Michalis Mallios\\Desktop\\FAN2FAN\\fan2fan-workspace\\Server\\Services",
+      "C:\\Users\\Michalis Mallios\\Desktop\\FAN2FAN\\fan2fan-workspace\\Server\\Controllers",
+      "C:\\Users\\Michalis Mallios\\Desktop\\FAN2FAN\\fan2fan-workspace\\Server\\Migrations",
+      "C:\\Users\\Michalis Mallios\\Desktop\\FAN2FAN\\fan2fan-workspace\\projects\\fan2fan\\src\\app\\core\\services",
+      "C:\\Users\\Michalis Mallios\\Desktop\\FAN2FAN\\fan2fan-workspace\\Server\\Models\\Events"
     ]
   }
 }

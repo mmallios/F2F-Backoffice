@@ -16,15 +16,22 @@ export interface AnnouncementDto {
     sendPushNotification?: boolean | null;
 
     isDeleted?: boolean | null;
-    createdOn?: string | null; // if exists
-    updatedOn?: string | null; // if exists
+    createdOn?: string | null;
+    updatedOn?: string | null;
+
+    createdByBoUserId?: number | null;
+    createdByFullName?: string | null;
+    createdByImage?: string | null;
+
+    /** 0 = Pending, 1 = Published */
+    status?: number | null;
 }
 
 export interface CreateAnnouncementRequest {
     title: string;
     message: string;
     thumbnail: string;
-    // Your POST model is AnnouncementModelDto (Title, Message)
+    createdByBoUserId?: number | null;
 }
 
 export interface UpdateAnnouncementRequest {
@@ -34,7 +41,9 @@ export interface UpdateAnnouncementRequest {
     thumbnail?: string | null;
     publishDate?: string | null;
     sendPushNotification?: boolean | null;
-    // Your PUT expects Announcement entity currently
+    /** 0 = Pending, 1 = Published */
+    status?: number | null;
+    // PUT body matches Announcement entity properties
 }
 
 @Injectable({ providedIn: 'root' })

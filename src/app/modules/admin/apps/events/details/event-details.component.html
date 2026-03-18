@@ -495,8 +495,8 @@
                             <div>Κάτοχος</div>
                             <div>Ημ/νία εισαγωγής</div>
                             <div>Θύρα / Θέση</div>
+                            <div>Τύπος</div>
                             <div>Κατάσταση</div>
-                            <div>Στοιχεία αγοραστή</div>
                             <div></div>
                         </div>
 
@@ -506,11 +506,13 @@
 
                             <!-- Owner -->
                             <div class="ticket-col-owner">
-                                <div class="owner-avatar">{{ ownerInitials(t) }}</div>
+                                <div class="owner-avatar">
+                                    <img *ngIf="t.ownerImage" [src]="t.ownerImage" class="w-full h-full object-cover rounded-full" />
+                                    <span *ngIf="!t.ownerImage">{{ ownerInitials(t) }}</span>
+                                </div>
                                 <div class="owner-info">
-                                    <div class="owner-name">{{ t.ownerFirstname || '' }} {{ t.ownerLastname || '' }}
-                                    </div>
-                                    <div class="owner-sub">ID {{ t.ticketUserId ?? '—' }}</div>
+                                    <div class="owner-name">{{ t.ownerFirstname || '' }} {{ t.ownerLastname || '' }}</div>
+                                    <div class="owner-sub">{{ t.ownerCode || '—' }}</div>
                                 </div>
                             </div>
 
@@ -528,9 +530,11 @@
                                     <span *ngIf="t.seat">Θέση {{ t.seat }}</span>
                                     <span *ngIf="!t.row && !t.seat">—</span>
                                 </div>
-                                <div class="text-xs mt-0.5">
-                                    <span class="ticket-type-badge">{{ ticketTypeLabel(t.type) }}</span>
-                                </div>
+                            </div>
+
+                            <!-- Type -->
+                            <div class="ticket-col-type">
+                                <span class="ticket-type-badge">{{ ticketTypeLabel(t.type) }}</span>
                             </div>
 
                             <!-- Status -->
@@ -539,14 +543,6 @@
                                     [ngClass]="ticketStatusColor(t.status)">
                                     {{ ticketStatusLabel(t.status) }}
                                 </span>
-                            </div>
-
-                            <!-- Buyer data -->
-                            <div class="ticket-col-buyer text-secondary text-sm">
-                                <ng-container *ngIf="t.buyerData; else noBuyer">
-                                    <span class="truncate-2">{{ t.buyerData }}</span>
-                                </ng-container>
-                                <ng-template #noBuyer>—</ng-template>
                             </div>
 
                             <!-- Actions -->
@@ -622,9 +618,31 @@
                                             <mat-option [value]="3">ΑΠΟΡΡΙΦΘΗΚΕ</mat-option>
                                         </mat-select>
                                     </mat-form-field>
-                                    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="col-span-2">
-                                        <mat-label>Στοιχεία αγοραστή</mat-label>
-                                        <input matInput formControlName="buyerData" />
+
+                                    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                                        <mat-label>Χρήστης</mat-label>
+                                        <mat-select formControlName="userId">
+                                            <mat-option>
+                                                <div class="px-3 py-2">
+                                                    <input
+                                                        [formControl]="userSearchCtrl"
+                                                        (click)="$event.stopPropagation()"
+                                                        placeholder="Αναζήτηση χρήστη..."
+                                                        class="w-full outline-none bg-transparent text-sm" />
+                                                </div>
+                                            </mat-option>
+                                            <mat-option [value]="null">— Χωρίς χρήστη —</mat-option>
+                                            <mat-option *ngFor="let u of filteredUsers" [value]="u.id">
+                                                <div class="flex items-center gap-2">
+                                                    <img *ngIf="u.image" [src]="u.image" class="w-6 h-6 rounded-full object-cover flex-shrink-0" />
+                                                    <span class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold flex items-center justify-center flex-shrink-0" *ngIf="!u.image">
+                                                        {{ u.firstname?.[0] }}{{ u.lastname?.[0] }}
+                                                    </span>
+                                                    <span>{{ u.firstname }} {{ u.lastname }}</span>
+                                                    <span class="text-xs text-gray-400 ml-1">{{ u.email }}</span>
+                                                </div>
+                                            </mat-option>
+                                        </mat-select>
                                     </mat-form-field>
                                 </div>
                             </div>
