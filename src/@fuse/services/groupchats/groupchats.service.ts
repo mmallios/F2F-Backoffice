@@ -218,5 +218,7 @@ export class GroupChatsService {
         return this.http.post(`${this.baseUrl}/groupchat/${groupId}/unpause`, { userId });
     }
 
-
+    deleteGroupChat(groupId: number): Observable<void> {
+        return this.http.delete<void>(`${this.baseUrl}/groupchat/${groupId}`);
+    }
 }

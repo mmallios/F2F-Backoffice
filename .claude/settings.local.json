@@ -11,7 +11,8 @@
       "Read(//c/Users/Michalis Mallios/Desktop/FAN2FAN/fan2fan-workspace/projects/fan2fan/**)",
       "Bash(sqlcmd -S \"46.224.196.145,7777\" -U sa -P \"StrongP@ss123\" -Q \":*)",
       "Bash(sqlcmd -S \"46.224.196.145,7777\" -U sa -P \"Olympiakossa!\" -d Fan2FanDB -Q \":*)",
-      "Bash(sqlcmd -S \"46.224.196.145,7777\" -U sa -P \"Olympiakossa!\" -d Fan2FanDB -Q \"SELECT TOP 5 Id, Name FROM Seasons ORDER BY Id DESC\")"
+      "Bash(sqlcmd -S \"46.224.196.145,7777\" -U sa -P \"Olympiakossa!\" -d Fan2FanDB -Q \"SELECT TOP 5 Id, Name FROM Seasons ORDER BY Id DESC\")",
+      "Bash(xargs grep:*)"
     ],
     "additionalDirectories": [
       "C:\\Users\\Michalis Mallios\\Desktop\\FAN2FAN\\fan2fan-workspace\\Server\\Database\\Entities",

@@ -28,6 +28,7 @@ import { EventsService, EventItem } from '@fuse/services/events/events.service';
 import { AuthService } from 'app/core/auth/auth.service';
 import { BOHubService } from 'app/core/signalr/bo-hub.service';
 import { ImageUploadService } from '@fuse/services/general/image-upload.service';
+import { FuseConfirmationService } from '@fuse/services/confirmation';
 
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
@@ -153,7 +154,8 @@ export class GroupChatDetailsComponent implements OnInit, OnDestroy, AfterViewIn
         private _eventsService: EventsService,
         private _authService: AuthService,
         private _boHubService: BOHubService,
-        private _imageUploadService: ImageUploadService
+        private _imageUploadService: ImageUploadService,
+        private _confirmation: FuseConfirmationService
     ) { }
 
     ngOnInit(): void {
@@ -474,6 +476,29 @@ export class GroupChatDetailsComponent implements OnInit, OnDestroy, AfterViewIn
     // ---------------- Actions ----------------
     back(): void {
         this._router.navigateByUrl('/apps/groupchats');
+    }
+
+    deleteGroupChat(): void {
+        const name = this.groupChat?.name ?? 'αυτό το group chat';
+        this._confirmation.open({
+            title: 'Διαγραφή group chat',
+            message: `Είστε σίγουροι ότι θέλετε να διαγράψετε το group chat <strong>${name}</strong>; Η ενέργεια δεν αναιρείται.`,
+            icon: { show: true, name: 'heroicons_outline:trash', color: 'warn' },
+            actions: {
+                confirm: { label: 'Διαγραφή', color: 'warn' },
+                cancel: { label: 'Ακύρωση' },
+            },
+        }).afterClosed()
+            .pipe(takeUntil(this._destroy$))
+            .subscribe(result => {
+                if (result !== 'confirmed') return;
+                this._groupChatsService.deleteGroupChat(this.groupId)
+                    .pipe(takeUntil(this._destroy$))
+                    .subscribe({
+                        next: () => this._router.navigateByUrl('/apps/groupchats'),
+                        error: () => this._cdr.markForCheck(),
+                    });
+            });
     }
 
     toggleEditMode(): void {

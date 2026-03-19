@@ -205,6 +205,10 @@
                                                 matTooltip="Επεξεργασία">
                                                 <mat-icon [svgIcon]="'heroicons_outline:pencil-square'"></mat-icon>
                                             </button>
+                                            <button mat-stroked-button class="!rounded-xl text-red-500 border-red-300 hover:bg-red-50 dark:hover:bg-red-500/10"
+                                                matTooltip="Διαγραφή" (click)="deleteGroupChat(g)">
+                                                <mat-icon [svgIcon]="'heroicons_outline:trash'"></mat-icon>
+                                            </button>
                                         </div>
                                     </td>
                                 </ng-container>

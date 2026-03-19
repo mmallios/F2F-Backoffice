@@ -29,6 +29,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { EventsService, EventItem } from '@fuse/services/events/events.service';
 import { GroupChatsService, GroupChat } from '@fuse/services/groupchats/groupchats.service';
 import { GroupChatCreateDialogComponent } from './dialogs/groupchat-create-dialog.component';
+import { FuseConfirmationService } from '@fuse/services/confirmation';
 
 @Component({
     selector: 'groupchats',
@@ -78,7 +79,7 @@ export class GroupChatsComponent implements OnInit, OnDestroy {
     // filters
     searchInputControl = new UntypedFormControl('');
     filterHasEvent = new UntypedFormControl(null);   // null | true | false
-    filterIsActive = new UntypedFormControl(null);   // null | true | false
+    filterIsActive = new UntypedFormControl(true);   // null | true | false
 
     // event lookup (for showing teams/competition/date)
     private _eventById = new Map<number, EventItem>();
@@ -96,7 +97,8 @@ export class GroupChatsComponent implements OnInit, OnDestroy {
         @Inject(DOCUMENT) private _document: any,
         private _router: Router,
         private _fuseMediaWatcherService: FuseMediaWatcherService,
-        private _dialog: MatDialog
+        private _dialog: MatDialog,
+        private _confirmation: FuseConfirmationService
     ) { }
 
     ngOnInit(): void {
@@ -337,6 +339,31 @@ export class GroupChatsComponent implements OnInit, OnDestroy {
         this._router.navigate(['/apps/groupchats', g.id]);
     }
 
+    deleteGroupChat(g: GroupChat): void {
+        this._confirmation.open({
+            title: 'Διαγραφή group chat',
+            message: `Είστε σίγουροι ότι θέλετε να διαγράψετε το group chat <strong>${g.name}</strong>;`,
+            icon: { show: true, name: 'heroicons_outline:trash', color: 'warn' },
+            actions: {
+                confirm: { label: 'Διαγραφή', color: 'warn' },
+                cancel: { label: 'Ακύρωση' },
+            },
+        }).afterClosed()
+            .pipe(takeUntil(this._unsubscribeAll))
+            .subscribe(result => {
+                if (result !== 'confirmed') return;
+                this._groupChatsService.deleteGroupChat(g.id)
+                    .pipe(takeUntil(this._unsubscribeAll))
+                    .subscribe({
+                        next: () => {
+                            this.dataSource.data = this.dataSource.data.filter(x => x.id !== g.id);
+                            this.count = this.dataSource.data.length;
+                            this.applyCombinedFilter();
+                        },
+                        error: () => this._cdr.markForCheck(),
+                    });
+            });
+    }
 
     trackById = (_: number, x: GroupChat) => x.id;
 
