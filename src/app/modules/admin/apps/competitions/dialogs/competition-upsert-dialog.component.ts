@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Inject, OnDestroy, inject } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Inject, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
@@ -14,6 +14,7 @@ import { finalize, Subject, takeUntil } from 'rxjs';
 
 import { Competition, EventsService } from '@fuse/services/events/events.service';
 import { ImageUploadService } from '@fuse/services/general/image-upload.service';
+import { FanCardsAdminService, FanCardSeason } from '@fuse/services/fan-cards/fan-cards-admin.service';
 
 type SportOption = { id: number; name: string };
 
@@ -126,8 +127,10 @@ type DialogData =
 
           <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full" subscriptSizing="dynamic">
             <mat-icon matPrefix class="icon-size-5" [svgIcon]="'heroicons_outline:calendar-days'"></mat-icon>
-            <mat-label>Season Id</mat-label>
-            <input matInput type="number" formControlName="seasonId" />
+            <mat-label>Σεζόν</mat-label>
+            <mat-select formControlName="seasonId">
+              <mat-option *ngFor="let s of seasons" [value]="s.id">{{ s.name }}</mat-option>
+            </mat-select>
             <mat-error *ngIf="form.get('seasonId')?.hasError('required')">Απαιτείται</mat-error>
           </mat-form-field>
 
@@ -159,11 +162,12 @@ type DialogData =
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class CompetitionUpsertDialogComponent implements OnDestroy {
+export class CompetitionUpsertDialogComponent implements OnInit, OnDestroy {
 
   saving = false;
   uploading = false;
   imagePreview: string | null = null;
+  seasons: FanCardSeason[] = [];
   private readonly _destroy$ = new Subject<void>();
   private readonly _snack = inject(MatSnackBar);
 
@@ -187,6 +191,7 @@ export class CompetitionUpsertDialogComponent implements OnDestroy {
     private _fb: FormBuilder,
     private _imageUpload: ImageUploadService,
     private _eventsService: EventsService,
+    private _fanCardsService: FanCardsAdminService,
     private _cdr: ChangeDetectorRef,
   ) {
     if (this.isEdit) {
@@ -202,6 +207,15 @@ export class CompetitionUpsertDialogComponent implements OnDestroy {
       });
       this.imagePreview = c.image ?? null;
     }
+  }
+
+  ngOnInit(): void {
+    this._fanCardsService.getSeasons()
+      .pipe(takeUntil(this._destroy$))
+      .subscribe(seasons => {
+        this.seasons = seasons ?? [];
+        this._cdr.markForCheck();
+      });
   }
 
   ngOnDestroy(): void {

@@ -141,6 +141,13 @@ export const defaultNavigation: FuseNavigationItem[] = [
                         icon: 'heroicons_outline:paper-airplane',
                         link: '/apps/away-trips',
                     },
+                    {
+                        id: 'apps.tickers',
+                        title: 'Ticker Bar',
+                        type: 'basic',
+                        icon: 'heroicons_outline:megaphone',
+                        link: '/apps/tickers',
+                    },
                 ],
             },
 

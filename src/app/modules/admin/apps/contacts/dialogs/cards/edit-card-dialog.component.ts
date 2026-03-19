@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, Inject, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, Inject, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
@@ -8,6 +8,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 
 import { UserCard } from '@fuse/services/users/users.service';
+import { FanCardsAdminService, FanCardSeason } from '@fuse/services/fan-cards/fan-cards-admin.service';
 
 @Component({
     selector: 'edit-user-card-dialog',
@@ -51,8 +52,10 @@ import { UserCard } from '@fuse/services/users/users.service';
       </mat-form-field>
 
       <mat-form-field class="w-full" subscriptSizing="dynamic">
-        <mat-label>Season Id</mat-label>
-        <input matInput type="number" formControlName="seasonId" />
+        <mat-label>Σεζόν</mat-label>
+        <mat-select formControlName="seasonId">
+          <mat-option *ngFor="let s of seasons" [value]="s.id">{{ s.name }}</mat-option>
+        </mat-select>
       </mat-form-field>
 
     </form>
@@ -70,6 +73,10 @@ import { UserCard } from '@fuse/services/users/users.service';
 })
 export class EditUserCardDialogComponent {
     private _fb = inject(FormBuilder);
+    private _fanCardsService = inject(FanCardsAdminService);
+    private _cdr = inject(ChangeDetectorRef);
+
+    seasons: FanCardSeason[] = [];
 
     form = this._fb.group({
         id: [0, Validators.required],
@@ -95,6 +102,11 @@ export class EditUserCardDialogComponent {
             firstname: c.firstname,
             lastname: c.lastname,
             cardNumber: c.cardNumber,
+        });
+
+        this._fanCardsService.getSeasons().subscribe(seasons => {
+            this.seasons = seasons ?? [];
+            this._cdr.markForCheck();
         });
     }
 

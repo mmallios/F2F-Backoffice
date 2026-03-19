@@ -96,12 +96,20 @@
 
                 <div class="px-6 py-5 space-y-4" [formGroup]="step2">
 
-                    <!-- Δημοσίευση -->
+                    <!-- ── Δημοσίευση ── -->
                     <div>
-                        <div
-                            class="text-xs font-bold uppercase tracking-wider text-secondary mb-2 flex items-center gap-1.5">
+                        <div class="text-xs font-bold uppercase tracking-wider text-secondary mb-2 flex items-center gap-1.5">
                             <mat-icon class="icon-size-3.5 text-gray-500">campaign</mat-icon> Δημοσίευση
                         </div>
+                        <!-- Mode selector -->
+                        <mat-form-field class="w-full fuse-mat-dense mb-2">
+                            <mat-label>Δημοσίευση διαγωνισμού</mat-label>
+                            <mat-select [value]="publishMode()" (selectionChange)="setPublishMode($event.value)">
+                                <mat-option value="now">Τώρα</mat-option>
+                                <mat-option value="custom">Συγκεκριμένη ημερομηνία</mat-option>
+                            </mat-select>
+                        </mat-form-field>
+                        @if (publishMode() === 'custom') {
                         <div class="grid grid-cols-2 gap-3">
                             <mat-form-field class="w-full fuse-mat-dense">
                                 <mat-label>Ημερομηνία *</mat-label>
@@ -115,14 +123,23 @@
                                 <mat-icon matSuffix class="icon-size-4 text-secondary">schedule</mat-icon>
                             </mat-form-field>
                         </div>
+                        }
                     </div>
 
-                    <!-- Έναρξη -->
+                    <!-- ── Έναρξη ── -->
                     <div>
-                        <div
-                            class="text-xs font-bold uppercase tracking-wider text-secondary mb-2 flex items-center gap-1.5">
+                        <div class="text-xs font-bold uppercase tracking-wider text-secondary mb-2 flex items-center gap-1.5">
                             <mat-icon class="icon-size-3.5 text-green-500">play_circle</mat-icon> Έναρξη
                         </div>
+                        <!-- Mode selector -->
+                        <mat-form-field class="w-full fuse-mat-dense mb-2">
+                            <mat-label>Έναρξη διαγωνισμού</mat-label>
+                            <mat-select [value]="startMode()" (selectionChange)="setStartMode($event.value)">
+                                <mat-option value="now">Τώρα</mat-option>
+                                <mat-option value="custom">Συγκεκριμένη ημερομηνία</mat-option>
+                            </mat-select>
+                        </mat-form-field>
+                        @if (startMode() === 'custom') {
                         <div class="grid grid-cols-2 gap-3">
                             <mat-form-field class="w-full fuse-mat-dense">
                                 <mat-label>Ημερομηνία *</mat-label>
@@ -136,14 +153,23 @@
                                 <mat-icon matSuffix class="icon-size-4 text-secondary">schedule</mat-icon>
                             </mat-form-field>
                         </div>
+                        }
                     </div>
 
-                    <!-- Λήξη -->
+                    <!-- ── Λήξη ── -->
                     <div>
-                        <div
-                            class="text-xs font-bold uppercase tracking-wider text-secondary mb-2 flex items-center gap-1.5">
+                        <div class="text-xs font-bold uppercase tracking-wider text-secondary mb-2 flex items-center gap-1.5">
                             <mat-icon class="icon-size-3.5 text-red-500">flag</mat-icon> Λήξη
                         </div>
+                        <!-- Mode selector -->
+                        <mat-form-field class="w-full fuse-mat-dense mb-2">
+                            <mat-label>Λήξη διαγωνισμού</mat-label>
+                            <mat-select [value]="endMode()" (selectionChange)="setEndMode($event.value)">
+                                <mat-option value="custom">Συγκεκριμένη ημερομηνία</mat-option>
+                                <mat-option value="indefinite">Αόριστου</mat-option>
+                            </mat-select>
+                        </mat-form-field>
+                        @if (endMode() === 'custom') {
                         <div class="grid grid-cols-2 gap-3">
                             <mat-form-field class="w-full fuse-mat-dense">
                                 <mat-label>Ημερομηνία *</mat-label>
@@ -157,6 +183,13 @@
                                 <mat-icon matSuffix class="icon-size-4 text-secondary">schedule</mat-icon>
                             </mat-form-field>
                         </div>
+                        }
+                        @if (endMode() === 'indefinite') {
+                        <div class="flex items-center gap-2 rounded-xl border bg-gray-50/80 dark:bg-white/5 px-4 py-2.5 text-sm text-secondary">
+                            <mat-icon class="icon-size-4 shrink-0">all_inclusive</mat-icon>
+                            Ο διαγωνισμός δεν έχει ημερομηνία λήξης
+                        </div>
+                        }
                     </div>
 
                     <!-- Numbers -->

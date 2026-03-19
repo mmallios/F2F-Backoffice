@@ -1,0 +1,379 @@
+<div class="absolute inset-0 flex min-w-0 flex-col overflow-hidden">
+
+    <!-- ═══════════════════════ HEADER ═══════════════════════ -->
+    <div class="shrink-0 border-b px-6 py-7 md:px-8">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+
+            <div class="min-w-0">
+                <div class="flex items-center gap-3">
+                    <div class="text-3xl md:text-4xl font-extrabold leading-none tracking-tight">Ticker</div>
+                    <span class="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-sm font-semibold text-primary">
+                        <mat-icon class="icon-size-4" svgIcon="heroicons_mini:megaphone"></mat-icon>
+                        Scrolling Bar
+                    </span>
+                </div>
+                <div class="mt-2 flex flex-wrap items-center gap-3 text-sm font-medium text-secondary">
+                    @if (loading()) {
+                        <span>Φόρτωση...</span>
+                    } @else {
+                        <span>{{ totalCount() }} items</span>
+                        @if (activeCount() > 0) {
+                            <span class="inline-flex items-center gap-1">
+                                <span class="inline-block w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                                {{ activeCount() }} ενεργά
+                            </span>
+                        }
+                        @if (dynamicCount() > 0) {
+                            <span class="inline-flex items-center gap-1">
+                                <mat-icon class="icon-size-3.5" svgIcon="heroicons_mini:lock-closed"></mat-icon>
+                                {{ dynamicCount() }} δυναμικά
+                            </span>
+                        }
+                    }
+                </div>
+            </div>
+
+            <div class="flex w-full flex-col gap-3 sm:flex-row lg:w-auto lg:items-center">
+                @if (reordering()) {
+                    <div class="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400">
+                        <mat-icon class="icon-size-4 animate-spin" svgIcon="heroicons_outline:arrow-path"></mat-icon>
+                        Αποθήκευση σειράς...
+                    </div>
+                }
+                <button mat-stroked-button class="!rounded-xl w-full sm:w-auto" (click)="load()">
+                    <mat-icon svgIcon="heroicons_outline:arrow-path"></mat-icon>
+                    <span class="ml-2">Ανανέωση</span>
+                </button>
+                <button mat-flat-button color="primary" class="!rounded-xl w-full sm:w-auto" (click)="openCreate()">
+                    <mat-icon svgIcon="heroicons_outline:plus"></mat-icon>
+                    <span class="ml-2">Νέο Item</span>
+                </button>
+            </div>
+
+        </div>
+    </div>
+    <!-- /HEADER -->
+
+    <!-- ═══════════════════════ SCROLLABLE CONTENT ═══════════════════════ -->
+    <div class="flex-1 min-h-0 overflow-auto">
+
+        <!-- ═══════════════════════ CREATE / EDIT FORM ═══════════════════════ -->
+        @if (showForm()) {
+            <div @slideDown class="px-6 pt-5 pb-2 md:px-8">
+                <div class="rounded-2xl border bg-card shadow-sm overflow-hidden">
+
+                    <div class="flex items-center justify-between gap-4 border-b px-6 py-4">
+                        <div class="flex items-center gap-3">
+                            <div class="flex h-9 w-9 items-center justify-center rounded-xl"
+                                [class]="editingId() ? 'bg-amber-100 dark:bg-amber-500/20' : 'bg-primary/10'">
+                                <mat-icon class="icon-size-5"
+                                    [class]="editingId() ? 'text-amber-600 dark:text-amber-400' : 'text-primary'"
+                                    [svgIcon]="editingId() ? 'heroicons_outline:pencil-square' : 'heroicons_outline:plus-circle'">
+                                </mat-icon>
+                            </div>
+                            <div>
+                                <div class="font-semibold">{{ editingId() ? 'Επεξεργασία Item' : 'Νέο Ticker Item' }}</div>
+                                <div class="text-xs text-secondary">Συμπλήρωσε τα παρακάτω πεδία</div>
+                            </div>
+                        </div>
+                        <button mat-icon-button (click)="cancelForm()" matTooltip="Κλείσιμο">
+                            <mat-icon svgIcon="heroicons_outline:x-mark"></mat-icon>
+                        </button>
+                    </div>
+
+                    <form [formGroup]="form" (ngSubmit)="save()" class="px-6 py-5">
+                        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+
+                            <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full lg:col-span-2" subscriptSizing="dynamic">
+                                <mat-label>Τίτλος *</mat-label>
+                                <mat-icon matPrefix class="icon-size-5" svgIcon="heroicons_outline:chat-bubble-left-ellipsis"></mat-icon>
+                                <input matInput formControlName="title" placeholder="Κείμενο που θα εμφανιστεί στο ticker..." autocomplete="off">
+                                @if (form.get('title')?.hasError('required') && form.get('title')?.touched) {
+                                    <mat-error>Απαιτείται τίτλος</mat-error>
+                                }
+                                @if (form.get('title')?.hasError('minlength') && form.get('title')?.touched) {
+                                    <mat-error>Ελάχιστο 2 χαρακτήρες</mat-error>
+                                }
+                            </mat-form-field>
+
+                            <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full" subscriptSizing="dynamic">
+                                <mat-label>Τύπος</mat-label>
+                                <mat-icon matPrefix class="icon-size-5" svgIcon="heroicons_outline:tag"></mat-icon>
+                                <mat-select formControlName="type">
+                                    @for (t of TYPES; track t.value) {
+                                        <mat-option [value]="t.value">
+                                            <div class="flex items-center gap-2">
+                                                <mat-icon class="icon-size-4" [svgIcon]="t.icon"></mat-icon>
+                                                <span>{{ t.label }}</span>
+                                                @if (t.isDynamic) {
+                                                    <span class="ml-auto text-xs text-secondary">(δυναμικό)</span>
+                                                }
+                                            </div>
+                                        </mat-option>
+                                    }
+                                </mat-select>
+                            </mat-form-field>
+
+                            <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full" subscriptSizing="dynamic">
+                                <mat-label>Εμφάνιση από</mat-label>
+                                <mat-icon matPrefix class="icon-size-5" svgIcon="heroicons_outline:calendar-days"></mat-icon>
+                                <input matInput [matDatepicker]="startPicker" formControlName="startAt" placeholder="Επίλεξε ημ/νία...">
+                                <mat-datepicker-toggle matSuffix [for]="startPicker"></mat-datepicker-toggle>
+                                <mat-datepicker #startPicker></mat-datepicker>
+                            </mat-form-field>
+
+                            <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full" subscriptSizing="dynamic">
+                                <mat-label>Εμφάνιση έως (προαιρετικό)</mat-label>
+                                <mat-icon matPrefix class="icon-size-5" svgIcon="heroicons_outline:calendar-days"></mat-icon>
+                                <input matInput [matDatepicker]="endPicker" formControlName="endAt" placeholder="Χωρίς ημ/νία λήξης...">
+                                <mat-datepicker-toggle matSuffix [for]="endPicker"></mat-datepicker-toggle>
+                                <mat-datepicker #endPicker></mat-datepicker>
+                                @if (form.get('endAt')?.value) {
+                                    <button mat-icon-button matSuffix type="button" (click)="form.get('endAt')?.setValue(null)">
+                                        <mat-icon svgIcon="heroicons_outline:x-mark"></mat-icon>
+                                    </button>
+                                }
+                            </mat-form-field>
+
+                            @if (form.get('type')?.value === 6) {
+                                <mat-form-field class="fuse-mat-dense fuse-mat-rounded w-full" subscriptSizing="dynamic">
+                                    <mat-label>URL (προαιρετικό)</mat-label>
+                                    <mat-icon matPrefix class="icon-size-5" svgIcon="heroicons_outline:link"></mat-icon>
+                                    <input matInput formControlName="linkUrl" placeholder="https://...">
+                                </mat-form-field>
+                            }
+
+                        </div>
+
+                        <div class="mt-5 flex flex-col gap-4 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
+                            <mat-slide-toggle formControlName="isActive" color="primary">
+                                <span class="text-sm font-medium">Ενεργό</span>
+                            </mat-slide-toggle>
+                            <div class="flex gap-3">
+                                <button type="button" mat-stroked-button class="!rounded-xl" (click)="cancelForm()">Ακύρωση</button>
+                                <button type="submit" mat-flat-button color="primary" class="!rounded-xl" [disabled]="saving()">
+                                    @if (saving()) {
+                                        <mat-icon class="icon-size-5 animate-spin" svgIcon="heroicons_mini:arrow-path"></mat-icon>
+                                    } @else {
+                                        <mat-icon [svgIcon]="editingId() ? 'heroicons_outline:check' : 'heroicons_outline:plus'"></mat-icon>
+                                    }
+                                    <span class="ml-2">{{ editingId() ? 'Αποθήκευση' : 'Δημιουργία' }}</span>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+        }
+        <!-- /FORM -->
+
+        <!-- ═══════════════════════ DYNAMIC PREVIEW ═══════════════════════ -->
+        <div class="px-6 pt-5 md:px-8">
+            <div class="rounded-2xl border bg-card shadow-sm overflow-hidden">
+
+                <div class="flex items-center justify-between gap-3 border-b bg-gray-800 dark:bg-gray-900 px-4 py-2.5">
+                    <div class="flex items-center gap-2">
+                        <mat-icon class="icon-size-4 text-amber-400" svgIcon="heroicons_mini:bolt"></mat-icon>
+                        <span class="text-xs font-semibold uppercase tracking-wide text-gray-300">Δυναμικό Περιεχόμενο</span>
+                        <span class="rounded-full bg-white/10 px-2 py-0.5 text-xs text-gray-400">αυτόματα από ανακοινώσεις & νέα</span>
+                    </div>
+                    <span class="text-xs text-gray-500">εμφανίζεται πάντα στο ticker</span>
+                </div>
+
+                @if (dynamicLoading()) {
+                    <div class="flex items-center gap-6 px-4 py-3 animate-pulse">
+                        @for (n of [1,2,3,4]; track n) {
+                            <div class="flex items-center gap-2">
+                                <div class="h-5 w-20 rounded-full bg-gray-200 dark:bg-gray-700"></div>
+                                <div class="h-4 w-36 rounded bg-gray-200 dark:bg-gray-700"></div>
+                            </div>
+                        }
+                    </div>
+                } @else if (dynamicItems().length === 0) {
+                    <div class="px-4 py-3 text-sm italic text-secondary">Δεν βρέθηκαν ανακοινώσεις ή νέα για προεπισκόπηση.</div>
+                } @else {
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <tbody>
+                                @for (item of dynamicItems(); track item.title) {
+                                    <tr class="border-b last:border-0 border-gray-100 dark:border-white/5">
+                                        <td class="px-4 py-2 w-10">
+                                            <mat-icon class="icon-size-3.5 text-amber-500" svgIcon="heroicons_mini:lock-closed"
+                                                matTooltip="Δυναμικό — διαχειρίζεται αυτόματα"></mat-icon>
+                                        </td>
+                                        <td class="px-2 py-2 w-36">
+                                            <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold {{ item.badgeClass }}">
+                                                <mat-icon class="icon-size-3.5" [svgIcon]="item.icon"></mat-icon>
+                                                {{ item.label }}
+                                            </span>
+                                        </td>
+                                        <td class="px-2 py-2 font-medium">{{ item.title }}</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+
+            </div>
+        </div>
+        <!-- /DYNAMIC PREVIEW -->
+
+        <!-- ═══════════════════════ TABLE CARD ═══════════════════════ -->
+        <div class="px-6 py-6 md:px-8">
+            <div class="bg-card rounded-2xl border shadow-sm overflow-hidden">
+
+                @if (loading()) {
+                    <div class="p-8">
+                        <div class="animate-pulse space-y-3">
+                            <div class="h-4 w-1/3 rounded bg-gray-200 dark:bg-gray-700"></div>
+                            <div class="h-4 w-2/3 rounded bg-gray-200 dark:bg-gray-700"></div>
+                            <div class="h-4 w-1/2 rounded bg-gray-200 dark:bg-gray-700"></div>
+                        </div>
+                    </div>
+                } @else {
+
+                    @if (!dataSource?.data?.length) {
+                        <div class="p-10 text-center">
+                            <div class="text-2xl font-semibold tracking-tight">Δεν υπάρχουν ticker items!</div>
+                            <div class="text-secondary mt-2">Πάτα «Νέο Item» για να δημιουργήσεις το πρώτο.</div>
+                        </div>
+                    } @else {
+
+                        <div class="overflow-x-auto">
+                            <table mat-table [dataSource]="dataSource" class="min-w-[820px] w-full">
+
+                                <!-- Rank column -->
+                                <ng-container matColumnDef="rank">
+                                    <th mat-header-cell *matHeaderCellDef class="w-10 px-2">#</th>
+                                    <td mat-cell *matCellDef="let item" class="w-10 px-2">
+                                        <div class="flex h-6 w-6 items-center justify-center rounded-full bg-gray-100 dark:bg-white/10 text-xs font-bold text-secondary">
+                                            {{ rankOf(item) }}
+                                        </div>
+                                    </td>
+                                </ng-container>
+
+                                <!-- Type column -->
+                                <ng-container matColumnDef="type">
+                                    <th mat-header-cell *matHeaderCellDef class="px-4">Τύπος</th>
+                                    <td mat-cell *matCellDef="let item" class="px-4 py-3">
+                                        <div class="flex flex-col gap-1">
+                                            <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold {{ typeFor(item.type).badgeClass }}">
+                                                <mat-icon class="icon-size-3.5" [svgIcon]="typeFor(item.type).icon"></mat-icon>
+                                                {{ typeFor(item.type).label }}
+                                            </span>
+                                            @if (isDynamic(item.type)) {
+                                                <span class="inline-flex items-center gap-0.5 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-600 dark:bg-amber-500/10 dark:text-amber-400">
+                                                    <mat-icon class="icon-size-3" svgIcon="heroicons_mini:lock-closed"></mat-icon>
+                                                    Δυναμικό
+                                                </span>
+                                            }
+                                        </div>
+                                    </td>
+                                </ng-container>
+
+                                <!-- Title column -->
+                                <ng-container matColumnDef="title">
+                                    <th mat-header-cell *matHeaderCellDef class="px-4">Τίτλος</th>
+                                    <td mat-cell *matCellDef="let item" class="px-4 py-3">
+                                        <div class="font-semibold truncate max-w-xs">{{ item.title }}</div>
+                                        @if (item.linkUrl) {
+                                            <a [href]="item.linkUrl" target="_blank"
+                                               class="mt-0.5 flex items-center gap-1 text-xs text-secondary hover:text-primary transition-colors truncate max-w-xs">
+                                                <mat-icon class="icon-size-3 shrink-0" svgIcon="heroicons_mini:link"></mat-icon>
+                                                {{ item.linkUrl }}
+                                            </a>
+                                        }
+                                    </td>
+                                </ng-container>
+
+                                <!-- Status column -->
+                                <ng-container matColumnDef="status">
+                                    <th mat-header-cell *matHeaderCellDef class="px-4">Κατάσταση</th>
+                                    <td mat-cell *matCellDef="let item" class="px-4 py-3">
+                                        <mat-chip class="!rounded-full !px-3 !text-xs !font-semibold"
+                                            [ngClass]="item.isActive
+                                                ? 'bg-green-100 text-green-800 dark:bg-green-500/10 dark:text-green-300'
+                                                : 'bg-gray-100 text-gray-800 dark:bg-white/5 dark:text-gray-200'">
+                                            {{ item.isActive ? 'Ενεργό' : 'Ανενεργό' }}
+                                        </mat-chip>
+                                    </td>
+                                </ng-container>
+
+                                <!-- Dates column -->
+                                <ng-container matColumnDef="dates">
+                                    <th mat-header-cell *matHeaderCellDef class="px-4">Ημερομηνίες</th>
+                                    <td mat-cell *matCellDef="let item" class="px-4 py-3">
+                                        <div class="text-sm font-medium">{{ item.startAt | date:'dd/MM/yy' }}</div>
+                                        @if (item.endAt) {
+                                            <div class="text-xs text-secondary">→ {{ item.endAt | date:'dd/MM/yy' }}</div>
+                                        } @else {
+                                            <div class="text-xs italic text-gray-400">χωρίς λήξη</div>
+                                        }
+                                    </td>
+                                </ng-container>
+
+                                <!-- Actions column -->
+                                <ng-container matColumnDef="actions">
+                                    <th mat-header-cell *matHeaderCellDef class="text-right px-6">Ενέργειες</th>
+                                    <td mat-cell *matCellDef="let item" class="text-right px-6 py-3">
+                                        <div class="inline-flex items-center gap-1">
+
+                                            <!-- Order arrows -->
+                                            <button mat-icon-button class="!h-8 !w-8 !min-h-0"
+                                                    matTooltip="Μετακίνηση πάνω"
+                                                    [disabled]="isFirst(item) || reordering()"
+                                                    (click)="moveUp(item)">
+                                                <mat-icon class="icon-size-4" svgIcon="heroicons_outline:chevron-up"></mat-icon>
+                                            </button>
+                                            <button mat-icon-button class="!h-8 !w-8 !min-h-0"
+                                                    matTooltip="Μετακίνηση κάτω"
+                                                    [disabled]="isLast(item) || reordering()"
+                                                    (click)="moveDown(item)">
+                                                <mat-icon class="icon-size-4" svgIcon="heroicons_outline:chevron-down"></mat-icon>
+                                            </button>
+
+                                            <span class="w-px h-5 bg-gray-200 dark:bg-white/10 mx-1"></span>
+
+                                            @if (!isDynamic(item.type)) {
+                                                <button mat-stroked-button class="!rounded-xl"
+                                                        matTooltip="Επεξεργασία"
+                                                        (click)="openEdit(item)">
+                                                    <mat-icon svgIcon="heroicons_outline:pencil-square"></mat-icon>
+                                                </button>
+                                            }
+                                            <button mat-stroked-button
+                                                    class="!rounded-xl text-red-500 border-red-300 hover:bg-red-50 dark:hover:bg-red-500/10"
+                                                    matTooltip="Διαγραφή"
+                                                    (click)="delete(item)">
+                                                <mat-icon svgIcon="heroicons_outline:trash"></mat-icon>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </ng-container>
+
+                                <tr mat-header-row *matHeaderRowDef="tableColumns"
+                                    class="bg-gray-800 dark:bg-gray-900 [&>th]:text-gray-300"></tr>
+                                <tr mat-row *matRowDef="let row; columns: tableColumns"
+                                    class="hover:bg-gray-800 hover:text-white dark:hover:bg-gray-800 transition">
+                                </tr>
+
+                            </table>
+                        </div>
+
+                        <div class="border-t sticky bottom-0 bg-card z-10">
+                            <mat-paginator [pageSizeOptions]="[15, 30, 50, 100]" [pageSize]="15" showFirstLastButtons></mat-paginator>
+                        </div>
+
+                    }
+                }
+
+            </div>
+        </div>
+        <!-- /TABLE CARD -->
+
+    </div>
+    <!-- /SCROLLABLE CONTENT -->
+
+</div>

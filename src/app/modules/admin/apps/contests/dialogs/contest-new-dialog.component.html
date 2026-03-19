@@ -44,20 +44,62 @@
 
             <div class="grid grid-cols-2 gap-3">
 
-                <mat-form-field class="w-full fuse-mat-dense">
-                    <mat-label>Δημοσίευση *</mat-label>
-                    <input matInput type="datetime-local" formControlName="publishDate" />
-                </mat-form-field>
+                <!-- ── Δημοσίευση ── -->
+                <div class="flex flex-col gap-2">
+                    <mat-form-field class="w-full fuse-mat-dense">
+                        <mat-label>Δημοσίευση διαγωνισμού</mat-label>
+                        <mat-select [value]="publishMode()" (selectionChange)="setPublishMode($event.value)">
+                            <mat-option value="now">Τώρα</mat-option>
+                            <mat-option value="custom">Συγκεκριμένη ημερομηνία</mat-option>
+                        </mat-select>
+                    </mat-form-field>
+                    @if (publishMode() === 'custom') {
+                    <mat-form-field class="w-full fuse-mat-dense">
+                        <mat-label>Ημερομηνία δημοσίευσης *</mat-label>
+                        <input matInput type="datetime-local" formControlName="publishDate" />
+                    </mat-form-field>
+                    }
+                </div>
 
-                <mat-form-field class="w-full fuse-mat-dense">
-                    <mat-label>Έναρξη *</mat-label>
-                    <input matInput type="datetime-local" formControlName="startDate" />
-                </mat-form-field>
+                <!-- ── Έναρξη ── -->
+                <div class="flex flex-col gap-2">
+                    <mat-form-field class="w-full fuse-mat-dense">
+                        <mat-label>Έναρξη διαγωνισμού</mat-label>
+                        <mat-select [value]="startMode()" (selectionChange)="setStartMode($event.value)">
+                            <mat-option value="now">Τώρα</mat-option>
+                            <mat-option value="custom">Συγκεκριμένη ημερομηνία</mat-option>
+                        </mat-select>
+                    </mat-form-field>
+                    @if (startMode() === 'custom') {
+                    <mat-form-field class="w-full fuse-mat-dense">
+                        <mat-label>Ημερομηνία έναρξης *</mat-label>
+                        <input matInput type="datetime-local" formControlName="startDate" />
+                    </mat-form-field>
+                    }
+                </div>
 
-                <mat-form-field class="w-full fuse-mat-dense col-span-2">
-                    <mat-label>Λήξη *</mat-label>
-                    <input matInput type="datetime-local" formControlName="endDate" />
-                </mat-form-field>
+                <!-- ── Λήξη ── -->
+                <div class="flex flex-col gap-2 col-span-2">
+                    <mat-form-field class="w-full fuse-mat-dense">
+                        <mat-label>Λήξη διαγωνισμού</mat-label>
+                        <mat-select [value]="endMode()" (selectionChange)="setEndMode($event.value)">
+                            <mat-option value="custom">Συγκεκριμένη ημερομηνία</mat-option>
+                            <mat-option value="indefinite">Αόριστου</mat-option>
+                        </mat-select>
+                    </mat-form-field>
+                    @if (endMode() === 'custom') {
+                    <mat-form-field class="w-full fuse-mat-dense">
+                        <mat-label>Ημερομηνία λήξης *</mat-label>
+                        <input matInput type="datetime-local" formControlName="endDate" />
+                    </mat-form-field>
+                    }
+                    @if (endMode() === 'indefinite') {
+                    <div class="flex items-center gap-2 rounded-xl border bg-gray-50/80 dark:bg-white/5 px-4 py-2.5 text-sm text-secondary">
+                        <mat-icon class="icon-size-4 shrink-0">all_inclusive</mat-icon>
+                        Ο διαγωνισμός δεν έχει ημερομηνία λήξης
+                    </div>
+                    }
+                </div>
 
                 <mat-form-field class="w-full fuse-mat-dense">
                     <mat-label>Αριθμός Νικητών</mat-label>

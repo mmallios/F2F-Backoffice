@@ -13,6 +13,7 @@ import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
@@ -25,6 +26,9 @@ import { finalize } from 'rxjs';
 import { ContestCreateDto, ContestsAdminService } from '@fuse/services/contests/contests-admin.service';
 import { ImageUploadService } from '@fuse/services/general/image-upload.service';
 
+type DateMode = 'now' | 'custom';
+type EndMode = 'custom' | 'indefinite';
+
 @Component({
     selector: 'contest-wizard-dialog',
     standalone: true,
@@ -36,6 +40,7 @@ import { ImageUploadService } from '@fuse/services/general/image-upload.service'
         MatFormFieldModule,
         MatIconModule,
         MatInputModule,
+        MatSelectModule,
         MatSlideToggleModule,
         MatDatepickerModule,
         MatNativeDateModule,
@@ -62,6 +67,11 @@ export class ContestWizardDialogComponent {
     uploading = signal(false);
     imagePreview: string | null = null;
 
+    // Date mode signals
+    publishMode = signal<DateMode>('now');
+    startMode = signal<DateMode>('custom');
+    endMode = signal<EndMode>('custom');
+
     step1 = this.fb.group({
         title: ['', Validators.required],
         description: [''],
@@ -69,7 +79,7 @@ export class ContestWizardDialogComponent {
     });
 
     step2 = this.fb.group({
-        publishDate: [null as Date | null, Validators.required],
+        publishDate: [null as Date | null],       // no required — default mode is 'now'
         publishTime: ['00:00'],
         startDate: [null as Date | null, Validators.required],
         startTime: ['00:00'],
@@ -82,12 +92,62 @@ export class ContestWizardDialogComponent {
         sendNotificationsToWinners: [true],
     });
 
+    // ── Mode setters ─────────────────────────────────────────────
+    setPublishMode(mode: DateMode): void {
+        this.publishMode.set(mode);
+        const dateCtrl = this.step2.get('publishDate')!;
+        if (mode === 'now') {
+            dateCtrl.clearValidators();
+            dateCtrl.setValue(null);
+        } else {
+            dateCtrl.setValidators(Validators.required);
+        }
+        dateCtrl.updateValueAndValidity();
+        this.cdr.markForCheck();
+    }
+
+    setStartMode(mode: DateMode): void {
+        this.startMode.set(mode);
+        const dateCtrl = this.step2.get('startDate')!;
+        if (mode === 'now') {
+            dateCtrl.clearValidators();
+            dateCtrl.setValue(null);
+        } else {
+            dateCtrl.setValidators(Validators.required);
+        }
+        dateCtrl.updateValueAndValidity();
+        this.cdr.markForCheck();
+    }
+
+    setEndMode(mode: EndMode): void {
+        this.endMode.set(mode);
+        const dateCtrl = this.step2.get('endDate')!;
+        if (mode === 'indefinite') {
+            dateCtrl.clearValidators();
+            dateCtrl.setValue(null);
+        } else {
+            dateCtrl.setValidators(Validators.required);
+        }
+        dateCtrl.updateValueAndValidity();
+        this.cdr.markForCheck();
+    }
+
     // ── Summary helpers ──────────────────────────────────────────
     get summaryTitle(): string { return this.step1.value.title || '—'; }
     get summaryDescription(): string { return this.step1.value.description || '—'; }
-    get summaryPublishDate(): string { return this.fmtDt(this.step2.value.publishDate, this.step2.value.publishTime!); }
-    get summaryStartDate(): string { return this.fmtDt(this.step2.value.startDate, this.step2.value.startTime!); }
-    get summaryEndDate(): string { return this.fmtDt(this.step2.value.endDate, this.step2.value.endTime!); }
+
+    get summaryPublishDate(): string {
+        if (this.publishMode() === 'now') return 'Τώρα';
+        return this.fmtDt(this.step2.value.publishDate, this.step2.value.publishTime!);
+    }
+    get summaryStartDate(): string {
+        if (this.startMode() === 'now') return 'Τώρα';
+        return this.fmtDt(this.step2.value.startDate, this.step2.value.startTime!);
+    }
+    get summaryEndDate(): string {
+        if (this.endMode() === 'indefinite') return 'Αόριστου';
+        return this.fmtDt(this.step2.value.endDate, this.step2.value.endTime!);
+    }
 
     private fmtDt(date: Date | null | undefined, time: string): string {
         if (!date) return '—';
@@ -147,14 +207,27 @@ export class ContestWizardDialogComponent {
     save(): void {
         const v1 = this.step1.value;
         const v2 = this.step2.value;
+
+        const publishDate = this.publishMode() === 'now'
+            ? new Date().toISOString()
+            : this.combineDateTime(v2.publishDate, v2.publishTime!);
+
+        const startDate = this.startMode() === 'now'
+            ? new Date().toISOString()
+            : this.combineDateTime(v2.startDate, v2.startTime!);
+
+        const endDate = this.endMode() === 'indefinite'
+            ? new Date('2050-01-01T00:00:00').toISOString()
+            : this.combineDateTime(v2.endDate, v2.endTime!);
+
         const dto: ContestCreateDto = {
             title: v1.title!,
             description: v1.description || null,
             image: v1.image || null,
             isActive: v2.isActive!,
-            publishDate: this.combineDateTime(v2.publishDate, v2.publishTime!),
-            startDate: this.combineDateTime(v2.startDate, v2.startTime!),
-            endDate: this.combineDateTime(v2.endDate, v2.endTime!),
+            publishDate,
+            startDate,
+            endDate,
             maxEntriesPerUser: v2.maxEntriesPerUser!,
             maxTotalEntries: v2.maxTotalEntries!,
             totalWinners: v2.totalWinners ?? null,

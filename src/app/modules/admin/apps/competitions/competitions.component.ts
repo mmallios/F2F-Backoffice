@@ -29,6 +29,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { EventsService, Competition } from '@fuse/services/events/events.service';
 import { CompetitionUpsertDialogComponent } from './dialogs/competition-upsert-dialog.component';
 import { combineLatest } from 'rxjs';
+import { FanCardsAdminService, FanCardSeason } from '@fuse/services/fan-cards/fan-cards-admin.service';
 
 
 type SportOption = { id: number; name: string };
@@ -96,6 +97,7 @@ export class CompetitionsComponent implements OnInit, OnDestroy {
         { id: 6, name: 'Χάντμπολ' },
     ];
     private _sportById = new Map<number, string>();
+    private _seasonById = new Map<number, string>();
 
     private _unsubscribeAll: Subject<any> = new Subject<any>();
 
@@ -106,7 +108,8 @@ export class CompetitionsComponent implements OnInit, OnDestroy {
         @Inject(DOCUMENT) private _document: any,
         private _router: Router,
         private _fuseMediaWatcherService: FuseMediaWatcherService,
-        private _dialog: MatDialog
+        private _dialog: MatDialog,
+        private _fanCardsService: FanCardsAdminService,
     ) { }
 
     ngOnInit(): void {
@@ -114,6 +117,14 @@ export class CompetitionsComponent implements OnInit, OnDestroy {
 
         this._sportById.clear();
         this.sports.forEach(s => this._sportById.set(s.id, s.name));
+
+        this._fanCardsService.getSeasons()
+            .pipe(takeUntil(this._unsubscribeAll))
+            .subscribe(seasons => {
+                this._seasonById.clear();
+                (seasons ?? []).forEach(s => this._seasonById.set(s.id, s.name));
+                this._cdr.markForCheck();
+            });
 
         // Load competitions initially (populates BehaviorSubject via tap)
         this._eventsService.getCompetitions()
@@ -271,5 +282,10 @@ export class CompetitionsComponent implements OnInit, OnDestroy {
     getSportName(sportId: any): string {
         const n = Number(sportId);
         return this._sportById.get(n) ?? '-';
+    }
+
+    getSeasonName(seasonId: any): string {
+        const n = Number(seasonId);
+        return this._seasonById.get(n) ?? String(seasonId ?? '-');
     }
 }
