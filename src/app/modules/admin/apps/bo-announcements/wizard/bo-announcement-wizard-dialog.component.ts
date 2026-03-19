@@ -190,7 +190,9 @@ export class BOAnnouncementWizardDialogComponent implements OnInit {
         const val = this.step1.value.autoDeleteValue;
         const unit = this.step1.value.autoDeleteUnit;
         if (!val || val <= 0) return null;
-        const ms = unit === 'days' ? val * 24 * 60 * 60 * 1000 : val * 60 * 60 * 1000;
+        const ms = unit === 'days' ? val * 24 * 60 * 60 * 1000
+                 : unit === 'hours' ? val * 60 * 60 * 1000
+                 : val * 60 * 1000;
         return new Date(Date.now() + ms).toISOString();
     }
 
@@ -205,7 +207,8 @@ export class BOAnnouncementWizardDialogComponent implements OnInit {
         const val = this.step1.value.autoDeleteValue;
         const unit = this.step1.value.autoDeleteUnit;
         if (!val || val <= 0) return 'Χωρίς αυτόματη διαγραφή';
-        return `${val} ${unit === 'days' ? 'μέρες' : 'ώρες'}`;
+        const label = unit === 'days' ? 'μέρες' : unit === 'hours' ? 'ώρες' : 'λεπτά';
+        return `${val} ${label}`;
     }
     get summaryEmail(): string {
         return this.step1.value.sendEmailNotification ? 'Ναι' : 'Όχι';

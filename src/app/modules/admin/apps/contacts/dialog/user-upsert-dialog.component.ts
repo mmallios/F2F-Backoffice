@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, Inject, OnDestroy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Inject, OnDestroy } from '@angular/core';
 import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
@@ -96,7 +96,10 @@ export const DD_MM_YYYY_FORMAT = {
 
               <div class="min-w-0">
                 <div class="font-semibold">Εικόνα προφίλ</div>
-                <div class="text-secondary text-sm">PNG/JPG έως 3MB.</div>
+                <div class="text-secondary text-sm">
+                  <ng-container *ngIf="uploadingImage">Μεταφόρτωση...</ng-container>
+                  <ng-container *ngIf="!uploadingImage">PNG/JPG έως 3MB.</ng-container>
+                </div>
               </div>
             </div>
 
@@ -108,10 +111,10 @@ export const DD_MM_YYYY_FORMAT = {
                 class="!rounded-xl"
                 type="button"
                 (click)="triggerFileInput(fileInput)"
-                [disabled]="saving"
+                [disabled]="saving || uploadingImage"
               >
-                <mat-icon class="mr-2" [svgIcon]="'heroicons_outline:arrow-up-tray'"></mat-icon>
-                Μεταφόρτωση
+                <mat-icon class="mr-2" [svgIcon]="uploadingImage ? 'heroicons_outline:arrow-path' : 'heroicons_outline:arrow-up-tray'" [class.animate-spin]="uploadingImage"></mat-icon>
+                {{ uploadingImage ? 'Μεταφόρτωση...' : 'Μεταφόρτωση' }}
               </button>
 
               <button
@@ -424,6 +427,7 @@ export class UserUpsertDialogComponent implements OnDestroy {
     @Inject(MAT_DIALOG_DATA) public data: DialogData,
     private _dialogRef: MatDialogRef<UserUpsertDialogComponent>,
     private _fb: FormBuilder,
+    private _cdr: ChangeDetectorRef,
     private _usersService: UsersService,
     private _staticDataService: StaticDataService,
     private _imageUpload: ImageUploadService
@@ -558,12 +562,16 @@ export class UserUpsertDialogComponent implements OnDestroy {
 
     this._imageUpload
       .uploadImage(file, folder, subFolder)
-      .pipe(finalize(() => (this.uploadingImage = false)))
+      .pipe(finalize(() => { this.uploadingImage = false; this._cdr.markForCheck(); }))
       .subscribe({
-        next: (res) => this.form.patchValue({ image: res.publicUrl }),
+        next: (res) => {
+          this.form.patchValue({ image: res.publicUrl });
+          this._cdr.markForCheck();
+        },
         error: (err) => {
           console.error('uploadImage failed', err);
           this.uploadImageError = 'Αποτυχία μεταφόρτωσης εικόνας.';
+          this._cdr.markForCheck();
         },
       });
   }
