@@ -1,6 +1,6 @@
 
 
-import { CommonModule } from '@angular/common';
+import { CommonModule, DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -17,6 +17,8 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 
 import {
+    BODirectAssignRequest,
+    BOTicketRequestDto,
     Competition,
     CreateEventTicketDto,
     EventItem,
@@ -27,8 +29,10 @@ import {
     UpdateEventTicketDto,
     TvChannel
 } from '@fuse/services/events/events.service';
+import { AuthService } from 'app/core/auth/auth.service';
 import { EventFanCardUsage, FanCardsAdminService } from '@fuse/services/fan-cards/fan-cards-admin.service';
 import { UsersService, User } from '@fuse/services/users/users.service';
+import { BOHubService } from 'app/core/signalr/bo-hub.service';
 
 @Component({
     selector: 'event-details',
@@ -87,6 +91,21 @@ export class EventDetailsComponent implements OnInit, OnDestroy {
     showAddModal = false;
     addForm!: FormGroup;
     addSaving = false;
+    addPriceMode: 'free' | 'paid' = 'free';
+
+    // ── direct assign modal
+    showAssignModal = false;
+    assignTarget: EventTicketDto | null = null;
+    assignSelectedUserId: number | null = null;
+    assignUserSearch = new FormControl<string>('', { nonNullable: true });
+    filteredAssignUsers: User[] = [];
+    assignSaving = false;
+    boAssigns: BOTicketRequestDto[] = [];
+    assignRequesterForm!: FormGroup;
+
+    // ── assign info modal
+    showAssignInfoModal = false;
+    assignInfoTarget: BOTicketRequestDto | null = null;
     activeUsers: User[] = [];
     filteredUsers: User[] = [];
     userSearchCtrl = new FormControl<string>('', { nonNullable: true });
@@ -108,8 +127,10 @@ export class EventDetailsComponent implements OnInit, OnDestroy {
         private _eventsService: EventsService,
         private _fanCardsService: FanCardsAdminService,
         private _usersService: UsersService,
+        private _authService: AuthService,
         private _fb: FormBuilder,
-        private _cdr: ChangeDetectorRef
+        private _cdr: ChangeDetectorRef,
+        private _boHub: BOHubService
     ) { }
 
     // ==============================
@@ -119,6 +140,30 @@ export class EventDetailsComponent implements OnInit, OnDestroy {
         this.buildHeaderForm();
         this._buildEditForm();
         this._buildAddForm();
+        this.assignRequesterForm = this._fb.group({
+            firstname: ['', Validators.required],
+            lastname:  ['', Validators.required],
+            email:     ['', [Validators.required, Validators.email]],
+            amka:      ['', Validators.required],
+        });
+
+        // Real-time ticket updates from fan2fan
+        this._boHub.boTicketUpdate$.pipe(takeUntil(this._unsubscribeAll)).subscribe(update => {
+            if (update.eventId !== this.event?.id) return;
+
+            if (update.action === 'ticket-added' && update.ticket) {
+                this.tickets = [update.ticket, ...this.tickets];
+                this.filteredTickets = [update.ticket, ...this.filteredTickets];
+            } else if (update.action === 'status-changed' || update.action === 'request-created') {
+                this.tickets = this.tickets.map(t =>
+                    t.id === update.ticketId ? { ...t, status: update.newStatus ?? t.status } : t
+                );
+                this.filteredTickets = this.filteredTickets.map(t =>
+                    t.id === update.ticketId ? { ...t, status: update.newStatus ?? t.status } : t
+                );
+            }
+            this._cdr.markForCheck();
+        });
 
         forkJoin({
             teams: this._eventsService.getTeams(),
@@ -213,6 +258,10 @@ export class EventDetailsComponent implements OnInit, OnDestroy {
                 },
                 error: () => { this.loadingTickets = false; this._cdr.markForCheck(); },
             });
+
+        this._eventsService.getAllTicketRequestsForEvent(eventId)
+            .pipe(takeUntil(this._unsubscribeAll))
+            .subscribe({ next: (list) => { this.boAssigns = list ?? []; this._cdr.markForCheck(); } });
     }
 
     private _wireFilters(): void {
@@ -310,6 +359,7 @@ export class EventDetailsComponent implements OnInit, OnDestroy {
     }
 
     openAddModal(): void {
+        this.addPriceMode = 'free';
         this.addForm.reset({ gate: '', section: '', row: '', seat: '', price: 0, status: 0, type: 0, userId: null });
         this.userSearchCtrl.setValue('', { emitEvent: false });
         this.filteredUsers = this.activeUsers;
@@ -318,6 +368,123 @@ export class EventDetailsComponent implements OnInit, OnDestroy {
     }
 
     closeAddModal(): void { this.showAddModal = false; this._cdr.markForCheck(); }
+
+    // ── direct assign modal ─────────────────────────────────────
+
+    openAssignModal(ticket: EventTicketDto): void {
+        this.assignTarget = ticket;
+        this.assignSelectedUserId = null;
+        this.assignUserSearch.setValue('', { emitEvent: false });
+        this.filteredAssignUsers = this.activeUsers;
+        this.showAssignModal = true;
+        this._cdr.markForCheck();
+
+        this.assignUserSearch.valueChanges
+            .pipe(takeUntil(this._unsubscribeAll))
+            .subscribe(q => {
+                const lower = (q ?? '').toLowerCase().trim();
+                this.filteredAssignUsers = lower
+                    ? this.activeUsers.filter(u =>
+                        `${u.firstname} ${u.lastname} ${u.email}`.toLowerCase().includes(lower))
+                    : this.activeUsers;
+                this._cdr.markForCheck();
+            });
+    }
+
+    closeAssignModal(): void {
+        this.showAssignModal = false;
+        this.assignTarget = null;
+        this.assignSelectedUserId = null;
+        this.assignRequesterForm.reset();
+        this._cdr.markForCheck();
+    }
+
+    submitDirectAssign(): void {
+        if (!this.assignTarget || !this.assignSelectedUserId || this.assignSaving) return;
+        if (this.assignRequesterForm.invalid) {
+            this.assignRequesterForm.markAllAsTouched();
+            this._cdr.markForCheck();
+            return;
+        }
+        const admin = this._authService.currentUser;
+        const rf = this.assignRequesterForm.getRawValue();
+        this.assignSaving = true;
+        this._cdr.markForCheck();
+
+        const dto: BODirectAssignRequest = {
+            eventTicketId: this.assignTarget.id,
+            requestedByUserId: this.assignSelectedUserId,
+            adminBoUserId: admin?.boUserId ?? admin?.id ?? 0,
+            adminFullName: `${admin?.firstname ?? ''} ${admin?.lastname ?? ''}`.trim(),
+            adminImage: admin?.image ?? undefined,
+            requesterFirstname: rf.firstname,
+            requesterLastname:  rf.lastname,
+            requesterEmail:     rf.email,
+            requesterAmka:      rf.amka,
+        };
+
+        this._eventsService.directAssignTicket(dto).subscribe({
+            next: (result) => {
+                // Update ticket status in local list
+                const idx = this.tickets.findIndex(t => t.id === this.assignTarget!.id);
+                if (idx >= 0) this.tickets[idx] = { ...this.tickets[idx], status: 1 };
+                this.filteredTickets = this.filteredTickets.map(t =>
+                    t.id === this.assignTarget!.id ? { ...t, status: 1 } : t
+                );
+                this.boAssigns = [...this.boAssigns, result];
+                this.assignSaving = false;
+                this.closeAssignModal();
+            },
+            error: () => { this.assignSaving = false; this._cdr.markForCheck(); },
+        });
+    }
+
+    getBoAssignForTicket(ticketId: number): BOTicketRequestDto | undefined {
+        return this.boAssigns.find(a => a.eventTicketId === ticketId);
+    }
+
+    openAssignInfoModal(ticketId: number): void {
+        this.assignInfoTarget = this.getBoAssignForTicket(ticketId) ?? null;
+        if (this.assignInfoTarget) {
+            this.showAssignInfoModal = true;
+            this._cdr.markForCheck();
+        }
+    }
+
+    closeAssignInfoModal(): void {
+        this.showAssignInfoModal = false;
+        this.assignInfoTarget = null;
+        this._cdr.markForCheck();
+    }
+
+    selectAssignUser(id: number): void {
+        this.assignSelectedUserId = id;
+        const u = this.activeUsers.find(x => x.id === id);
+        if (u) {
+            this.assignRequesterForm.patchValue({
+                firstname: u.firstname ?? '',
+                lastname:  u.lastname ?? '',
+                email:     u.email ?? '',
+                amka:      u.amka ?? '',
+            });
+        }
+        this._cdr.markForCheck();
+    }
+
+    onAddPriceModeChange(mode: 'free' | 'paid'): void {
+        this.addPriceMode = mode;
+        if (mode === 'free') {
+            this.addForm.get('price')!.setValue(0);
+        } else {
+            this.addForm.get('price')!.setValue(null);
+        }
+    }
+
+    onPriceKeydown(event: KeyboardEvent): void {
+        const controlKeys = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Home', 'End'];
+        if (controlKeys.includes(event.key)) return;
+        if (!/^\d$/.test(event.key)) event.preventDefault();
+    }
 
     saveAddTicket(): void {
         if (!this.event || this.addForm.invalid) return;
@@ -380,7 +547,7 @@ export class EventDetailsComponent implements OnInit, OnDestroy {
     ticketStatusLabel(status: number): string {
         switch (status) {
             case 0: return 'ΔΙΑΘΕΣΙΜΟ';
-            case 1: return 'ΕΚΚΡΕΜΕΙ ΜΕΤΑΒΙΒΑΣΗ';
+            case 1: return 'ΠΡΟΣ ΠΑΡΑΧΩΡΗΣΗ';
             case 2: return 'ΜΕΤΑΒΙΒΑΣΘΗΚΕ';
             case 3: return 'ΑΠΟΡΡΙΦΘΗΚΕ';
             default: return '—';

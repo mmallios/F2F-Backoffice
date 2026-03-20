@@ -29,6 +29,15 @@ export interface BOGroupChatPauseChangedDto {
     isPaused: boolean;
 }
 
+export interface BOTicketUpdateDto {
+    /** 'ticket-added' | 'status-changed' | 'request-created' */
+    action: string;
+    eventId: number;
+    ticketId?: number;
+    newStatus?: number;
+    ticket?: any;
+}
+
 @Injectable({ providedIn: 'root' })
 export class BOHubService {
     private _connection: signalR.HubConnection | null = null;
@@ -56,6 +65,9 @@ export class BOHubService {
 
     /** Emits when an admin comes online or goes offline. */
     readonly adminPresenceChanged$ = new Subject<{ boUserId: number; isOnline: boolean }>();
+
+    /** Emits when a fan2fan ticket is added or its status changes. */
+    readonly boTicketUpdate$ = new Subject<BOTicketUpdateDto>();
 
     /**
      * Start the SignalR connection to /api/hubs/bo-notifications.
@@ -115,6 +127,10 @@ export class BOHubService {
             this.adminPresenceChanged$.next(dto);
         });
 
+        this._connection.on('BOTicketUpdate', (dto: BOTicketUpdateDto) => {
+            this.boTicketUpdate$.next(dto);
+        });
+
         this._connection
             .start()
             .then(() => {
@@ -138,6 +154,7 @@ export class BOHubService {
             this._connection.off('GroupChatPauseChanged');
             this._connection.off('NewBOGroupChat');
             this._connection.off('AdminPresenceChanged');
+            this._connection.off('BOTicketUpdate');
             this._connection.stop();
             this._connection = null;
         }

@@ -559,6 +559,17 @@
                                     </button>
                                 </ng-container>
                                 <ng-template #normalActions>
+                                    <!-- ΑΠΕΥΘΕΙΑΣ ΑΝΑΘΕΣΗ — only for available tickets -->
+                                    <button *ngIf="t.status === 0" mat-icon-button
+                                        class="!text-indigo-600"
+                                        title="Απευθείας ανάθεση" (click)="openAssignModal(t)">
+                                        <mat-icon class="text-[18px]">bolt</mat-icon>
+                                    </button>
+                                    <!-- Info button for requested / accepted / rejected tickets -->
+                                    <button *ngIf="(t.status === 1 || t.status === 2 || t.status === 3) && getBoAssignForTicket(t.id)"
+                                        mat-icon-button title="Στοιχεία ανάθεσης" (click)="openAssignInfoModal(t.id)">
+                                        <mat-icon class="text-[18px] text-amber-500">info</mat-icon>
+                                    </button>
                                     <button mat-icon-button title="Επεξεργασία" (click)="openEditTicket(t)">
                                         <mat-icon class="text-[18px]">edit</mat-icon>
                                     </button>
@@ -583,7 +594,7 @@
                             <div class="ticket-modal-body">
                                 <div class="ticket-modal-grid">
                                     <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                                        <mat-label>Θύρα *</mat-label>
+                                        <mat-label>Θύρα</mat-label>
                                         <input matInput formControlName="gate" />
                                     </mat-form-field>
                                     <mat-form-field appearance="outline" subscriptSizing="dynamic">
@@ -599,11 +610,19 @@
                                         <input matInput formControlName="seat" />
                                     </mat-form-field>
                                     <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                                        <mat-label>Τιμή (€)</mat-label>
-                                        <input matInput type="number" formControlName="price" />
+                                        <mat-label>Τιμή</mat-label>
+                                        <mat-select [value]="addPriceMode" (valueChange)="onAddPriceModeChange($event)">
+                                            <mat-option value="free">ΔΩΡΕΑΝ</mat-option>
+                                            <mat-option value="paid">ΜΕ ΤΙΜΗ</mat-option>
+                                        </mat-select>
+                                    </mat-form-field>
+                                    <mat-form-field *ngIf="addPriceMode === 'paid'" appearance="outline" subscriptSizing="dynamic">
+                                        <mat-label>Ποσό (€)</mat-label>
+                                        <input matInput type="text" inputmode="numeric" formControlName="price"
+                                            (keydown)="onPriceKeydown($event)" />
                                     </mat-form-field>
                                     <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                                        <mat-label>Τύπος</mat-label>
+                                        <mat-label>Τύπος Εισιτηρίου</mat-label>
                                         <mat-select formControlName="type">
                                             <mat-option [value]="0">ΑΓΩΝΑ</mat-option>
                                             <mat-option [value]="1">ΔΙΑΡΚΕΙΑΣ</mat-option>
@@ -669,7 +688,7 @@
                             <div class="ticket-modal-body">
                                 <div class="ticket-modal-grid">
                                     <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                                        <mat-label>Θύρα *</mat-label>
+                                        <mat-label>Θύρα</mat-label>
                                         <input matInput formControlName="gate" />
                                     </mat-form-field>
                                     <mat-form-field appearance="outline" subscriptSizing="dynamic">
@@ -710,6 +729,266 @@
                                     <mat-icon *ngIf="editSaving" class="animate-spin text-sm">refresh</mat-icon>
                                     Αποθήκευση
                                 </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ── DIRECT ASSIGN MODAL ── -->
+                    <div *ngIf="showAssignModal && assignTarget" class="ticket-modal-backdrop" (click)="closeAssignModal()">
+                        <div class="assign-modal" (click)="$event.stopPropagation()">
+
+                            <!-- Header -->
+                            <div class="ticket-modal-header">
+                                <div class="flex items-center gap-2">
+                                    <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-100">
+                                        <mat-icon class="icon-size-5 text-indigo-600">bolt</mat-icon>
+                                    </div>
+                                    <span class="font-bold text-base">Απευθείας Ανάθεση Εισιτηρίου</span>
+                                </div>
+                                <button mat-icon-button (click)="closeAssignModal()">
+                                    <mat-icon>close</mat-icon>
+                                </button>
+                            </div>
+
+                            <!-- Ticket info card -->
+                            <div class="px-5 pt-4">
+                                <div class="assign-ticket-card">
+                                    <div class="assign-ticket-row">
+                                        <div class="assign-ticket-field">
+                                            <span class="assign-field-label">Θύρα</span>
+                                            <span class="assign-field-value gate-badge">ΘΥΡΑ {{ assignTarget.gate || '—' }}</span>
+                                        </div>
+                                        <div class="assign-ticket-field" *ngIf="assignTarget.section">
+                                            <span class="assign-field-label">Τμήμα</span>
+                                            <span class="assign-field-value">{{ assignTarget.section }}</span>
+                                        </div>
+                                        <div class="assign-ticket-field" *ngIf="assignTarget.row">
+                                            <span class="assign-field-label">Σειρά</span>
+                                            <span class="assign-field-value">{{ assignTarget.row }}</span>
+                                        </div>
+                                        <div class="assign-ticket-field" *ngIf="assignTarget.seat">
+                                            <span class="assign-field-label">Θέση</span>
+                                            <span class="assign-field-value">{{ assignTarget.seat }}</span>
+                                        </div>
+                                        <div class="assign-ticket-field">
+                                            <span class="assign-field-label">Τιμή</span>
+                                            <span class="assign-field-value font-bold">
+                                                {{ (assignTarget.price ?? 0) === 0 ? 'ΔΩΡΕΑΝ' : (assignTarget.price + ' €') }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="assign-owner-row mt-2 pt-2 border-t border-gray-100">
+                                        <div class="owner-avatar" style="width:28px;height:28px;font-size:11px;flex:0 0 28px">
+                                            <img *ngIf="assignTarget.ownerImage" [src]="assignTarget.ownerImage" class="w-full h-full object-cover rounded-full" />
+                                            <span *ngIf="!assignTarget.ownerImage">{{ ownerInitials(assignTarget) }}</span>
+                                        </div>
+                                        <span class="text-xs text-gray-500 ml-2">Κάτοχος: <strong class="text-gray-700">{{ assignTarget.ownerFirstname }} {{ assignTarget.ownerLastname }}</strong></span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- User search + list -->
+                            <div class="ticket-modal-body pt-3">
+                                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Επιλογή χρήστη</p>
+                                <div class="assign-search-wrap">
+                                    <mat-icon class="assign-search-icon">search</mat-icon>
+                                    <input [formControl]="assignUserSearch" placeholder="Αναζήτηση ονόματος, email..."
+                                        class="assign-search-input" />
+                                </div>
+                                <div class="assign-user-list">
+                                    <div *ngFor="let u of filteredAssignUsers"
+                                        class="assign-user-row"
+                                        [class.assign-user-selected]="assignSelectedUserId === u.id"
+                                        (click)="selectAssignUser(u.id)">
+                                        <div class="owner-avatar" style="width:34px;height:34px;flex:0 0 34px">
+                                            <img *ngIf="u.image" [src]="u.image" class="w-full h-full object-cover rounded-full" />
+                                            <span *ngIf="!u.image" class="text-xs font-bold">{{ (u.firstname?.[0] ?? '') }}{{ (u.lastname?.[0] ?? '') }}</span>
+                                        </div>
+                                        <div class="flex flex-col min-w-0 flex-1">
+                                            <span class="text-sm font-semibold truncate">{{ u.firstname }} {{ u.lastname }}</span>
+                                            <span class="text-xs text-gray-400 truncate">{{ u.email }}</span>
+                                        </div>
+                                        <div *ngIf="assignSelectedUserId === u.id" class="assign-check">
+                                            <mat-icon class="icon-size-4 text-white">check</mat-icon>
+                                        </div>
+                                    </div>
+                                    <div *ngIf="!filteredAssignUsers.length" class="text-center text-secondary text-sm py-6">
+                                        Δεν βρέθηκαν χρήστες
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Requester info fields (shown after user selected) -->
+                            <div *ngIf="assignSelectedUserId" class="px-5 pb-4" [formGroup]="assignRequesterForm">
+                                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Στοιχεία αιτούντος</p>
+                                <div class="ticket-modal-grid">
+                                    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                                        <mat-label>Όνομα</mat-label>
+                                        <input matInput formControlName="firstname" />
+                                        <mat-error>Υποχρεωτικό</mat-error>
+                                    </mat-form-field>
+                                    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                                        <mat-label>Επώνυμο</mat-label>
+                                        <input matInput formControlName="lastname" />
+                                        <mat-error>Υποχρεωτικό</mat-error>
+                                    </mat-form-field>
+                                    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                                        <mat-label>Email</mat-label>
+                                        <input matInput formControlName="email" />
+                                        <mat-error>Υποχρεωτικό / μη έγκυρο</mat-error>
+                                    </mat-form-field>
+                                    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                                        <mat-label>ΑΜΚΑ</mat-label>
+                                        <input matInput formControlName="amka" />
+                                        <mat-error>Υποχρεωτικό</mat-error>
+                                    </mat-form-field>
+                                </div>
+                            </div>
+
+                            <!-- Footer -->
+                            <div class="ticket-modal-footer">
+                                <button mat-stroked-button type="button" (click)="closeAssignModal()">Ακύρωση</button>
+                                <button mat-flat-button color="primary" type="button"
+                                    [disabled]="!assignSelectedUserId || assignSaving"
+                                    (click)="submitDirectAssign()">
+                                    <mat-icon *ngIf="assignSaving" class="animate-spin icon-size-4">refresh</mat-icon>
+                                    <mat-icon *ngIf="!assignSaving" class="icon-size-4 mr-1">bolt</mat-icon>
+                                    ΑΝΑΘΕΣΗ
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ── ASSIGN INFO MODAL ── -->
+                    <div *ngIf="showAssignInfoModal && assignInfoTarget" class="ticket-modal-backdrop" (click)="closeAssignInfoModal()">
+                        <div class="assign-info-modal" (click)="$event.stopPropagation()">
+
+                            <!-- Header -->
+                            <div class="ticket-modal-header">
+                                <div class="flex items-center gap-2">
+                                    <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-100">
+                                        <mat-icon class="icon-size-5 text-indigo-600">info</mat-icon>
+                                    </div>
+                                    <span class="font-bold text-base">Στοιχεία Ανάθεσης</span>
+                                </div>
+                                <button mat-icon-button (click)="closeAssignInfoModal()">
+                                    <mat-icon>close</mat-icon>
+                                </button>
+                            </div>
+
+                            <div class="ticket-modal-body space-y-5">
+
+                                <!-- Flow card: Admin → User (BO assign) or just User (fan2fan) -->
+                                <div class="assign-flow-card">
+                                    <!-- Admin section — only for BO direct-assign -->
+                                    <ng-container *ngIf="assignInfoTarget.adminFullName">
+                                        <div class="assign-flow-person">
+                                            <div class="assign-flow-avatar admin">
+                                                <img *ngIf="assignInfoTarget.adminImage" [src]="assignInfoTarget.adminImage" class="w-full h-full object-cover rounded-full" />
+                                                <mat-icon *ngIf="!assignInfoTarget.adminImage" class="icon-size-6 text-indigo-500">admin_panel_settings</mat-icon>
+                                            </div>
+                                            <div class="assign-flow-info">
+                                                <span class="assign-flow-role admin-role">ADMIN</span>
+                                                <span class="assign-flow-name">{{ assignInfoTarget.adminFullName }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="assign-flow-arrow">
+                                            <mat-icon class="icon-size-5 text-indigo-400">arrow_forward</mat-icon>
+                                        </div>
+                                    </ng-container>
+
+                                    <!-- User (requester) -->
+                                    <div class="assign-flow-person">
+                                        <div class="assign-flow-avatar user">
+                                            <img *ngIf="assignInfoTarget.requestedByImage" [src]="assignInfoTarget.requestedByImage" class="w-full h-full object-cover rounded-full" />
+                                            <mat-icon *ngIf="!assignInfoTarget.requestedByImage" class="icon-size-6 text-emerald-500">person</mat-icon>
+                                        </div>
+                                        <div class="assign-flow-info">
+                                            <span class="assign-flow-role user-role">ΧΡΗΣΤΗΣ</span>
+                                            <span class="assign-flow-name">{{ assignInfoTarget.requestedByFullName || '—' }}</span>
+                                            <span class="assign-flow-sub">{{ assignInfoTarget.requestedByCode || '' }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Ticket details -->
+                                <div class="info-section">
+                                    <p class="info-section-title">Εισιτήριο</p>
+                                    <div class="assign-info-grid">
+                                        <div class="assign-info-item">
+                                            <span class="assign-field-label">Θύρα</span>
+                                            <span class="assign-field-value gate-badge">ΘΥΡΑ {{ assignInfoTarget.gate || '—' }}</span>
+                                        </div>
+                                        <div class="assign-info-item" *ngIf="assignInfoTarget.section">
+                                            <span class="assign-field-label">Τμήμα</span>
+                                            <span class="assign-field-value">{{ assignInfoTarget.section }}</span>
+                                        </div>
+                                        <div class="assign-info-item" *ngIf="assignInfoTarget.row">
+                                            <span class="assign-field-label">Σειρά</span>
+                                            <span class="assign-field-value">{{ assignInfoTarget.row }}</span>
+                                        </div>
+                                        <div class="assign-info-item" *ngIf="assignInfoTarget.seat">
+                                            <span class="assign-field-label">Θέση</span>
+                                            <span class="assign-field-value">{{ assignInfoTarget.seat }}</span>
+                                        </div>
+                                        <div class="assign-info-item">
+                                            <span class="assign-field-label">Τιμή</span>
+                                            <span class="assign-field-value font-bold">
+                                                {{ (assignInfoTarget.price ?? 0) === 0 ? 'ΔΩΡΕΑΝ' : (assignInfoTarget.price + ' €') }}
+                                            </span>
+                                        </div>
+                                        <div class="assign-info-item">
+                                            <span class="assign-field-label">Ημ/νία αιτήματος</span>
+                                            <span class="assign-field-value">{{ assignInfoTarget.requestedAt | date:'dd/MM/yyyy HH:mm' }}</span>
+                                        </div>
+                                        <div class="assign-info-item" *ngIf="(assignInfoTarget.status === 2 || assignInfoTarget.status === 3) && assignInfoTarget.respondedAt">
+                                            <span class="assign-field-label">Ημ/νία απάντησης</span>
+                                            <span class="assign-field-value" [class.text-green-600]="assignInfoTarget.status === 2" [class.text-red-600]="assignInfoTarget.status === 3">
+                                                {{ assignInfoTarget.respondedAt | date:'dd/MM/yyyy HH:mm' }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Requester info -->
+                                <div class="info-section">
+                                    <p class="info-section-title">Στοιχεία αιτούντος</p>
+                                    <div class="assign-info-grid">
+                                        <div class="assign-info-item">
+                                            <span class="assign-field-label">Όνομα</span>
+                                            <span class="assign-field-value">{{ assignInfoTarget.requesterFirstname || '—' }}</span>
+                                        </div>
+                                        <div class="assign-info-item">
+                                            <span class="assign-field-label">Επώνυμο</span>
+                                            <span class="assign-field-value">{{ assignInfoTarget.requesterLastname || '—' }}</span>
+                                        </div>
+                                        <div class="assign-info-item">
+                                            <span class="assign-field-label">Email</span>
+                                            <span class="assign-field-value">{{ assignInfoTarget.requesterEmail || '—' }}</span>
+                                        </div>
+                                        <div class="assign-info-item">
+                                            <span class="assign-field-label">ΑΜΚΑ</span>
+                                            <span class="assign-field-value">{{ assignInfoTarget.requesterAmka || '—' }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Owner -->
+                                <div class="info-section" *ngIf="assignInfoTarget.ownerFullName">
+                                    <p class="info-section-title">Κάτοχος εισιτηρίου</p>
+                                    <div class="flex items-center gap-2">
+                                        <div class="owner-avatar" style="width:28px;height:28px;font-size:11px;flex:0 0 28px">
+                                            <img *ngIf="assignInfoTarget.ownerImage" [src]="assignInfoTarget.ownerImage" class="w-full h-full object-cover rounded-full" />
+                                            <span *ngIf="!assignInfoTarget.ownerImage">{{ assignInfoTarget.ownerFullName?.[0] }}</span>
+                                        </div>
+                                        <span class="text-sm font-medium">{{ assignInfoTarget.ownerFullName }}</span>
+                                    </div>
+                                </div>
+
+                            </div>
+
+                            <div class="ticket-modal-footer">
+                                <button mat-flat-button color="primary" (click)="closeAssignInfoModal()">Κλείσιμο</button>
                             </div>
                         </div>
                     </div>

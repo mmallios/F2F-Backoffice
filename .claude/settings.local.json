@@ -12,7 +12,29 @@
       "Bash(sqlcmd -S \"46.224.196.145,7777\" -U sa -P \"StrongP@ss123\" -Q \":*)",
       "Bash(sqlcmd -S \"46.224.196.145,7777\" -U sa -P \"Olympiakossa!\" -d Fan2FanDB -Q \":*)",
       "Bash(sqlcmd -S \"46.224.196.145,7777\" -U sa -P \"Olympiakossa!\" -d Fan2FanDB -Q \"SELECT TOP 5 Id, Name FROM Seasons ORDER BY Id DESC\")",
-      "Bash(xargs grep:*)"
+      "Bash(xargs grep:*)",
+      "Bash(find 'C:\\\\Users\\\\Michalis Mallios\\\\Desktop\\\\FAN2FAN\\\\fan2fan-workspace\\\\projects\\\\fan2fan\\\\src' -type f \\\\\\(-name *ticket* -o -name *request* \\\\\\))",
+      "Bash(find 'C:\\\\Users\\\\Michalis Mallios\\\\Desktop\\\\FAN2FAN\\\\fan2fan-workspace\\\\projects\\\\fan2fan\\\\src' -type f -name *.service.ts)",
+      "Bash(find 'C:/Users/Michalis Mallios/Desktop/FAN2FAN/fan2fan-workspace/Server' -name *.cs)",
+      "Read(//c/Users/Michalis Mallios/Desktop/FAN2FAN/fan2fan-workspace/**)",
+      "Bash(sqlcmd -S \"46.224.196.145,7777\" -d Fan2FanDB -U sa -P \"Olympiakossa!\" -Q \"IF NOT EXISTS \\(SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME=''TicketRequests'' AND COLUMN_NAME=''RespondedAt''\\) ALTER TABLE TicketRequests ADD RespondedAt datetime2 NULL; SELECT ''done'';\")",
+      "Bash(where sqlcmd:*)",
+      "Bash(sqlcmd -S \"46.224.196.145,7777\" -d Fan2FanDB -U sa -P \"Olympiakossa!\" -C -Q \"SELECT 1\")",
+      "Bash(sqlcmd -S \"46.224.196.145,7777\" -d Fan2FanDB -U sa -P \"Olympiakossa!\" -C -Q \"IF NOT EXISTS \\(SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME=''TicketRequests'' AND COLUMN_NAME=''RespondedAt''\\) BEGIN ALTER TABLE TicketRequests ADD RespondedAt datetime2 NULL; PRINT ''Column added''; END ELSE PRINT ''Column already exists'';\")",
+      "Bash(sqlcmd -S \"46.224.196.145,7777\" -d Fan2FanDB -U sa -P \"Olympiakossa!\" -C -Q \"SELECT TOP 1 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME=''TicketRequests'' AND COLUMN_NAME=''RespondedAt''\")",
+      "Bash(sqlcmd -S \"46.224.196.145,7777\" -U sa -P \"Olympiakossa!\" -C -Q \"USE Fan2FanDB; ALTER TABLE TicketRequests ADD RespondedAt datetime2 NULL\")",
+      "Bash(sqlcmd -S \"46.224.196.145,7777\" -U sa -P \"Olympiakossa!\" -C -Q \"USE Fan2FanDB; SELECT COLUMN_NAME, DATA_TYPE, IS_NULLABLE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME=''TicketRequests'' AND COLUMN_NAME=''RespondedAt''\")",
+      "Bash(sqlcmd -S \"46.224.196.145,7777\" -U sa -P \"Olympiakossa!\" -C -Q \"USE Fan2FanDB; SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME=''TicketRequests''\")",
+      "Bash(sqlcmd -S \"46.224.196.145,7777\" -U sa -P \"Olympiakossa!\" -C -Q \"USE Fan2FanDB; SELECT 1\")",
+      "Bash(sqlcmd -S \"46.224.196.145,7777\" -U sa -P \"Olympiakossa!\" -C -Q \"USE Fan2FanDB; SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME=N''TicketRequests'' AND COLUMN_NAME=N''RespondedAt''\")",
+      "Bash(sqlcmd -S \"46.224.196.145,7777\" -U sa -P \"Olympiakossa!\" -C -Q \"USE Fan2FanDB; SELECT c.name FROM sys.columns c JOIN sys.tables t ON c.object_id=t.object_id WHERE t.name=''TicketRequests'' AND c.name=''RespondedAt''\")",
+      "Bash(sqlcmd -S \"46.224.196.145,7777\" -U sa -P \"Olympiakossa!\" -C -Q \"USE Fan2FanDB; SELECT TOP 3 Id, RespondedAt FROM TicketRequests\")",
+      "Bash(grep -r sticky 'C:\\\\Users\\\\Michalis Mallios\\\\Desktop\\\\FAN2FAN\\\\fan2fan-workspace\\\\projects\\\\fan2fan\\\\src\\\\app' --include=*.html --include=*.scss --include=*.css -l)",
+      "Bash(grep -r \"donation-fab\\\\|support-fab\" 'C:\\\\Users\\\\Michalis Mallios\\\\Desktop\\\\FAN2FAN\\\\fan2fan-workspace\\\\projects\\\\fan2fan\\\\src\\\\app' --include=*.html -B 3 -A 3)",
+      "Bash(find 'C:\\\\Users\\\\Michalis Mallios\\\\Desktop\\\\FAN2FAN\\\\fan2fan-workspace\\\\projects\\\\fan2fan\\\\src\\\\app' -type f -name *signalr* -o -name *signal*)",
+      "Bash(find 'C:\\\\Users\\\\Michalis Mallios\\\\Desktop\\\\FAN2FAN\\\\fan2fan-workspace\\\\projects\\\\fan2fan\\\\src' -name *settings*.js -type f)",
+      "Bash(\"C:\\\\Users\\\\Michalis Mallios\\\\Desktop\\\\FAN2FAN\\\\fan2fan-workspace\\\\projects\\\\fan2fan\\\\src\\\\app\\\\features\\\\events\\\\events-details\\\\events-details.component.css\":*)",
+      "Bash(find 'C:\\\\Users\\\\Michalis Mallios\\\\Desktop\\\\FAN2FAN\\\\fan2fan-workspace\\\\Server\\\\Controllers' -type f -name *BO* -o -name *Backoffice*)"
     ],
     "additionalDirectories": [
       "C:\\Users\\Michalis Mallios\\Desktop\\FAN2FAN\\fan2fan-workspace\\Server\\Database\\Entities",
@@ -23,7 +45,13 @@
       "C:\\Users\\Michalis Mallios\\Desktop\\FAN2FAN\\fan2fan-workspace\\Server\\Migrations",
       "C:\\Users\\Michalis Mallios\\Desktop\\FAN2FAN\\fan2fan-workspace\\projects\\fan2fan\\src\\app\\core\\services",
       "C:\\Users\\Michalis Mallios\\Desktop\\FAN2FAN\\fan2fan-workspace\\Server\\Models\\Events",
-      "C:\\Users\\Michalis Mallios\\Desktop\\FAN2FAN\\fan2fan-workspace\\Server\\Models\\Ticker"
+      "C:\\Users\\Michalis Mallios\\Desktop\\FAN2FAN\\fan2fan-workspace\\Server\\Models\\Ticker",
+      "C:\\Users\\Michalis Mallios\\Desktop\\FAN2FAN\\fan2fan-workspace\\Server\\Models\\Tickets",
+      "C:\\Users\\Michalis Mallios\\Desktop\\FAN2FAN\\fan2fan-workspace\\projects\\fan2fan\\src\\app\\features\\events\\events-details",
+      "C:\\Users\\Michalis Mallios\\Desktop\\FAN2FAN\\fan2fan-workspace\\projects\\fan2fan\\src\\app\\shared\\components",
+      "C:\\Users\\Michalis Mallios\\Desktop\\FAN2FAN\\fan2fan-workspace\\projects\\fan2fan\\src\\app\\features\\tickets-requests",
+      "C:\\Users\\Michalis Mallios\\Desktop\\FAN2FAN\\fan2fan-workspace\\projects\\fan2fan\\src\\app\\shared\\layout\\layout",
+      "C:\\Users\\Michalis Mallios\\Desktop\\FAN2FAN\\fan2fan-workspace\\projects\\fan2fan\\src\\app"
     ]
   }
 }

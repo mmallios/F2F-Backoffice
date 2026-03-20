@@ -181,6 +181,44 @@ export interface EventStats {
     subscriptionsCount: number;
 }
 
+export interface BOTicketRequestDto {
+    id: number;
+    eventTicketId: number;
+    requestedByUserId: number;
+    requestedByFullName?: string;
+    requestedByImage?: string;
+    requestedByCode?: string;
+    ownerFullName?: string;
+    ownerImage?: string;
+    adminBoUserId: number;
+    adminFullName?: string;
+    adminImage?: string;
+    requesterFirstname?: string;
+    requesterLastname?: string;
+    requesterEmail?: string;
+    requesterAmka?: string;
+    gate?: string;
+    section?: string;
+    row?: string;
+    seat?: string;
+    price?: number;
+    requestedAt: string;
+    respondedAt?: string;
+    status: number;
+}
+
+export interface BODirectAssignRequest {
+    eventTicketId: number;
+    requestedByUserId: number;
+    adminBoUserId: number;
+    adminFullName: string;
+    adminImage?: string;
+    requesterFirstname: string;
+    requesterLastname: string;
+    requesterEmail: string;
+    requesterAmka: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class EventsService {
 
@@ -309,6 +347,28 @@ export class EventsService {
     deleteEventTicket(eventId: number, ticketId: number): Observable<void> {
         return this.http.delete<void>(
             `${this.baseUrl}/events/${eventId}/tickets/${ticketId}`
+        );
+    }
+
+    /** POST api/backoffice/ticket-requests/direct-assign */
+    directAssignTicket(dto: BODirectAssignRequest): Observable<BOTicketRequestDto> {
+        return this.http.post<BOTicketRequestDto>(
+            `${this.baseUrl}/backoffice/ticket-requests/direct-assign`,
+            dto
+        );
+    }
+
+    /** GET api/backoffice/ticket-requests/bo-assigns/event/{eventId} */
+    getBOAssignsForEvent(eventId: number): Observable<BOTicketRequestDto[]> {
+        return this.http.get<BOTicketRequestDto[]>(
+            `${this.baseUrl}/backoffice/ticket-requests/bo-assigns/event/${eventId}`
+        );
+    }
+
+    /** GET api/backoffice/ticket-requests/all/event/{eventId} — all requests (BO + fan2fan) */
+    getAllTicketRequestsForEvent(eventId: number): Observable<BOTicketRequestDto[]> {
+        return this.http.get<BOTicketRequestDto[]>(
+            `${this.baseUrl}/backoffice/ticket-requests/all/event/${eventId}`
         );
     }
 

@@ -14,7 +14,7 @@
 <!-- Notifications panel -->
 <ng-template #notificationsPanel>
     <div
-        class="fixed inset-0 flex flex-col overflow-hidden shadow-lg sm:static sm:inset-auto sm:w-90 sm:min-w-90 sm:rounded-2xl">
+        class="fixed inset-0 flex flex-col overflow-hidden shadow-lg sm:static sm:inset-auto sm:w-120 sm:min-w-120 sm:rounded-2xl">
         <!-- Header -->
         <div class="flex shrink-0 items-center bg-primary py-4 pl-6 pr-4 text-on-primary">
             <div class="-ml-1 mr-3 sm:hidden">
@@ -22,7 +22,7 @@
                     <mat-icon class="text-current icon-size-5" [svgIcon]="'heroicons_solid:x-mark'"></mat-icon>
                 </button>
             </div>
-            <div class="text-lg font-medium leading-10">Notifications</div>
+            <div class="text-base font-medium leading-10">Notifications</div>
             <div class="ml-auto">
                 <button class="dark:text-white" mat-icon-button [matTooltip]="'Mark all as read'"
                     [disabled]="unreadCount === 0" (click)="markAllAsRead()">
@@ -90,8 +90,8 @@
                 <!-- Icon -->
                 @if (notification.icon && !notification.image) {
                 <div
-                    class="mr-4 flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-700">
-                    <mat-icon class="icon-size-7" [svgIcon]="notification.icon">
+                    class="mr-4 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-700">
+                    <mat-icon class="icon-size-6 text-red-500" [svgIcon]="notification.icon">
                     </mat-icon>
                 </div>
                 }
@@ -103,12 +103,12 @@
                 <!-- Title, description & time -->
                 <div class="flex flex-auto flex-col">
                     @if (notification.title) {
-                    <div class="line-clamp-1 font-semibold" [innerHTML]="notification.title"></div>
+                    <div class="line-clamp-1 text-sm font-semibold" [innerHTML]="notification.title"></div>
                     }
                     @if (notification.description) {
-                    <div class="line-clamp-2" [innerHTML]="notification.description"></div>
+                    <div class="line-clamp-2 text-xs" [innerHTML]="notification.description"></div>
                     }
-                    <div class="text-secondary mt-2 text-sm leading-none">
+                    <div class="text-secondary mt-1 text-xs leading-none">
                         {{ notification.time | date: 'MMM dd, h:mm a' }}
                     </div>
                 </div>
@@ -120,7 +120,7 @@
             <div class="flex flex-auto flex-col items-center justify-center px-8 py-12 sm:justify-start">
                 <div
                     class="flex h-14 w-14 flex-0 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-600">
-                    <mat-icon class="text-primary-700 dark:text-primary-50"
+                    <mat-icon class="text-red-500"
                         [svgIcon]="'heroicons_outline:bell'"></mat-icon>
                 </div>
                 <div class="mt-5 text-2xl font-semibold tracking-tight">

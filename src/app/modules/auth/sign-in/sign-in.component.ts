@@ -98,15 +98,13 @@ export class AuthSignInComponent implements OnInit {
 
                     this._router.navigateByUrl(redirectURL);
                 },
-                error: (error) => {
+                error: () => {
                     this.signInForm.enable();
                     this.signInNgForm.resetForm();
 
                     this.alert = {
                         type: 'error',
-                        message:
-                            error?.error ??
-                            'You are not authorized to access Backoffice',
+                        message: 'Ανεπιτυχής σύνδεση, προσπάθησε ξανά',
                     };
 
                     this.showAlert = true;
