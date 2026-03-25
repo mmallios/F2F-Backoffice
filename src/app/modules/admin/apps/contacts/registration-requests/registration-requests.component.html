@@ -178,7 +178,7 @@
                         <ng-container matColumnDef="actions">
                             <th mat-header-cell *matHeaderCellDef class="px-5"></th>
                             <td mat-cell *matCellDef="let r" class="px-5 py-3">
-                                <button mat-flat-button color="primary" type="button" (click)="openModal(r)">
+                                <button mat-flat-button color="primary" type="button" (click)="openModal(r)" [boPermission]="claimsService.canEdit('REGISTRATION_REQUESTS')">
                                     <mat-icon class="icon-size-4">rate_review</mat-icon>
                                     <span class="ml-1 text-sm">Απάντηση Αιτήματος</span>
                                 </button>

@@ -18,7 +18,7 @@
                     <span class="ml-2">Ανανέωση</span>
                 </button>
 
-                <button mat-flat-button color="primary" type="button" (click)="openAddRole()" [disabled]="loading">
+                <button mat-flat-button color="primary" type="button" (click)="openAddRole()" [disabled]="loading || !claimsService.canEdit('ROLES')">
                     <mat-icon>add</mat-icon>
                     <span class="ml-2">Νέος ρόλος</span>
                 </button>
@@ -55,7 +55,7 @@
                         </div>
 
                         <button mat-flat-button color="primary" type="button" (click)="openAddAdministrator()"
-                            [disabled]="adminsLoading">
+                            [disabled]="adminsLoading || !claimsService.canEdit('ROLES')">
                             <mat-icon>person_add</mat-icon>
                             <span class="ml-2">Προσθήκη διαχειριστή</span>
                         </button>
@@ -114,7 +114,7 @@
                                         </button>
 
                                         <button mat-stroked-button color="warn" type="button"
-                                            (click)="removeAdministrator(a)">
+                                            (click)="removeAdministrator(a)" [boPermission]="claimsService.canDelete('ROLES')">
                                             <mat-icon>person_remove</mat-icon>
                                             <span class="ml-2 hidden sm:inline">Αφαίρεση</span>
                                         </button>
@@ -173,12 +173,12 @@
                                 <th mat-header-cell *matHeaderCellDef class="text-right"> Ενέργειες </th>
                                 <td mat-cell *matCellDef="let r" class="text-right">
                                     <div class="flex justify-end gap-2">
-                                        <button mat-stroked-button type="button" (click)="openEditRole(r)">
+                                        <button mat-stroked-button type="button" (click)="openEditRole(r)" [boPermission]="claimsService.canEdit('ROLES')">
                                             <mat-icon>edit</mat-icon>
                                             <span class="ml-2 hidden sm:inline">Επεξεργασία</span>
                                         </button>
 
-                                        <button mat-stroked-button color="warn" type="button" (click)="deleteRole(r)">
+                                        <button mat-stroked-button color="warn" type="button" (click)="deleteRole(r)" [boPermission]="claimsService.canDelete('ROLES')">
                                             <mat-icon>delete</mat-icon>
                                             <span class="ml-2 hidden sm:inline">Διαγραφή</span>
                                         </button>
@@ -396,7 +396,7 @@
                                                     *ngIf="!u.isActive">do_not_disturb_on</mat-icon>
 
                                                 <button mat-icon-button color="warn" type="button"
-                                                    (click)="removeUserFromRole(u)">
+                                                    (click)="removeUserFromRole(u)" [boPermission]="claimsService.canDelete('ROLES')">
                                                     <mat-icon>delete</mat-icon>
                                                 </button>
                                             </div>

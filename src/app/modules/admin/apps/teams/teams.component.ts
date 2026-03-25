@@ -8,6 +8,7 @@ import {
     OnInit,
     ViewChild,
     ViewEncapsulation,
+    inject,
 } from '@angular/core';
 import { FormsModule, ReactiveFormsModule, UntypedFormControl } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -29,6 +30,8 @@ import { MatSelectModule } from '@angular/material/select';
 
 import { EventsService, Team } from '@fuse/services/events/events.service';
 import { TeamUpsertDialogComponent } from './dialogs/team-upsert-dialog.component';
+import { ClaimsService } from '@fuse/services/claims/claims.service';
+import { BoPermissionDirective } from '@fuse/directives/permission/bo-permission.directive';
 
 type SportOption = { id: number; name: string };
 
@@ -62,9 +65,11 @@ type SportOption = { id: number; name: string };
         MatTooltipModule,
         MatDialogModule,
         MatSelectModule,
+        BoPermissionDirective,
     ],
 })
 export class TeamsComponent implements OnInit, OnDestroy {
+    readonly claimsService = inject(ClaimsService);
 
     @ViewChild('matDrawer', { static: true }) matDrawer: MatDrawer;
     @ViewChild(MatPaginator) paginator: MatPaginator;

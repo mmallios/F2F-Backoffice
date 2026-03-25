@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { FuseNavigationItem } from '@fuse/components/navigation';
 import { FuseMockApiService } from '@fuse/lib/mock-api';
+import { ClaimsService } from '@fuse/services/claims/claims.service';
 import {
     compactNavigation,
     defaultNavigation,
@@ -20,67 +21,96 @@ export class NavigationMockApi {
     private readonly _horizontalNavigation: FuseNavigationItem[] =
         horizontalNavigation;
 
-    /**
-     * Constructor
-     */
-    constructor(private _fuseMockApiService: FuseMockApiService) {
-        // Register Mock API handlers
+    constructor(
+        private _fuseMockApiService: FuseMockApiService,
+        private _claimsService: ClaimsService,
+    ) {
         this.registerHandlers();
     }
 
-    // -----------------------------------------------------------------------------------------------------
-    // @ Public methods
-    // -----------------------------------------------------------------------------------------------------
+    // ─── Helpers ─────────────────────────────────────────────────────────────
 
     /**
-     * Register Mock API handlers
+     * Recursively removes nav items whose `meta.domain` the user cannot view.
+     * Collapsable groups with no visible children are also removed.
      */
+    private _filterByDomain(items: FuseNavigationItem[]): FuseNavigationItem[] {
+        const result: FuseNavigationItem[] = [];
+
+        for (const item of items) {
+            const domain: string | undefined = (item as any).meta?.domain;
+
+            // Items with a domain code: check canView
+            if (domain) {
+                if (!this._claimsService.canView(domain)) {
+                    continue; // skip — user has no view access
+                }
+                result.push(item);
+                continue;
+            }
+
+            // Collapsable / group items: filter children, keep only if non-empty
+            if (item.children && item.children.length > 0) {
+                const filteredChildren = this._filterByDomain(item.children);
+                if (filteredChildren.length === 0) {
+                    continue; // all children hidden → hide the group too
+                }
+                result.push({ ...item, children: filteredChildren });
+                continue;
+            }
+
+            // Items without a domain (dashboard group header, etc.) — always visible
+            result.push(item);
+        }
+
+        return result;
+    }
+
+    // ─── Mock API ─────────────────────────────────────────────────────────────
+
     registerHandlers(): void {
-        // -----------------------------------------------------------------------------------------------------
-        // @ Navigation - GET
-        // -----------------------------------------------------------------------------------------------------
         this._fuseMockApiService.onGet('api/common/navigation').reply(() => {
-            // Fill compact navigation children using the default navigation
-            this._compactNavigation.forEach((compactNavItem) => {
-                this._defaultNavigation.forEach((defaultNavItem) => {
+            // Deep-clone to avoid mutating the original static arrays
+            const defaultClone = cloneDeep(this._defaultNavigation);
+            const filtered = this._filterByDomain(defaultClone);
+
+            // Fill compact navigation children using filtered default navigation
+            const compactClone = cloneDeep(this._compactNavigation);
+            compactClone.forEach((compactNavItem) => {
+                filtered.forEach((defaultNavItem) => {
                     if (defaultNavItem.id === compactNavItem.id) {
-                        compactNavItem.children = cloneDeep(
-                            defaultNavItem.children
-                        );
+                        compactNavItem.children = cloneDeep(defaultNavItem.children);
                     }
                 });
             });
 
-            // Fill futuristic navigation children using the default navigation
-            this._futuristicNavigation.forEach((futuristicNavItem) => {
-                this._defaultNavigation.forEach((defaultNavItem) => {
+            // Fill futuristic navigation children using filtered default navigation
+            const futuristicClone = cloneDeep(this._futuristicNavigation);
+            futuristicClone.forEach((futuristicNavItem) => {
+                filtered.forEach((defaultNavItem) => {
                     if (defaultNavItem.id === futuristicNavItem.id) {
-                        futuristicNavItem.children = cloneDeep(
-                            defaultNavItem.children
-                        );
+                        futuristicNavItem.children = cloneDeep(defaultNavItem.children);
                     }
                 });
             });
 
-            // Fill horizontal navigation children using the default navigation
-            this._horizontalNavigation.forEach((horizontalNavItem) => {
-                this._defaultNavigation.forEach((defaultNavItem) => {
+            // Fill horizontal navigation children using filtered default navigation
+            const horizontalClone = cloneDeep(this._horizontalNavigation);
+            horizontalClone.forEach((horizontalNavItem) => {
+                filtered.forEach((defaultNavItem) => {
                     if (defaultNavItem.id === horizontalNavItem.id) {
-                        horizontalNavItem.children = cloneDeep(
-                            defaultNavItem.children
-                        );
+                        horizontalNavItem.children = cloneDeep(defaultNavItem.children);
                     }
                 });
             });
 
-            // Return the response
             return [
                 200,
                 {
-                    compact: cloneDeep(this._compactNavigation),
-                    default: cloneDeep(this._defaultNavigation),
-                    futuristic: cloneDeep(this._futuristicNavigation),
-                    horizontal: cloneDeep(this._horizontalNavigation),
+                    compact: compactClone,
+                    default: filtered,
+                    futuristic: futuristicClone,
+                    horizontal: horizontalClone,
                 },
             ];
         });

@@ -17,6 +17,7 @@ export const defaultNavigation: FuseNavigationItem[] = [
                 type: 'basic',
                 icon: 'heroicons_outline:home',
                 link: '/dashboards/project',
+                meta: { domain: 'DASHBOARD' },
             },
 
             // ── Κοινότητα ────────────────────────────────────────
@@ -32,6 +33,7 @@ export const defaultNavigation: FuseNavigationItem[] = [
                         type: 'basic',
                         icon: 'heroicons_outline:user',
                         link: '/apps/contacts',
+                        meta: { domain: 'USERS' },
                     },
                     {
                         id: 'apps.registration-requests',
@@ -39,6 +41,7 @@ export const defaultNavigation: FuseNavigationItem[] = [
                         type: 'basic',
                         icon: 'heroicons_outline:user-plus',
                         link: '/apps/registration-requests',
+                        meta: { domain: 'REGISTRATION_REQUESTS' },
                     },
                     {
                         id: 'apps.groupchats',
@@ -46,6 +49,7 @@ export const defaultNavigation: FuseNavigationItem[] = [
                         type: 'basic',
                         icon: 'heroicons_outline:chat-bubble-left-right',
                         link: '/apps/groupchats',
+                        meta: { domain: 'GROUP_CHATS' },
                     },
                 ],
             },
@@ -63,6 +67,7 @@ export const defaultNavigation: FuseNavigationItem[] = [
                         type: 'basic',
                         icon: 'heroicons_outline:megaphone',
                         link: '/apps/announcements',
+                        meta: { domain: 'ANNOUNCEMENTS' },
                     },
                     {
                         id: 'apps.events',
@@ -70,6 +75,7 @@ export const defaultNavigation: FuseNavigationItem[] = [
                         type: 'basic',
                         icon: 'heroicons_outline:calendar-days',
                         link: '/apps/events',
+                        meta: { domain: 'EVENTS' },
                     },
                     {
                         id: 'apps.teams',
@@ -77,6 +83,7 @@ export const defaultNavigation: FuseNavigationItem[] = [
                         type: 'basic',
                         icon: 'heroicons_outline:user-group',
                         link: '/apps/teams',
+                        meta: { domain: 'TEAMS' },
                     },
                     {
                         id: 'apps.competitions',
@@ -84,6 +91,7 @@ export const defaultNavigation: FuseNavigationItem[] = [
                         type: 'basic',
                         icon: 'heroicons_outline:trophy',
                         link: '/apps/competitions',
+                        meta: { domain: 'COMPETITIONS' },
                     },
                     {
                         id: 'apps.tvchannels',
@@ -91,6 +99,7 @@ export const defaultNavigation: FuseNavigationItem[] = [
                         type: 'basic',
                         icon: 'heroicons_outline:tv',
                         link: '/apps/tvchannels',
+                        meta: { domain: 'TV_CHANNELS' },
                     },
                     {
                         id: 'apps.fan-cards',
@@ -98,6 +107,7 @@ export const defaultNavigation: FuseNavigationItem[] = [
                         type: 'basic',
                         icon: 'heroicons_outline:identification',
                         link: '/apps/fan-cards',
+                        meta: { domain: 'FAN_CARDS' },
                     },
                     {
                         id: 'apps.fan-card-reports',
@@ -105,6 +115,7 @@ export const defaultNavigation: FuseNavigationItem[] = [
                         type: 'basic',
                         icon: 'heroicons_outline:flag',
                         link: '/apps/fan-cards/reports',
+                        meta: { domain: 'FAN_CARD_REPORTS' },
                     },
                     {
                         id: 'apps.news',
@@ -112,6 +123,7 @@ export const defaultNavigation: FuseNavigationItem[] = [
                         type: 'basic',
                         icon: 'heroicons_outline:newspaper',
                         link: '/apps/news',
+                        meta: { domain: 'NEWS' },
                     },
                     {
                         id: 'apps.contests',
@@ -119,6 +131,7 @@ export const defaultNavigation: FuseNavigationItem[] = [
                         type: 'basic',
                         icon: 'heroicons_outline:gift',
                         link: '/apps/contests',
+                        meta: { domain: 'CONTESTS' },
                     },
                     {
                         id: 'apps.offers',
@@ -126,6 +139,7 @@ export const defaultNavigation: FuseNavigationItem[] = [
                         type: 'basic',
                         icon: 'heroicons_outline:tag',
                         link: '/apps/offers',
+                        meta: { domain: 'OFFERS' },
                     },
                     {
                         id: 'apps.offers.categories',
@@ -133,6 +147,7 @@ export const defaultNavigation: FuseNavigationItem[] = [
                         type: 'basic',
                         icon: 'heroicons_outline:squares-2x2',
                         link: '/apps/offers/categories',
+                        meta: { domain: 'OFFER_CATEGORIES' },
                     },
                     {
                         id: 'apps.away-trips',
@@ -140,6 +155,7 @@ export const defaultNavigation: FuseNavigationItem[] = [
                         type: 'basic',
                         icon: 'heroicons_outline:paper-airplane',
                         link: '/apps/away-trips',
+                        meta: { domain: 'AWAY_TRIPS' },
                     },
                     {
                         id: 'apps.tickers',
@@ -147,6 +163,7 @@ export const defaultNavigation: FuseNavigationItem[] = [
                         type: 'basic',
                         icon: 'heroicons_outline:megaphone',
                         link: '/apps/tickers',
+                        meta: { domain: 'TICKERS' },
                     },
                 ],
             },
@@ -164,6 +181,7 @@ export const defaultNavigation: FuseNavigationItem[] = [
                         type: 'basic',
                         icon: 'heroicons_outline:shopping-cart',
                         link: '/apps/orders',
+                        meta: { domain: 'ORDERS' },
                     },
                     {
                         id: 'apps.products',
@@ -171,6 +189,7 @@ export const defaultNavigation: FuseNavigationItem[] = [
                         type: 'basic',
                         icon: 'heroicons_outline:cube',
                         link: '/apps/products',
+                        meta: { domain: 'PRODUCTS' },
                     },
                     {
                         id: 'apps.product-categories',
@@ -178,14 +197,12 @@ export const defaultNavigation: FuseNavigationItem[] = [
                         type: 'basic',
                         icon: 'heroicons_outline:tag',
                         link: '/apps/products/categories',
+                        meta: { domain: 'PRODUCT_CATEGORIES' },
                     },
                 ],
             },
 
             // ── Υποστήριξη ───────────────────────────────────────
-            // ── Στατιστικά FAN2FAN ───────────────────────────────
-
-
             {
                 id: 'apps.support',
                 title: 'Υποστήριξη',
@@ -198,6 +215,7 @@ export const defaultNavigation: FuseNavigationItem[] = [
                         type: 'basic',
                         icon: 'heroicons_outline:ticket',
                         link: '/apps/support/tickets',
+                        meta: { domain: 'SUPPORT_TICKETS' },
                     },
                     {
                         id: 'apps.support.stats',
@@ -205,6 +223,7 @@ export const defaultNavigation: FuseNavigationItem[] = [
                         type: 'basic',
                         icon: 'heroicons_outline:chart-bar',
                         link: '/apps/support/stats',
+                        meta: { domain: 'SUPPORT_STATS' },
                     },
                 ],
             },
@@ -222,6 +241,7 @@ export const defaultNavigation: FuseNavigationItem[] = [
                         type: 'basic',
                         icon: 'heroicons_outline:shield-check',
                         link: '/apps/settings/roles',
+                        // meta: { domain: 'ROLES' },
                     },
 
                     {
@@ -230,6 +250,7 @@ export const defaultNavigation: FuseNavigationItem[] = [
                         type: 'basic',
                         icon: 'heroicons_outline:chart-bar-square',
                         link: '/apps/settings/admin-activity',
+                        meta: { domain: 'ADMIN_ACTIVITY' },
                     },
                 ],
             },
@@ -249,6 +270,7 @@ export const defaultNavigation: FuseNavigationItem[] = [
                 type: 'basic',
                 icon: 'heroicons_outline:chat-bubble-left-right',
                 link: '/apps/chat',
+                meta: { domain: 'HQ_CHAT' },
             },
             {
                 id: 'apps.bo-announcements',
@@ -256,6 +278,7 @@ export const defaultNavigation: FuseNavigationItem[] = [
                 type: 'basic',
                 icon: 'heroicons_outline:megaphone',
                 link: '/apps/bo-announcements',
+                meta: { domain: 'HQ_ANNOUNCEMENTS' },
             },
 
             {
@@ -264,6 +287,7 @@ export const defaultNavigation: FuseNavigationItem[] = [
                 type: 'basic',
                 icon: 'heroicons_outline:chart-pie',
                 link: '/apps/fan2fan-stats',
+                meta: { domain: 'FAN2FAN_STATS' },
             },
         ],
     },

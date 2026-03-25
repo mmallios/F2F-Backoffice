@@ -29,6 +29,7 @@ import {
     SupportTicketAdminDto,
     SupportTicketStatus,
 } from '@fuse/services/support/support-tickets-admin.service';
+import { ClaimsService } from '@fuse/services/claims/claims.service';
 
 @Component({
     selector: 'app-support-tickets-list',
@@ -60,6 +61,7 @@ import {
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SupportTicketsListComponent implements OnInit, OnDestroy {
+    readonly claimsService = inject(ClaimsService);
     private api = inject(SupportTicketsAdminService);
     private usersService = inject(UsersService);
     private fb = inject(FormBuilder);

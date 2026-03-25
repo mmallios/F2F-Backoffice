@@ -29,6 +29,8 @@ import {
     BOAwayTripsService,
     AwayTripListDto,
 } from '@fuse/services/away-trips/bo-away-trips.service';
+import { ClaimsService } from '@fuse/services/claims/claims.service';
+import { BoPermissionDirective } from '@fuse/directives/permission/bo-permission.directive';
 import { EventItem, EventsService } from '@fuse/services/events/events.service';
 import { FuseConfirmationService } from '@fuse/services/confirmation';
 import { ImageUploadService } from '@fuse/services/general/image-upload.service';
@@ -50,11 +52,13 @@ import { ImageUploadService } from '@fuse/services/general/image-upload.service'
         MatTableModule,
         MatTooltipModule,
         MatProgressBarModule,
+        BoPermissionDirective,
     ],
     templateUrl: './bo-away-trips-list.component.html',
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class BOAwayTripsListComponent implements OnInit, OnDestroy {
+    readonly claimsService = inject(ClaimsService);
     private api = inject(BOAwayTripsService);
     private eventsApi = inject(EventsService);
     private fb = inject(FormBuilder);

@@ -29,7 +29,7 @@
 
                         <div class="flex w-full flex-col gap-3 sm:flex-row lg:w-auto lg:items-center">
                             <button mat-flat-button color="primary" class="w-full sm:w-auto"
-                                (click)="openCreateDialog()">
+                                (click)="openCreateDialog()" [boPermission]="claimsService.canEdit('GROUP_CHATS')">
                                 <mat-icon svgIcon="heroicons_outline:plus"></mat-icon>
                                 <span class="ml-2 mr-1">ΝΕΟ GROUP CHAT</span>
                             </button>
@@ -202,11 +202,11 @@
                                     <td mat-cell *matCellDef="let g" class="text-right px-6 py-3">
                                         <div class="inline-flex items-center gap-2">
                                             <button mat-stroked-button class="!rounded-xl" (click)="openEdit(g)"
-                                                matTooltip="Επεξεργασία">
+                                                matTooltip="Επεξεργασία" [boPermission]="claimsService.canEdit('GROUP_CHATS')">
                                                 <mat-icon [svgIcon]="'heroicons_outline:pencil-square'"></mat-icon>
                                             </button>
                                             <button mat-stroked-button class="!rounded-xl text-red-500 border-red-300 hover:bg-red-50 dark:hover:bg-red-500/10"
-                                                matTooltip="Διαγραφή" (click)="deleteGroupChat(g)">
+                                                matTooltip="Διαγραφή" (click)="deleteGroupChat(g)" [boPermission]="claimsService.canDelete('GROUP_CHATS')">
                                                 <mat-icon [svgIcon]="'heroicons_outline:trash'"></mat-icon>
                                             </button>
                                         </div>

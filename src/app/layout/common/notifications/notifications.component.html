@@ -1,170 +1,188 @@
-<!-- Notifications toggle -->
-<button mat-icon-button (click)="openPanel()" #notificationsOrigin>
+<!-- ─── Bell button ─────────────────────────────────────────────────────────── -->
+<button mat-icon-button (click)="openPanel()" [matTooltip]="'Ειδοποιήσεις'">
     @if (unreadCount > 0) {
-    <span class="absolute left-0 right-0 top-0 flex h-3 items-center justify-center">
+    <span
+        class="absolute left-0 right-0 top-0 flex h-3 items-center justify-center pointer-events-none">
         <span
-            class="ml-4 mt-2.5 flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-teal-600 px-1 text-xs font-medium text-indigo-50">
-            {{ unreadCount }}
+            class="ml-4 mt-2.5 flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-teal-600 px-1 text-xs font-medium text-white">
+            {{ unreadCount > 99 ? '99+' : unreadCount }}
         </span>
     </span>
     }
     <mat-icon [svgIcon]="'heroicons_outline:bell'"></mat-icon>
 </button>
 
-<!-- Notifications panel -->
-<ng-template #notificationsPanel>
-    <div
-        class="fixed inset-0 flex flex-col overflow-hidden shadow-lg sm:static sm:inset-auto sm:w-120 sm:min-w-120 sm:rounded-2xl">
-        <!-- Header -->
-        <div class="flex shrink-0 items-center bg-primary py-4 pl-6 pr-4 text-on-primary">
-            <div class="-ml-1 mr-3 sm:hidden">
-                <button mat-icon-button (click)="closePanel()">
-                    <mat-icon class="text-current icon-size-5" [svgIcon]="'heroicons_solid:x-mark'"></mat-icon>
-                </button>
+<!-- ─── Backdrop ─────────────────────────────────────────────────────────────── -->
+@if (panelOpen) {
+<div
+    class="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm"
+    @fadeIn
+    (click)="closePanel()">
+</div>
+}
+
+<!-- ─── Right-side drawer ─────────────────────────────────────────────────── -->
+@if (panelOpen) {
+<div
+    class="notifications-drawer fixed right-0 top-0 bottom-0 z-50 flex flex-col bg-card shadow-2xl"
+    @slideInRight>
+
+    <!-- Header -->
+    <div class="flex shrink-0 items-center gap-3 border-b px-5 py-4">
+        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10">
+            <mat-icon class="text-primary icon-size-5" [svgIcon]="'heroicons_outline:bell'"></mat-icon>
+        </div>
+        <div class="flex-auto">
+            <div class="text-base font-semibold leading-none">Ειδοποιήσεις</div>
+            @if (unreadCount > 0) {
+            <div class="text-secondary mt-1 text-xs">{{ unreadCount }} αδιάβαστες</div>
+            } @else {
+            <div class="text-secondary mt-1 text-xs">Όλες διαβασμένες</div>
+            }
+        </div>
+        <!-- Mark all read -->
+        <button
+            mat-icon-button
+            [matTooltip]="'Σήμανση όλων ως διαβασμένα'"
+            [disabled]="unreadCount === 0"
+            (click)="markAllAsRead()">
+            <mat-icon class="icon-size-5" [svgIcon]="'heroicons_solid:envelope-open'"></mat-icon>
+        </button>
+        <!-- Close -->
+        <button mat-icon-button [matTooltip]="'Κλείσιμο'" (click)="closePanel()">
+            <mat-icon class="icon-size-5" [svgIcon]="'heroicons_solid:x-mark'"></mat-icon>
+        </button>
+    </div>
+
+    <!-- Notification list -->
+    <div class="flex-auto divide-y overflow-y-auto">
+
+        @for (notification of notifications; track trackByFn($index, notification)) {
+        <!-- Row -->
+        <div
+            class="group relative flex cursor-pointer items-start gap-4 px-5 py-4 transition-colors hover:bg-hover"
+            [ngClass]="{ 'bg-primary/5 dark:bg-primary/10': !notification.read }"
+            (click)="openDetail(notification)">
+
+            <!-- Unread dot -->
+            @if (!notification.read) {
+            <span class="absolute left-2 top-1/2 -translate-y-1/2 h-2 w-2 rounded-full bg-primary shrink-0"></span>
+            }
+
+            <!-- Icon -->
+            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-700">
+                <mat-icon
+                    class="icon-size-5"
+                    [ngClass]="notification.read ? 'text-secondary' : 'text-primary'"
+                    [svgIcon]="notification.icon ?? 'heroicons_outline:bell'">
+                </mat-icon>
             </div>
-            <div class="text-base font-medium leading-10">Notifications</div>
-            <div class="ml-auto">
-                <button class="dark:text-white" mat-icon-button [matTooltip]="'Mark all as read'"
-                    [disabled]="unreadCount === 0" (click)="markAllAsRead()">
-                    <mat-icon class="text-current icon-size-5" [svgIcon]="'heroicons_solid:envelope-open'"></mat-icon>
+
+            <!-- Content -->
+            <div class="min-w-0 flex-auto">
+                <!-- Type badge -->
+                @if (notification.type && BONotifLabel[notification.type]) {
+                <span class="mb-1 inline-block rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                    {{ BONotifLabel[notification.type] }}
+                </span>
+                }
+                <div class="line-clamp-2 text-sm font-medium leading-snug" [innerHTML]="notification.title"></div>
+                @if (notification.description) {
+                <div class="text-secondary mt-0.5 line-clamp-1 text-xs" [innerHTML]="notification.description"></div>
+                }
+                <div class="text-secondary mt-1 text-xs">
+                    {{ notification.time | date: 'dd MMM, HH:mm' }}
+                </div>
+            </div>
+
+            <!-- Row actions -->
+            <div class="flex shrink-0 flex-col items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100"
+                (click)="$event.stopPropagation()">
+                <!-- Toggle read -->
+                <button
+                    class="h-7 min-h-7 w-7"
+                    mat-icon-button
+                    [matTooltip]="notification.read ? 'Σήμανση ως αδιάβαστο' : 'Σήμανση ως διαβασμένο'"
+                    (click)="toggleRead(notification)">
+                    <span class="h-2 w-2 rounded-full"
+                        [ngClass]="notification.read ? 'bg-gray-300 dark:bg-gray-600' : 'bg-primary'">
+                    </span>
+                </button>
+                <!-- Delete -->
+                <button
+                    class="h-7 min-h-7 w-7"
+                    mat-icon-button
+                    [matTooltip]="'Διαγραφή'"
+                    (click)="delete(notification)">
+                    <mat-icon class="icon-size-3.5 text-red-400" [svgIcon]="'heroicons_solid:x-mark'"></mat-icon>
                 </button>
             </div>
         </div>
+        }
 
-        <!-- Content -->
-        <div class="bg-card relative flex flex-auto flex-col divide-y overflow-y-auto sm:max-h-120">
-            <!-- Notifications -->
-            @for (
-            notification of notifications;
-            track trackByFn($index, notification)
-            ) {
-            <div class="group flex cursor-pointer hover:bg-gray-50 dark:hover:bg-black dark:hover:bg-opacity-5"
-                [ngClass]="{ unread: !notification.read }" (click)="openDetail(notification)">
-                <!-- Notification with a link -->
-                @if (notification.link) {
-                <!-- Normal links -->
-                @if (!notification.useRouter) {
-                <a class="flex flex-auto cursor-pointer py-5 pl-6" [href]="notification.link">
-                    <ng-container *ngTemplateOutlet="notificationContent"></ng-container>
-                </a>
-                }
-                <!-- Router links -->
-                @if (notification.useRouter) {
-                <a class="flex flex-auto cursor-pointer py-5 pl-6" [routerLink]="notification.link">
-                    <ng-container *ngTemplateOutlet="notificationContent"></ng-container>
-                </a>
-                }
-                }
-
-                <!-- Notification without a link -->
-                @if (!notification.link) {
-                <div class="flex flex-auto py-5 pl-6">
-                    <ng-container *ngTemplateOutlet="notificationContent"></ng-container>
-                </div>
-                }
-
-                <!-- Actions -->
-                <div class="relative my-5 ml-2 mr-6 flex flex-col" (click)="$event.stopPropagation()">
-                    <!-- Indicator -->
-                    <button class="h-6 min-h-6 w-6" mat-icon-button (click)="toggleRead(notification)" [matTooltip]="
-                                notification.read
-                                    ? 'Mark as unread'
-                                    : 'Mark as read'
-                            ">
-                        <span class="h-2 w-2 rounded-full" [ngClass]="{
-                                    'bg-gray-400 dark:bg-gray-500 sm:opacity-0 sm:group-hover:opacity-100':
-                                        notification.read,
-                                    'bg-primary': !notification.read,
-                                }"></span>
-                    </button>
-                    <!-- Remove -->
-                    <button class="h-6 min-h-6 w-6 sm:opacity-0 sm:group-hover:opacity-100" mat-icon-button
-                        (click)="delete(notification)" [matTooltip]="'Remove'">
-                        <mat-icon class="icon-size-4" [svgIcon]="'heroicons_solid:x-mark'"></mat-icon>
-                    </button>
-                </div>
+        <!-- Empty state -->
+        @if (!notifications || notifications.length === 0) {
+        <div class="flex flex-col items-center justify-center px-8 py-16 text-center">
+            <div class="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+                <mat-icon class="text-primary icon-size-7" [svgIcon]="'heroicons_outline:bell-slash'"></mat-icon>
             </div>
-
-            <!-- Notification content template -->
-            <ng-template #notificationContent>
-                <!-- Icon -->
-                @if (notification.icon && !notification.image) {
-                <div
-                    class="mr-4 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-700">
-                    <mat-icon class="icon-size-6 text-red-500" [svgIcon]="notification.icon">
-                    </mat-icon>
-                </div>
-                }
-                <!-- Image -->
-                @if (notification.image) {
-                <img class="mr-4 h-12 w-12 shrink-0 overflow-hidden rounded-xl object-cover object-center"
-                    [src]="notification.image" [alt]="'Notification image'" />
-                }
-                <!-- Title, description & time -->
-                <div class="flex flex-auto flex-col">
-                    @if (notification.title) {
-                    <div class="line-clamp-1 text-sm font-semibold" [innerHTML]="notification.title"></div>
-                    }
-                    @if (notification.description) {
-                    <div class="line-clamp-2 text-xs" [innerHTML]="notification.description"></div>
-                    }
-                    <div class="text-secondary mt-1 text-xs leading-none">
-                        {{ notification.time | date: 'MMM dd, h:mm a' }}
-                    </div>
-                </div>
-            </ng-template>
-            }
-
-            <!-- No notifications -->
-            @if (!notifications || !notifications.length) {
-            <div class="flex flex-auto flex-col items-center justify-center px-8 py-12 sm:justify-start">
-                <div
-                    class="flex h-14 w-14 flex-0 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-600">
-                    <mat-icon class="text-red-500"
-                        [svgIcon]="'heroicons_outline:bell'"></mat-icon>
-                </div>
-                <div class="mt-5 text-2xl font-semibold tracking-tight">
-                    No notifications
-                </div>
-                <div class="text-secondary mt-1 w-full max-w-60 text-center text-md">
-                    When you have notifications, they will appear here.
-                </div>
+            <div class="mt-4 text-lg font-semibold">Δεν υπάρχουν ειδοποιήσεις</div>
+            <div class="text-secondary mt-1 text-sm max-w-52">
+                Θα εμφανίζονται εδώ όταν λάβεις νέες ειδοποιήσεις.
             </div>
-            }
+        </div>
+        }
+    </div>
+
+    <!-- Footer -->
+    <div class="shrink-0 border-t px-5 py-3">
+        <div class="text-secondary text-xs text-center">
+            {{ notifications?.length ?? 0 }} ειδοποιήσεις συνολικά
         </div>
     </div>
-</ng-template>
+</div>
+}
 
-<!-- Notification detail modal -->
+<!-- ─── Detail modal ──────────────────────────────────────────────────────── -->
 @if (detailModalOpen && selectedNotification) {
-<div class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" (click)="closeDetail()">
-    <div class="bg-card relative mx-4 w-full max-w-md rounded-2xl p-6 shadow-xl" (click)="$event.stopPropagation()">
-        <!-- Close button -->
+<div
+    class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm"
+    @fadeIn
+    (click)="closeDetail()">
+    <div
+        class="bg-card relative mx-4 w-full max-w-md rounded-2xl p-6 shadow-2xl"
+        (click)="$event.stopPropagation()">
+
+        <!-- Close -->
         <button class="absolute right-4 top-4" mat-icon-button (click)="closeDetail()">
             <mat-icon [svgIcon]="'heroicons_solid:x-mark'"></mat-icon>
         </button>
 
-        <!-- Icon + type badge -->
+        <!-- Icon + type -->
         <div class="mb-4 flex items-center gap-3">
-            <div
-                class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-700">
-                <mat-icon class="text-primary-700 dark:text-primary-50 icon-size-5"
-                    [svgIcon]="BONotifIcon[selectedNotification.type] ?? 'heroicons_outline:bell'"></mat-icon>
+            <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                <mat-icon
+                    class="text-primary icon-size-5"
+                    [svgIcon]="BONotifIcon[selectedNotification.type] ?? 'heroicons_outline:bell'">
+                </mat-icon>
             </div>
-            @if (selectedNotification.type) {
-            <span
-                class="rounded-full bg-primary-100 px-3 py-1 text-xs font-semibold text-primary-700 dark:bg-primary-700 dark:text-primary-50">
+            @if (selectedNotification.type && BONotifLabel[selectedNotification.type]) {
+            <span class="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
                 {{ BONotifLabel[selectedNotification.type] }}
             </span>
             }
         </div>
 
         <!-- Title -->
-        <h2 class="mb-2 text-lg font-bold leading-snug" [innerHTML]="selectedNotification.title"></h2>
+        <h2 class="mb-2 text-lg font-bold leading-snug"
+            [innerHTML]="selectedNotification.title">
+        </h2>
 
         <!-- Description -->
         @if (selectedNotification.description) {
-        <p class="text-secondary mb-4 text-sm" [innerHTML]="selectedNotification.description"></p>
+        <p class="text-secondary mb-4 text-sm leading-relaxed"
+            [innerHTML]="selectedNotification.description">
+        </p>
         }
 
         <!-- Time -->
@@ -172,30 +190,28 @@
             {{ selectedNotification.time | date: 'dd MMM yyyy, HH:mm' }}
         </div>
 
-        <!-- Registration request action button -->
+        <!-- CTA buttons -->
         @if (selectedNotification.type === BONotifType.NewRegistrationRequest) {
         <div class="mt-5">
-            <button mat-flat-button color="primary" class="w-full" (click)="goToRegistrationRequests()">
+            <button mat-flat-button color="primary" class="w-full rounded-xl" (click)="goToRegistrationRequests()">
                 <mat-icon class="icon-size-4 mr-1" [svgIcon]="'heroicons_outline:arrow-right'"></mat-icon>
-                ΠΡΟΒΟΛΗ ΑΙΤΗΜΑΤΟΣ
+                ΠΡΟΒΟΛΗ ΑΙΤΗΜΑΤΟΣ ΕΓΓΡΑΦΗΣ
             </button>
         </div>
         }
 
-        <!-- Support ticket action button -->
         @if (selectedNotification.type === BONotifType.NewSupportTicket || selectedNotification.type === BONotifType.SupportReply) {
         <div class="mt-5">
-            <button mat-flat-button color="primary" class="w-full" (click)="goToSupportTicket()">
+            <button mat-flat-button color="primary" class="w-full rounded-xl" (click)="goToSupportTicket()">
                 <mat-icon class="icon-size-4 mr-1" [svgIcon]="'heroicons_outline:arrow-right'"></mat-icon>
                 ΠΡΟΒΟΛΗ ΑΙΤΗΜΑΤΟΣ ΥΠΟΣΤΗΡΙΞΗΣ
             </button>
         </div>
         }
 
-        <!-- Order action button -->
         @if (selectedNotification.type === BONotifType.NewOrder) {
         <div class="mt-5">
-            <button mat-flat-button color="primary" class="w-full" (click)="goToOrder()">
+            <button mat-flat-button color="primary" class="w-full rounded-xl" (click)="goToOrder()">
                 <mat-icon class="icon-size-4 mr-1" [svgIcon]="'heroicons_outline:arrow-right'"></mat-icon>
                 ΠΡΟΒΟΛΗ ΠΑΡΑΓΓΕΛΙΑΣ
             </button>

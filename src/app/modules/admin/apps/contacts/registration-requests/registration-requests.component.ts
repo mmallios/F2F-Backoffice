@@ -7,6 +7,7 @@ import {
     OnDestroy,
     OnInit,
     ViewChild,
+    inject,
 } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -32,6 +33,8 @@ import {
     User,
 } from '@fuse/services/users/users.service';
 import { AuthService } from 'app/core/auth/auth.service';
+import { ClaimsService } from '@fuse/services/claims/claims.service';
+import { BoPermissionDirective } from '@fuse/directives/permission/bo-permission.directive';
 
 @Component({
     selector: 'registration-requests',
@@ -74,10 +77,13 @@ import { AuthService } from 'app/core/auth/auth.service';
         MatDatepickerModule,
         MatNativeDateModule,
         TextFieldModule,
+        BoPermissionDirective,
     ],
     templateUrl: './registration-requests.component.html',
 })
 export class RegistrationRequestsComponent implements OnInit, AfterViewInit, OnDestroy {
+    readonly claimsService = inject(ClaimsService);
+
     @ViewChild('pendingPaginator') paginator!: MatPaginator;
     @ViewChild('pendingSort') sort!: MatSort;
     @ViewChild('completedPaginator') completedPaginator!: MatPaginator;

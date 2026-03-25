@@ -29,7 +29,7 @@
                                 <span class="ml-2 mr-1">Ανανέωση</span>
                             </button>
                             <button mat-flat-button color="primary" class="w-full sm:w-auto !rounded-xl"
-                                (click)="openNewOrderDialog()">
+                                (click)="openNewOrderDialog()" [boPermission]="claimsService.canEdit('ORDERS')">
                                 <mat-icon>add</mat-icon>
                                 <span class="ml-1 mr-1">Νέα Παραγγελία</span>
                             </button>

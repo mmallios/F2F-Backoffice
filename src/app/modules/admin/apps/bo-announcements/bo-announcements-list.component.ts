@@ -6,6 +6,7 @@ import {
     OnDestroy,
     OnInit,
     ViewEncapsulation,
+    inject,
 } from '@angular/core';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -25,6 +26,8 @@ import {
     BOAnnouncementListItem,
 } from '@fuse/services/announcements/bo-announcements.service';
 import { BOAnnouncementWizardDialogComponent } from './wizard/bo-announcement-wizard-dialog.component';
+import { ClaimsService } from '@fuse/services/claims/claims.service';
+import { BoPermissionDirective } from '@fuse/directives/permission/bo-permission.directive';
 
 @Component({
     selector: 'bo-announcements-list',
@@ -43,9 +46,12 @@ import { BOAnnouncementWizardDialogComponent } from './wizard/bo-announcement-wi
         MatInputModule,
         MatProgressSpinnerModule,
         MatTooltipModule,
+        BoPermissionDirective,
     ],
 })
 export class BOAnnouncementsListComponent implements OnInit, OnDestroy {
+    readonly claimsService = inject(ClaimsService);
+
     loading = true;
     announcements: BOAnnouncementListItem[] = [];
     filtered: BOAnnouncementListItem[] = [];

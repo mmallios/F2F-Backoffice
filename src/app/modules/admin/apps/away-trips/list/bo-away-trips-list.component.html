@@ -9,7 +9,7 @@
                     <div class="text-secondary mt-2 font-medium">Διαχείριση εκδρομών εκτός έδρας</div>
                 </div>
                 <div class="flex items-center gap-2 shrink-0">
-                    <button mat-flat-button color="primary" (click)="openNew()" class="!rounded-full !font-semibold">
+                    <button mat-flat-button color="primary" (click)="openNew()" class="!rounded-full !font-semibold" [boPermission]="claimsService.canEdit('AWAY_TRIPS')">
                         <mat-icon class="mr-1">add</mat-icon>
                         Νέο Away Trip
                     </button>
@@ -248,7 +248,7 @@
                                     VIEW DETAILS
                                 </button>
                                 <button mat-icon-button color="warn" (click)="deleteTrip(row); $event.stopPropagation()"
-                                    matTooltip="Διαγραφή" class="ml-1">
+                                    matTooltip="Διαγραφή" class="ml-1" [boPermission]="claimsService.canDelete('AWAY_TRIPS')">
                                     <mat-icon>delete</mat-icon>
                                 </button>
                             </td>

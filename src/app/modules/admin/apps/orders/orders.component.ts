@@ -9,6 +9,7 @@ import {
     OnInit,
     ViewChild,
     ViewEncapsulation,
+    inject,
 } from '@angular/core';
 import { FormControl, FormsModule, ReactiveFormsModule, UntypedFormControl } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -26,6 +27,8 @@ import { MatSelectModule } from '@angular/material/select';
 import { FuseMediaWatcherService } from '@fuse/services/media-watcher';
 import { Subject, filter, fromEvent, takeUntil } from 'rxjs';
 import { Order, StoreService } from '@fuse/services/store/store.service';
+import { ClaimsService } from '@fuse/services/claims/claims.service';
+import { BoPermissionDirective } from '@fuse/directives/permission/bo-permission.directive';
 
 type UserOptionVm = { id: number; fullname: string; image?: string | null };
 
@@ -54,9 +57,12 @@ type UserOptionVm = { id: number; fullname: string; image?: string | null };
         MatChipsModule,
         MatTooltipModule,
         MatSelectModule,
+        BoPermissionDirective,
     ],
 })
 export class OrdersListComponent implements OnInit, AfterViewInit, OnDestroy {
+    readonly claimsService = inject(ClaimsService);
+
     @ViewChild('matDrawer', { static: true }) matDrawer!: MatDrawer;
     @ViewChild(MatPaginator) paginator?: MatPaginator;
     @ViewChild(MatSort) sort?: MatSort;

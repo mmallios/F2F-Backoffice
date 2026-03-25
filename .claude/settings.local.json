@@ -34,7 +34,11 @@
       "Bash(find 'C:\\\\Users\\\\Michalis Mallios\\\\Desktop\\\\FAN2FAN\\\\fan2fan-workspace\\\\projects\\\\fan2fan\\\\src\\\\app' -type f -name *signalr* -o -name *signal*)",
       "Bash(find 'C:\\\\Users\\\\Michalis Mallios\\\\Desktop\\\\FAN2FAN\\\\fan2fan-workspace\\\\projects\\\\fan2fan\\\\src' -name *settings*.js -type f)",
       "Bash(\"C:\\\\Users\\\\Michalis Mallios\\\\Desktop\\\\FAN2FAN\\\\fan2fan-workspace\\\\projects\\\\fan2fan\\\\src\\\\app\\\\features\\\\events\\\\events-details\\\\events-details.component.css\":*)",
-      "Bash(find 'C:\\\\Users\\\\Michalis Mallios\\\\Desktop\\\\FAN2FAN\\\\fan2fan-workspace\\\\Server\\\\Controllers' -type f -name *BO* -o -name *Backoffice*)"
+      "Bash(find 'C:\\\\Users\\\\Michalis Mallios\\\\Desktop\\\\FAN2FAN\\\\fan2fan-workspace\\\\Server\\\\Controllers' -type f -name *BO* -o -name *Backoffice*)",
+      "Bash(for f:*)",
+      "Bash(do echo:*)",
+      "Bash(grep -rn \"provideAnimations\\\\|BrowserAnimations\" 'c:\\\\Users\\\\Michalis Mallios\\\\Desktop\\\\F2F-Backoffice\\\\F2F-Backoffice\\\\src\\\\app' --include=*.ts)",
+      "Bash(find 'C:\\\\Users\\\\Michalis Mallios\\\\Desktop\\\\FAN2FAN\\\\fan2fan-workspace\\\\Server\\\\Controllers' -name *roup* -o -name *chat* -o -name *Chat* -o -name *Group*)"
     ],
     "additionalDirectories": [
       "C:\\Users\\Michalis Mallios\\Desktop\\FAN2FAN\\fan2fan-workspace\\Server\\Database\\Entities",

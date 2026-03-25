@@ -10,7 +10,7 @@
             <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight leading-none">Κάρτες Φιλάθλου</h1>
             <p class="text-secondary text-sm mt-1">Διαχείριση καρτών & ιστορικό χρήσης</p>
         </div>
-        <button mat-flat-button color="primary" class="!rounded-xl" (click)="openCreate()">
+        <button mat-flat-button color="primary" class="!rounded-xl" (click)="openCreate()" [boPermission]="claimsService.canEdit('FAN_CARDS')">
             <mat-icon>add_card</mat-icon>
             <span class="ml-1">Νέα Κάρτα</span>
         </button>
@@ -270,7 +270,7 @@
                             <div class="flex items-center justify-end gap-2">
                                 <button mat-stroked-button
                                     class="!rounded-xl !h-8 !text-xs text-amber-600 border-amber-400/60" type="button"
-                                    (click)="openEdit(row); $event.stopPropagation()">
+                                    (click)="openEdit(row); $event.stopPropagation()" [boPermission]="claimsService.canEdit('FAN_CARDS')">
                                     <mat-icon class="!text-sm">edit</mat-icon>
                                     Επεξεργασία
                                 </button>

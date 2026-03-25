@@ -8,6 +8,7 @@ import {
     OnInit,
     ViewChild,
     ViewEncapsulation,
+    inject,
 } from '@angular/core';
 import { FormsModule, ReactiveFormsModule, UntypedFormControl } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -28,6 +29,8 @@ import { UserUpsertDialogComponent } from '../dialog/user-upsert-dialog.componen
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { StaticData, StaticDataService } from '@fuse/services/staticdata/static-data.service';
 import { MatSelectModule, MatSelectTrigger } from '@angular/material/select';
+import { ClaimsService } from '@fuse/services/claims/claims.service';
+import { BoPermissionDirective } from '@fuse/directives/permission/bo-permission.directive';
 
 @Component({
     selector: 'users-list',
@@ -59,10 +62,13 @@ import { MatSelectModule, MatSelectTrigger } from '@angular/material/select';
         MatTooltipModule,
         MatDialogModule,
         MatSelectModule,
-        MatSelectTrigger
+        MatSelectTrigger,
+        BoPermissionDirective,
     ],
 })
 export class UsersListComponent implements OnInit, OnDestroy {
+    readonly claimsService = inject(ClaimsService);
+
     @ViewChild('matDrawer', { static: true }) matDrawer: MatDrawer;
 
     @ViewChild(MatPaginator) paginator: MatPaginator;

@@ -28,6 +28,8 @@ import { Subject, takeUntil } from 'rxjs';
 import { AnnouncementsService, AnnouncementDto } from '@fuse/services/announcements/announcements.service';
 import { SafeHtmlPipe } from '@fuse/pipes/safe-html/safe-html.pipe';
 import { FuseConfirmationService } from '@fuse/services/confirmation';
+import { ClaimsService } from '@fuse/services/claims/claims.service';
+import { BoPermissionDirective } from '@fuse/directives/permission/bo-permission.directive';
 
 @Component({
     selector: 'announcements-list',
@@ -60,9 +62,12 @@ import { FuseConfirmationService } from '@fuse/services/confirmation';
         MatDatepickerModule,
         MatNativeDateModule,
         SafeHtmlPipe,
+        BoPermissionDirective,
     ],
 })
 export class AnnouncementsListComponent implements OnInit, OnDestroy {
+    readonly claimsService = inject(ClaimsService);
+
     @ViewChild(MatPaginator) paginator: MatPaginator;
     @ViewChild(MatSort) sort: MatSort;
 

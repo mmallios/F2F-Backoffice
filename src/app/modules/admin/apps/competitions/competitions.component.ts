@@ -8,6 +8,7 @@ import {
     OnInit,
     ViewChild,
     ViewEncapsulation,
+    inject,
 } from '@angular/core';
 import { FormsModule, ReactiveFormsModule, UntypedFormControl } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -30,6 +31,8 @@ import { EventsService, Competition } from '@fuse/services/events/events.service
 import { CompetitionUpsertDialogComponent } from './dialogs/competition-upsert-dialog.component';
 import { combineLatest } from 'rxjs';
 import { FanCardsAdminService, FanCardSeason } from '@fuse/services/fan-cards/fan-cards-admin.service';
+import { ClaimsService } from '@fuse/services/claims/claims.service';
+import { BoPermissionDirective } from '@fuse/directives/permission/bo-permission.directive';
 
 
 type SportOption = { id: number; name: string };
@@ -64,9 +67,11 @@ type SportOption = { id: number; name: string };
         MatTooltipModule,
         MatDialogModule,
         MatSelectModule,
+        BoPermissionDirective,
     ],
 })
 export class CompetitionsComponent implements OnInit, OnDestroy {
+    readonly claimsService = inject(ClaimsService);
 
     @ViewChild('matDrawer', { static: true }) matDrawer: MatDrawer;
     @ViewChild(MatPaginator) paginator: MatPaginator;

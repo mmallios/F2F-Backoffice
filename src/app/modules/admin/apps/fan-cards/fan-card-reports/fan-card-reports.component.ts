@@ -5,6 +5,7 @@ import {
     OnDestroy,
     OnInit,
     ViewEncapsulation,
+    inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -28,6 +29,8 @@ import {
     FanCardReportResolveDialogComponent,
     FanCardReportResolveDialogData,
 } from '../fan-card-report-resolve-dialog/fan-card-report-resolve-dialog.component';
+import { ClaimsService } from '@fuse/services/claims/claims.service';
+import { BoPermissionDirective } from '@fuse/directives/permission/bo-permission.directive';
 
 @Component({
     selector: 'fan-card-reports',
@@ -48,9 +51,11 @@ import {
         MatProgressBarModule,
         MatSelectModule,
         MatTooltipModule,
+        BoPermissionDirective,
     ],
 })
 export class FanCardReportsComponent implements OnInit, OnDestroy {
+    readonly claimsService = inject(ClaimsService);
 
     loading = true;
     items: AllReportItem[] = [];

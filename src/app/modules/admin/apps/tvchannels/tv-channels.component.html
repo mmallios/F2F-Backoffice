@@ -34,7 +34,7 @@
 
                         <div class="flex w-full flex-col gap-3 sm:flex-row lg:w-auto lg:items-center">
                             <button mat-flat-button color="primary" class="w-full sm:w-auto"
-                                (click)="openTVChannelDialog()">
+                                (click)="openTVChannelDialog()" [boPermission]="claimsService.canEdit('TV_CHANNELS')">
                                 <mat-icon svgIcon="heroicons_outline:plus"></mat-icon>
                                 <span class="ml-2 mr-1">ΠΡΟΣΘΗΚΗ ΝΕΟΥ ΚΑΝΑΛΙΟΥ</span>
                             </button>
@@ -172,7 +172,7 @@
                                     <td mat-cell *matCellDef="let ch" class="text-right px-6 py-3">
                                         <div class="inline-flex items-center gap-2">
                                             <button mat-stroked-button class="!rounded-xl"
-                                                (click)="openTVChannelDialog(ch)" matTooltip="Επεξεργασία">
+                                                (click)="openTVChannelDialog(ch)" matTooltip="Επεξεργασία" [boPermission]="claimsService.canEdit('TV_CHANNELS')">
                                                 <mat-icon [svgIcon]="'heroicons_outline:pencil-square'"></mat-icon>
                                             </button>
                                         </div>

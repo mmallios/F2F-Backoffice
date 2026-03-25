@@ -13,7 +13,7 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-2 shrink-0">
-                    <button mat-flat-button color="primary" (click)="openNew()" class="!rounded-full !font-semibold">
+                    <button mat-flat-button color="primary" (click)="openNew()" class="!rounded-full !font-semibold" [disabled]="!claimsService.canEdit('CONTESTS')">
                         <mat-icon class="mr-1">add</mat-icon>
                         Νέος Διαγωνισμός
                     </button>
@@ -182,7 +182,7 @@
                                         <mat-icon class="icon-size-4 mr-1">open_in_new</mat-icon>
                                         Λεπτομέρειες
                                     </button>
-                                    <button mat-icon-button color="warn" [disabled]="deletingId() === c.id"
+                                    <button mat-icon-button color="warn" [disabled]="deletingId() === c.id || !claimsService.canDelete('CONTESTS')"
                                         (click)="deleteContest(c, $event)" matTooltip="Διαγραφή">
                                         <mat-icon class="icon-size-5">delete_outline</mat-icon>
                                     </button>

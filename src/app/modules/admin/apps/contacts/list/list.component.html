@@ -35,7 +35,7 @@
 
 
                             <!-- Add -->
-                            <button mat-flat-button color="primary" class="w-full sm:w-auto" (click)="openUserDialog()">
+                            <button mat-flat-button color="primary" class="w-full sm:w-auto" (click)="openUserDialog()" [boPermission]="claimsService.canEdit('USERS')">
                                 <mat-icon svgIcon="heroicons_outline:plus"></mat-icon>
                                 <span class="ml-2 mr-1">ΠΡΟΣΘΗΚΗ ΝΕΟΥ ΧΡΗΣΤΗ</span>
                             </button>
@@ -324,7 +324,7 @@
 
                                             <!-- Edit -->
                                             <button mat-stroked-button class="!rounded-xl" (click)="openUserDialog(u)"
-                                                matTooltip="Επεξεργασία">
+                                                matTooltip="Επεξεργασία" [boPermission]="claimsService.canEdit('USERS')">
                                                 <mat-icon [svgIcon]="'heroicons_outline:pencil-square'"></mat-icon>
                                             </button>
                                         </div>

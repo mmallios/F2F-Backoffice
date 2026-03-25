@@ -27,6 +27,8 @@ import {
     BOOffersService,
     OfferCategoryDto,
 } from '@fuse/services/offers/bo-offers.service';
+import { ClaimsService } from '@fuse/services/claims/claims.service';
+import { BoPermissionDirective } from '@fuse/directives/permission/bo-permission.directive';
 
 @Component({
     selector: 'bo-offer-categories',
@@ -41,11 +43,13 @@ import {
         MatInputModule,
         MatSlideToggleModule,
         MatTooltipModule,
+        BoPermissionDirective,
     ],
     templateUrl: './bo-offer-categories.component.html',
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class BOOfferCategoriesComponent implements OnInit, OnDestroy {
+    readonly claimsService = inject(ClaimsService);
     private _api = inject(BOOffersService);
     private _confirm = inject(FuseConfirmationService);
     private _fb = inject(FormBuilder);

@@ -8,6 +8,7 @@ import {
     OnInit,
     ViewChild,
     ViewEncapsulation,
+    inject,
 } from '@angular/core';
 import { FormsModule, ReactiveFormsModule, UntypedFormControl } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -30,6 +31,8 @@ import { EventsService, EventItem } from '@fuse/services/events/events.service';
 import { GroupChatsService, GroupChat } from '@fuse/services/groupchats/groupchats.service';
 import { GroupChatCreateDialogComponent } from './dialogs/groupchat-create-dialog.component';
 import { FuseConfirmationService } from '@fuse/services/confirmation';
+import { ClaimsService } from '@fuse/services/claims/claims.service';
+import { BoPermissionDirective } from '@fuse/directives/permission/bo-permission.directive';
 
 @Component({
     selector: 'groupchats',
@@ -59,9 +62,12 @@ import { FuseConfirmationService } from '@fuse/services/confirmation';
         MatTooltipModule,
         MatDialogModule,
         MatSelectModule,
+        BoPermissionDirective,
     ],
 })
 export class GroupChatsComponent implements OnInit, OnDestroy {
+    readonly claimsService = inject(ClaimsService);
+
     @ViewChild('matDrawer', { static: true }) matDrawer: MatDrawer;
     @ViewChild(MatPaginator) paginator: MatPaginator;
     @ViewChild(MatSort) sort: MatSort;

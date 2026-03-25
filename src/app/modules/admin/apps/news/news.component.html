@@ -140,7 +140,7 @@
 
                             <!-- Toggle visibility -->
                             <button *ngIf="!r.isHidden" mat-stroked-button type="button"
-                                class="text-red-600 border-red-300 hover:bg-red-50" [disabled]="toggling === r.link"
+                                class="text-red-600 border-red-300 hover:bg-red-50" [disabled]="toggling === r.link || !claimsService.canEdit('NEWS')"
                                 (click)="toggleVisibility(r)" matTooltip="Απόκρυψη από την ιστοσελίδα">
                                 <mat-icon class="icon-size-4">visibility_off</mat-icon>
                                 <span class="ml-1 text-sm">Απόκρυψη</span>
@@ -148,7 +148,7 @@
 
                             <button *ngIf="r.isHidden" mat-stroked-button type="button"
                                 class="text-green-600 border-green-300 hover:bg-green-50"
-                                [disabled]="toggling === r.link" (click)="toggleVisibility(r)"
+                                [disabled]="toggling === r.link || !claimsService.canEdit('NEWS')" (click)="toggleVisibility(r)"
                                 matTooltip="Εμφάνιση στην ιστοσελίδα">
                                 <mat-icon class="icon-size-4">visibility</mat-icon>
                                 <span class="ml-1 text-sm">Εμφάνιση</span>
@@ -227,12 +227,12 @@
         <div class="flex items-center justify-end gap-3 px-6 pb-6 pt-2 border-t">
             <button mat-button type="button" (click)="closeDetail()">Κλείσιμο</button>
             <button *ngIf="!detailItem.isHidden" mat-flat-button color="warn" type="button"
-                [disabled]="toggling === detailItem.link" (click)="toggleVisibility(detailItem)">
+                [disabled]="toggling === detailItem.link || !claimsService.canEdit('NEWS')" (click)="toggleVisibility(detailItem)">
                 <mat-icon>visibility_off</mat-icon>
                 <span class="ml-1">Απόκρυψη</span>
             </button>
             <button *ngIf="detailItem.isHidden" mat-flat-button color="primary" type="button"
-                [disabled]="toggling === detailItem.link" (click)="toggleVisibility(detailItem)">
+                [disabled]="toggling === detailItem.link || !claimsService.canEdit('NEWS')" (click)="toggleVisibility(detailItem)">
                 <mat-icon>visibility</mat-icon>
                 <span class="ml-1">Εμφάνιση</span>
             </button>

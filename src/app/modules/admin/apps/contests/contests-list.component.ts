@@ -30,6 +30,8 @@ import {
 } from '@fuse/services/contests/contests-admin.service';
 import { ContestWizardDialogComponent } from './dialogs/contest-wizard-dialog.component';
 import { FuseConfirmationService } from '@fuse/services/confirmation';
+import { ClaimsService } from '@fuse/services/claims/claims.service';
+import { BoPermissionDirective } from '@fuse/directives/permission/bo-permission.directive';
 
 @Component({
     selector: 'app-contests-list',
@@ -48,11 +50,13 @@ import { FuseConfirmationService } from '@fuse/services/confirmation';
         MatSortModule,
         MatTableModule,
         MatTooltipModule,
+        BoPermissionDirective,
     ],
     templateUrl: './contests-list.component.html',
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ContestsListComponent implements OnInit, OnDestroy {
+    readonly claimsService = inject(ClaimsService);
     private api = inject(ContestsAdminService);
     private dialog = inject(MatDialog);
     private router = inject(Router);

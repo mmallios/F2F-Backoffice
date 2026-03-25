@@ -219,6 +219,6 @@ export class GroupChatsService {
     }
 
     deleteGroupChat(groupId: number): Observable<void> {
-        return this.http.delete<void>(`${this.baseUrl}/groupchat/${groupId}`);
+        return this.http.delete<void>(`${this.baseUrl}/BOGroupChats/${groupId}`);
     }
 }

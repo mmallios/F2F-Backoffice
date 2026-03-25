@@ -208,7 +208,7 @@
                                 <!-- Pending: resolve button -->
                                 <button *ngIf="r.status === 1" mat-stroked-button type="button"
                                     class="text-xs !h-8 !min-w-0 !px-3 border-primary text-primary"
-                                    matTooltip="Επίλυση αναφοράς" (click)="openResolveDialog(r)">
+                                    matTooltip="Επίλυση αναφοράς" (click)="openResolveDialog(r)" [boPermission]="claimsService.canEdit('FAN_CARD_REPORTS')">
                                     <mat-icon class="text-[15px] mr-1">check_circle</mat-icon>
                                     Επίλυση
                                 </button>

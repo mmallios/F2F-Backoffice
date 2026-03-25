@@ -34,6 +34,8 @@ import {
     OfferDto,
 } from '@fuse/services/offers/bo-offers.service';
 import { FuseConfirmationService } from '@fuse/services/confirmation';
+import { ClaimsService } from '@fuse/services/claims/claims.service';
+import { BoPermissionDirective } from '@fuse/directives/permission/bo-permission.directive';
 
 @Component({
     selector: 'bo-offers-list',
@@ -55,11 +57,13 @@ import { FuseConfirmationService } from '@fuse/services/confirmation';
         MatDatepickerModule,
         MatNativeDateModule,
         MatProgressBarModule,
+        BoPermissionDirective,
     ],
     templateUrl: './bo-offers-list.component.html',
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class BOOffersListComponent implements OnInit, OnDestroy {
+    readonly claimsService = inject(ClaimsService);
     private api = inject(BOOffersService);
     private fb = inject(FormBuilder);
     private cdr = inject(ChangeDetectorRef);

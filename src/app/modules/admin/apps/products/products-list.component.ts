@@ -18,6 +18,8 @@ import { Subject, takeUntil } from 'rxjs';
 
 import { StoreService, ProductDto } from '@fuse/services/store/store.service';
 import { FuseConfirmationService } from '@fuse/services/confirmation';
+import { ClaimsService } from '@fuse/services/claims/claims.service';
+import { BoPermissionDirective } from '@fuse/directives/permission/bo-permission.directive';
 
 @Component({
     selector: 'products-list',
@@ -49,9 +51,12 @@ import { FuseConfirmationService } from '@fuse/services/confirmation';
 
         MatDatepickerModule,
         MatNativeDateModule,
+        BoPermissionDirective,
     ],
 })
 export class ProductsListComponent implements OnInit, OnDestroy {
+    readonly claimsService = inject(ClaimsService);
+
     @ViewChild(MatPaginator) paginator: MatPaginator;
     @ViewChild(MatSort) sort: MatSort;
 

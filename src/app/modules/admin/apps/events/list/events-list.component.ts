@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { debounceTime, distinctUntilChanged, merge } from 'rxjs';
@@ -15,6 +15,8 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 
 import { EventItem, EventsService, TvChannel } from '@fuse/services/events/events.service';
+import { ClaimsService } from '@fuse/services/claims/claims.service';
+import { BoPermissionDirective } from '@fuse/directives/permission/bo-permission.directive';
 import { forkJoin } from 'rxjs';
 
 type TabKey = 'all' | 'football' | 'basket' | 'polo' | 'volley' | 'handball';
@@ -57,12 +59,14 @@ type TabVM = {
     MatSelectModule,
     MatDatepickerModule,
     MatNativeDateModule,
+    BoPermissionDirective,
   ],
   templateUrl: './events-list.component.html',
   styleUrl: './events-list.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class EventsListComponent implements OnInit {
+  readonly claimsService = inject(ClaimsService);
 
   events: EventVM[] = [];
   tvchannels: TvChannel[] = [];

@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { environment } from '@fuse/environments/environment';
+import { ClaimsService } from '@fuse/services/claims/claims.service';
 
 import { catchError, map, Observable, of, tap } from 'rxjs';
 import { AuthUtils } from './auth.utils';
@@ -19,7 +20,10 @@ export interface BOCurrentUser {
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-    constructor(private _http: HttpClient) { }
+    constructor(
+        private _http: HttpClient,
+        private _claimsService: ClaimsService,
+    ) { }
 
     backofficeLogin(data: { email: string; password: string }): Observable<any> {
         return this._http
@@ -49,6 +53,10 @@ export class AuthService {
                             keycloakId: res.keycloakId ?? null,
                         };
                         localStorage.setItem('bo_current_user', JSON.stringify(userData));
+                    }
+                    // Store claims for the entire session
+                    if (res?.claims) {
+                        this._claimsService.setClaims(res.claims);
                     }
                 })
             );
@@ -88,6 +96,7 @@ export class AuthService {
         localStorage.removeItem('bo_access_token');
         localStorage.removeItem('bo_refresh_token');
         localStorage.removeItem('bo_current_user');
+        this._claimsService.clearClaims();
         return of(true);
     }
 

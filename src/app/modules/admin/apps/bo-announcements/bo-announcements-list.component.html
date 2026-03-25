@@ -23,7 +23,7 @@
                 <mat-icon class="icon-size-5" matPrefix [svgIcon]="'heroicons_solid:magnifying-glass'"></mat-icon>
                 <input matInput [formControl]="searchCtrl" placeholder="Αναζήτηση..." />
             </mat-form-field>
-            <button mat-flat-button color="primary" (click)="openWizard()">
+            <button mat-flat-button color="primary" (click)="openWizard()" [boPermission]="claimsService.canEdit('HQ_ANNOUNCEMENTS')">
                 <mat-icon [svgIcon]="'heroicons_outline:plus'"></mat-icon>
                 <span class="ml-1">Νέα ανακοίνωση</span>
             </button>

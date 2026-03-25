@@ -8,6 +8,7 @@ import {
     OnInit,
     ViewChild,
     SecurityContext,
+    inject,
 } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -25,6 +26,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { Subject, combineLatest, debounceTime, startWith, takeUntil } from 'rxjs';
 import { BONewsItem, NewsService } from '@fuse/services/news/news.service';
+import { ClaimsService } from '@fuse/services/claims/claims.service';
 
 @Component({
     selector: 'app-news',
@@ -49,6 +51,8 @@ import { BONewsItem, NewsService } from '@fuse/services/news/news.service';
     templateUrl: './news.component.html',
 })
 export class NewsComponent implements OnInit, AfterViewInit, OnDestroy {
+    readonly claimsService = inject(ClaimsService);
+
     @ViewChild(MatPaginator) paginator!: MatPaginator;
     @ViewChild(MatSort) sort!: MatSort;
 

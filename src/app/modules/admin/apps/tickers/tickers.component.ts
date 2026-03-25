@@ -32,6 +32,8 @@ import { MatSort, MatSortModule } from '@angular/material/sort';
 import { forkJoin } from 'rxjs';
 import { FuseConfirmationService } from '@fuse/services/confirmation';
 import { TickersService, TickerDto } from '@fuse/services/tickers/tickers.service';
+import { ClaimsService } from '@fuse/services/claims/claims.service';
+import { BoPermissionDirective } from '@fuse/directives/permission/bo-permission.directive';
 import { AnnouncementsService } from '@fuse/services/announcements/announcements.service';
 import { NewsService } from '@fuse/services/news/news.service';
 
@@ -82,6 +84,7 @@ export interface TickerTypeConfig {
         MatTableModule,
         MatPaginatorModule,
         MatSortModule,
+        BoPermissionDirective,
     ],
     templateUrl: './tickers.component.html',
 })
@@ -89,6 +92,7 @@ export class TickersComponent implements OnInit {
     @ViewChild(MatPaginator) paginator: MatPaginator;
     @ViewChild(MatSort) sort: MatSort;
 
+    readonly claimsService = inject(ClaimsService);
     private _service = inject(TickersService);
     private _announcements = inject(AnnouncementsService);
     private _news = inject(NewsService);

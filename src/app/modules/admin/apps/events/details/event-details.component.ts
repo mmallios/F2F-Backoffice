@@ -6,6 +6,7 @@ import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } 
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { Subject, combineLatest, forkJoin, startWith, takeUntil } from 'rxjs';
 
+import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatIconModule } from '@angular/material/icon';
@@ -33,6 +34,7 @@ import { AuthService } from 'app/core/auth/auth.service';
 import { EventFanCardUsage, FanCardsAdminService } from '@fuse/services/fan-cards/fan-cards-admin.service';
 import { UsersService, User } from '@fuse/services/users/users.service';
 import { BOHubService } from 'app/core/signalr/bo-hub.service';
+import { EventGroupChatDto, EventGroupChatService } from '@fuse/services/events/event-groupchat.service';
 
 @Component({
     selector: 'event-details',
@@ -41,6 +43,7 @@ import { BOHubService } from 'app/core/signalr/bo-hub.service';
         CommonModule,
         RouterModule,
         ReactiveFormsModule,
+        FormsModule,
         MatButtonModule,
         MatDatepickerModule,
         MatIconModule,
@@ -116,6 +119,14 @@ export class EventDetailsComponent implements OnInit, OnDestroy {
     loadingFanCardUsages = false;
     fanCardUsagesLoaded = false;
 
+    // ── group chat tab ───────────────────────────────────────────
+    groupChat: EventGroupChatDto | null = null;
+    loadingGroupChat = false;
+    groupChatLoaded = false;
+    groupChatNameEdit = false;
+    groupChatNameValue = '';
+    groupChatSaving = false;
+
     trackByStatKey = (_: number, s: any) => s.key;
     trackByTicketId = (_: number, t: EventTicketDto) => t.id;
 
@@ -128,6 +139,7 @@ export class EventDetailsComponent implements OnInit, OnDestroy {
         private _fanCardsService: FanCardsAdminService,
         private _usersService: UsersService,
         private _authService: AuthService,
+        private _groupChatService: EventGroupChatService,
         private _fb: FormBuilder,
         private _cdr: ChangeDetectorRef,
         private _boHub: BOHubService
@@ -655,8 +667,18 @@ export class EventDetailsComponent implements OnInit, OnDestroy {
         if (this.headerForm.invalid) { this.headerForm.markAllAsTouched(); this._cdr.markForCheck(); return; }
         const raw = this.headerForm.getRawValue();
         const combined = this.combineDateAndTime(raw.eventDateOnly, raw.eventTimeOnly || '00:00');
+        const homeTeam = this.teams.find(t => t.id === raw.homeTeamId);
+        const awayTeam = this.teams.find(t => t.id === raw.awayTeamId);
+        const d = raw.eventDateOnly ? new Date(raw.eventDateOnly) : null;
+        const datePart = d && !isNaN(d.getTime())
+            ? `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`
+            : 'NODATE';
+        const home3 = (homeTeam?.name ?? 'HOM').replace(/\s+/g, '').toUpperCase().slice(0, 3);
+        const away3 = (awayTeam?.name ?? 'AWY').replace(/\s+/g, '').toUpperCase().slice(0, 3);
+        const generatedCode = `${datePart}_${home3}_${away3}`;
+
         const payload: Partial<EventItem> = {
-            code: 'BO', name: 'BOO',
+            code: generatedCode, name: generatedCode,
             competitionId: raw.competitionId,
             matchday: raw.matchday || '',
             homeTeamId: raw.homeTeamId,
@@ -763,4 +785,90 @@ export class EventDetailsComponent implements OnInit, OnDestroy {
     }
     onAvatarSelected(_ev: Event): void { }
     backToList(): void { this._router.navigateByUrl('/apps/events'); }
+
+    // ── Group Chat Tab ────────────────────────────────────────────
+
+    loadGroupChat(): void {
+        if (!this.event || this.groupChatLoaded) return;
+
+        this.loadingGroupChat = true;
+        this._cdr.markForCheck();
+
+        this._groupChatService.getForEvent(this.event.id)
+            .pipe(takeUntil(this._unsubscribeAll))
+            .subscribe({
+                next: (data) => {
+                    this.groupChat = data;
+                    this.groupChatNameValue = data.name ?? '';
+                    this.groupChatLoaded = true;
+                    this.loadingGroupChat = false;
+                    this._cdr.markForCheck();
+                },
+                error: () => {
+                    this.loadingGroupChat = false;
+                    this._cdr.markForCheck();
+                },
+            });
+    }
+
+    reloadGroupChat(): void {
+        if (!this.event) return;
+        this.groupChatLoaded = false;
+        this.loadGroupChat();
+    }
+
+    startEditGroupChatName(): void {
+        this.groupChatNameValue = this.groupChat?.name ?? '';
+        this.groupChatNameEdit = true;
+        this._cdr.markForCheck();
+    }
+
+    cancelEditGroupChatName(): void {
+        this.groupChatNameEdit = false;
+        this._cdr.markForCheck();
+    }
+
+    saveGroupChatName(): void {
+        if (!this.event || !this.groupChatNameValue.trim()) return;
+        this.groupChatSaving = true;
+        this._cdr.markForCheck();
+
+        this._groupChatService.update(this.event.id, { name: this.groupChatNameValue.trim() })
+            .subscribe({
+                next: () => {
+                    if (this.groupChat) this.groupChat = { ...this.groupChat, name: this.groupChatNameValue.trim() };
+                    this.groupChatNameEdit = false;
+                    this.groupChatSaving = false;
+                    this._cdr.markForCheck();
+                },
+                error: () => { this.groupChatSaving = false; this._cdr.markForCheck(); },
+            });
+    }
+
+    toggleGroupChatActive(): void {
+        if (!this.event || !this.groupChat) return;
+        this.groupChatSaving = true;
+        this._cdr.markForCheck();
+
+        const action$ = this.groupChat.isActive
+            ? this._groupChatService.deactivate(this.event.id)
+            : this._groupChatService.activate(this.event.id);
+
+        action$.subscribe({
+            next: () => {
+                this.groupChat = { ...this.groupChat!, isActive: !this.groupChat!.isActive };
+                this.groupChatSaving = false;
+                this._cdr.markForCheck();
+            },
+            error: () => { this.groupChatSaving = false; this._cdr.markForCheck(); },
+        });
+    }
+
+    formatUtc(iso: string | null | undefined): string {
+        if (!iso) return '—';
+        const d = new Date(iso);
+        return isNaN(d.getTime()) ? '—'
+            : d.toLocaleDateString('el-GR', { day: 'numeric', month: 'short', year: 'numeric' })
+            + ' ' + d.toLocaleTimeString('el-GR', { hour: '2-digit', minute: '2-digit' });
+    }
 }

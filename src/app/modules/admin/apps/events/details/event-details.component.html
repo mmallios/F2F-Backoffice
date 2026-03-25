@@ -422,7 +422,7 @@
 
     <!-- ================= TABS ================= -->
     <div class="bg-card rounded-2xl border shadow-sm overflow-hidden">
-        <mat-tab-group class="p-2 md:p-4" (selectedTabChange)="$event.index === 2 && loadFanCardUsages()">
+        <mat-tab-group class="p-2 md:p-4" (selectedTabChange)="$event.index === 2 && loadFanCardUsages(); $event.index === 3 && loadGroupChat()">
 
             <!-- TAB 1 : ΕΙΣΙΤΗΡΙΑ ΑΓΩΝΑ -->
             <mat-tab label="ΕΙΣΙΤΗΡΙΑ ΑΓΩΝΑ">
@@ -1066,6 +1066,193 @@
 
                             </div>
                         </div>
+
+                    </div>
+                </ng-template>
+            </mat-tab>
+
+            <!-- TAB 4 : ΟΜΑΔΙΚΗ ΣΥΝΟΜΙΛΙΑ -->
+            <mat-tab label="ΟΜΑΔΙΚΗ ΣΥΝΟΜΙΛΙΑ">
+                <ng-template matTabContent>
+                    <div class="gc-tab">
+
+                        <!-- Loading skeleton -->
+                        <ng-container *ngIf="loadingGroupChat">
+                            <div class="gc-skeleton">
+                                <div class="gc-skel-block"></div>
+                                <div class="gc-skel-block short"></div>
+                                <div class="gc-skel-block"></div>
+                            </div>
+                        </ng-container>
+
+                        <!-- Chat doesn't exist yet -->
+                        <ng-container *ngIf="!loadingGroupChat && groupChatLoaded && !groupChat?.exists">
+                            <div class="gc-empty-state">
+                                <div class="gc-empty-icon">
+                                    <mat-icon>forum</mat-icon>
+                                </div>
+                                <div class="gc-empty-title">Δεν υπάρχει ακόμα ομαδική συνομιλία</div>
+                                <div class="gc-empty-desc">
+                                    Η συνομιλία θα δημιουργηθεί αυτόματα την ημέρα του αγώνα.
+                                    Θα ενεργοποιηθεί 2 ώρες πριν την έναρξη και θα κλείσει 6 ώρες μετά.
+                                </div>
+                                <button mat-flat-button color="primary" (click)="reloadGroupChat()">
+                                    <mat-icon>refresh</mat-icon> Ανανέωση
+                                </button>
+                            </div>
+                        </ng-container>
+
+                        <!-- Chat exists -->
+                        <ng-container *ngIf="!loadingGroupChat && groupChat?.exists">
+
+                            <!-- Header row -->
+                            <div class="gc-header">
+                                <div class="gc-header-left">
+                                    <div class="gc-chat-icon">
+                                        <mat-icon>forum</mat-icon>
+                                    </div>
+                                    <div>
+                                        <div class="gc-chat-id">Chat #{{ groupChat?.id }}</div>
+                                        <div class="gc-chat-meta">
+                                            <span class="gc-badge" [class.gc-badge--active]="groupChat?.isActive"
+                                                  [class.gc-badge--inactive]="!groupChat?.isActive">
+                                                <span class="gc-badge-dot"></span>
+                                                {{ groupChat?.isActive ? 'ΕΝΕΡΓΗ' : 'ΑΝΕΝΕΡΓΗ' }}
+                                            </span>
+                                            <span class="gc-badge gc-badge--info" *ngIf="groupChat?.isPaused">
+                                                <mat-icon class="gc-badge-icon">pause_circle</mat-icon>
+                                                ΠΑΥΣΗ
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="gc-header-actions">
+                                    <button mat-stroked-button (click)="reloadGroupChat()" [disabled]="loadingGroupChat">
+                                        <mat-icon>refresh</mat-icon>
+                                    </button>
+                                    <button mat-flat-button
+                                            [color]="groupChat?.isActive ? 'warn' : 'primary'"
+                                            (click)="toggleGroupChatActive()"
+                                            [disabled]="groupChatSaving">
+                                        <mat-icon>{{ groupChat?.isActive ? 'toggle_off' : 'toggle_on' }}</mat-icon>
+                                        <span class="ml-1">{{ groupChat?.isActive ? 'Απενεργοποίηση' : 'Ενεργοποίηση' }}</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Info cards -->
+                            <div class="gc-info-grid">
+
+                                <!-- Name card -->
+                                <div class="gc-card">
+                                    <div class="gc-card-label">
+                                        <mat-icon class="gc-card-icon">edit_note</mat-icon>
+                                        Όνομα συνομιλίας
+                                    </div>
+                                    <div class="gc-card-body" *ngIf="!groupChatNameEdit">
+                                        <span class="gc-card-value">{{ groupChat?.name }}</span>
+                                        <button mat-icon-button (click)="startEditGroupChatName()" class="gc-edit-btn">
+                                            <mat-icon>edit</mat-icon>
+                                        </button>
+                                    </div>
+                                    <div class="gc-name-edit" *ngIf="groupChatNameEdit">
+                                        <input class="gc-name-input" [(ngModel)]="groupChatNameValue"
+                                               placeholder="Όνομα συνομιλίας" />
+                                        <button mat-icon-button color="primary" (click)="saveGroupChatName()"
+                                                [disabled]="groupChatSaving || !groupChatNameValue.trim()">
+                                            <mat-icon>check</mat-icon>
+                                        </button>
+                                        <button mat-icon-button (click)="cancelEditGroupChatName()">
+                                            <mat-icon>close</mat-icon>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Schedule card -->
+                                <div class="gc-card">
+                                    <div class="gc-card-label">
+                                        <mat-icon class="gc-card-icon">schedule</mat-icon>
+                                        Χρονοδιάγραμμα
+                                    </div>
+                                    <div class="gc-schedule">
+                                        <div class="gc-schedule-row">
+                                            <div class="gc-schedule-dot gc-schedule-dot--on"></div>
+                                            <div>
+                                                <div class="gc-schedule-key">Ενεργοποίηση</div>
+                                                <div class="gc-schedule-val">{{ formatUtc(groupChat?.activatesAt) }}</div>
+                                            </div>
+                                        </div>
+                                        <div class="gc-schedule-line"></div>
+                                        <div class="gc-schedule-row">
+                                            <div class="gc-schedule-dot gc-schedule-dot--off"></div>
+                                            <div>
+                                                <div class="gc-schedule-key">Απενεργοποίηση</div>
+                                                <div class="gc-schedule-val">{{ formatUtc(groupChat?.deactivatesAt) }}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Stats card -->
+                                <div class="gc-card">
+                                    <div class="gc-card-label">
+                                        <mat-icon class="gc-card-icon">bar_chart</mat-icon>
+                                        Στατιστικά
+                                    </div>
+                                    <div class="gc-stats">
+                                        <div class="gc-stat">
+                                            <span class="gc-stat-value">{{ groupChat?.totalMessages }}</span>
+                                            <span class="gc-stat-key">Μηνύματα</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+
+                            <!-- Messages list -->
+                            <div class="gc-messages-section">
+                                <div class="gc-messages-title">
+                                    <mat-icon>chat_bubble_outline</mat-icon>
+                                    Μηνύματα
+                                    <span class="gc-msg-count">{{ groupChat?.totalMessages }}</span>
+                                </div>
+
+                                <div class="gc-messages-list" *ngIf="groupChat?.messages?.length; else noMessages">
+                                    <div *ngFor="let msg of groupChat?.messages" class="gc-message">
+                                        <!-- Avatar -->
+                                        <div class="gc-msg-avatar">
+                                            <img *ngIf="msg.senderAvatar" [src]="msg.senderAvatar"
+                                                 class="gc-msg-avatar-img" alt="">
+                                            <div *ngIf="!msg.senderAvatar" class="gc-msg-avatar-initials">
+                                                {{ (msg.senderName || 'U').charAt(0).toUpperCase() }}
+                                            </div>
+                                        </div>
+                                        <!-- Content -->
+                                        <div class="gc-msg-content">
+                                            <div class="gc-msg-header">
+                                                <span class="gc-msg-name">{{ msg.senderName }}</span>
+                                                <span class="gc-msg-time">{{ formatUtc(msg.sentAtUtc) }}</span>
+                                                <span class="gc-msg-badge" *ngIf="msg.hasImages">
+                                                    <mat-icon>image</mat-icon>
+                                                </span>
+                                                <span class="gc-msg-badge" *ngIf="msg.hasAudio">
+                                                    <mat-icon>mic</mat-icon>
+                                                </span>
+                                            </div>
+                                            <div class="gc-msg-body">{{ msg.body }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <ng-template #noMessages>
+                                    <div class="gc-no-messages">
+                                        <mat-icon>chat_bubble_outline</mat-icon>
+                                        <span>Δεν υπάρχουν μηνύματα ακόμα</span>
+                                    </div>
+                                </ng-template>
+                            </div>
+
+                        </ng-container>
 
                     </div>
                 </ng-template>

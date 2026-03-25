@@ -1,0 +1,11 @@
+notifications {
+    position: static;
+}
+
+.notifications-drawer {
+    width: 420px;
+
+    @media (max-width: 480px) {
+        width: 100vw;
+    }
+}

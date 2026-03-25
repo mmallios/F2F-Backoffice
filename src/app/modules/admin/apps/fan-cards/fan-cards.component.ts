@@ -6,6 +6,7 @@ import {
     OnInit,
     ViewChild,
     ViewEncapsulation,
+    inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormControl, FormsModule, ReactiveFormsModule, UntypedFormControl } from '@angular/forms';
@@ -30,6 +31,8 @@ import {
 import { User, UsersService } from '@fuse/services/users/users.service';
 import { FanCardDetailsDialogComponent } from './fan-card-details-dialog/fan-card-details-dialog.component';
 import { FanCardEditDialogComponent, FanCardEditDialogData } from './fan-card-edit-dialog/fan-card-edit-dialog.component';
+import { ClaimsService } from '@fuse/services/claims/claims.service';
+import { BoPermissionDirective } from '@fuse/directives/permission/bo-permission.directive';
 
 @Component({
     selector: 'fan-cards',
@@ -52,9 +55,12 @@ import { FanCardEditDialogComponent, FanCardEditDialogData } from './fan-card-ed
         MatSortModule,
         MatTableModule,
         MatTooltipModule,
+        BoPermissionDirective,
     ],
 })
 export class FanCardsComponent implements OnInit, OnDestroy {
+    readonly claimsService = inject(ClaimsService);
+
     @ViewChild(MatPaginator) paginator!: MatPaginator;
     @ViewChild(MatSort) sort!: MatSort;
 

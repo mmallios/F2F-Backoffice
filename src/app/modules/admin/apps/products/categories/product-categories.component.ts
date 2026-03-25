@@ -29,6 +29,7 @@ import {
     StoreService,
     UpdateCategoryRequest,
 } from '@fuse/services/store/store.service';
+import { ClaimsService } from '@fuse/services/claims/claims.service';
 
 /* =========================================================
    DIALOG: Add / Edit Category
@@ -246,7 +247,7 @@ export class CategoryFormDialogComponent {
           <span class="ml-2">Ανανέωση</span>
         </button>
 
-        <button mat-flat-button color="primary" class="!rounded-xl w-full sm:w-auto" (click)="openAdd()">
+        <button mat-flat-button color="primary" class="!rounded-xl w-full sm:w-auto" (click)="openAdd()" [disabled]="!claimsService.canEdit('PRODUCT_CATEGORIES')">
           <mat-icon [svgIcon]="'heroicons_outline:plus'"></mat-icon>
           <span class="ml-2">Νέα Κατηγορία</span>
         </button>
@@ -343,12 +344,12 @@ export class CategoryFormDialogComponent {
                 <th mat-header-cell *matHeaderCellDef class="text-right px-6"></th>
                 <td mat-cell *matCellDef="let cat" class="text-right px-6 py-3">
                   <div class="inline-flex items-center gap-2">
-                    <button mat-stroked-button class="!rounded-xl" (click)="openEdit(cat)" matTooltip="Επεξεργασία">
+                    <button mat-stroked-button class="!rounded-xl" (click)="openEdit(cat)" matTooltip="Επεξεργασία" [disabled]="!claimsService.canEdit('PRODUCT_CATEGORIES')">
                       <mat-icon [svgIcon]="'heroicons_outline:pencil-square'"></mat-icon>
                       <span class="ml-2">Επεξεργασία</span>
                     </button>
                     <button mat-icon-button color="warn" (click)="deleteCategory(cat)" matTooltip="Διαγραφή"
-                      [disabled]="deletingId === cat.id">
+                      [disabled]="deletingId === cat.id || !claimsService.canDelete('PRODUCT_CATEGORIES')">
                       <mat-icon [svgIcon]="'heroicons_outline:trash'"></mat-icon>
                     </button>
                   </div>
@@ -372,6 +373,7 @@ export class ProductCategoriesComponent implements OnInit, OnDestroy {
     @ViewChild(MatPaginator) paginator: MatPaginator;
     @ViewChild(MatSort) sort: MatSort;
 
+    readonly claimsService = inject(ClaimsService);
     private _api = inject(StoreService);
     private _dialog = inject(MatDialog);
     private _snack = inject(MatSnackBar);

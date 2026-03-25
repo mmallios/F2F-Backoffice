@@ -30,6 +30,8 @@ import {
     UserClaimOverrideRowDto,
     UpsertUserClaimOverrideRequest,
 } from '@fuse/services/roles/roles.service'; // adjust path
+import { ClaimsService } from '@fuse/services/claims/claims.service';
+import { BoPermissionDirective } from '@fuse/directives/permission/bo-permission.directive';
 
 @Component({
     selector: 'bo-roles-admin',
@@ -41,6 +43,7 @@ import {
         CommonModule,
         FormsModule,
         ReactiveFormsModule,
+        BoPermissionDirective,
 
         MatButtonModule,
         MatIconModule,
@@ -60,6 +63,7 @@ import {
     ],
 })
 export class BoRolesAdminComponent implements OnInit {
+    readonly claimsService = inject(ClaimsService);
     private _api = inject(RolesService);
     private _cdr = inject(ChangeDetectorRef);
     private _dialog = inject(MatDialog);
